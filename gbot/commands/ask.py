@@ -1,7 +1,12 @@
 import argparse
+import inspect
+from collections.abc import Callable
+from typing import cast
 
 from gbot.bots import resolve_bot
 from gbot.context import Context, prompt
+from gbot.pending import discover, is_pending, render
+from groken.gateway import AwaitingUserError, GatewayManager
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -18,18 +23,53 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 def run(args: argparse.Namespace, ctx: Context) -> int:
     text = prompt(args)
     bot_id, name = resolve_bot(ctx, args.bot)
-    if args.stream:
-        reply = ctx.manager().ask_stream(
-            bot_id,
-            text,
-            args.timeout,
-            args.idle,
-            on_chunk=None if ctx.out.json_mode else ctx.out.chunk,
-        )
-        if not ctx.out.json_mode:
-            print()
-            return 0
-    else:
-        reply = ctx.manager().ask(bot_id, text, args.timeout, args.idle)
+    manager = cast(GatewayManager, ctx.manager())
+    method = manager.ask_stream if args.stream else manager.ask
+    # Older injected/relay managers retain the original ask interface.
+    parameters = inspect.signature(method).parameters
+    options: dict[str, Callable[[dict[str, object]], bool]] = {}
+    if "on_entry" in parameters or any(
+        p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values()
+    ):
+        options["on_entry"] = is_pending
+    streamed: list[str] = []
+
+    def chunk(value: str) -> None:
+        streamed.append(value)
+        ctx.out.chunk(value)
+
+    try:
+        if args.stream:
+            reply = manager.ask_stream(
+                bot_id,
+                text,
+                args.timeout,
+                args.idle,
+                on_chunk=None if ctx.out.json_mode else chunk,
+                **options,
+            )
+            if not ctx.out.json_mode:
+                print()
+                return 0
+        else:
+            reply = manager.ask(bot_id, text, args.timeout, args.idle, **options)
+    except AwaitingUserError as exc:
+        items = discover(ctx, bot_id)
+        if ctx.out.json_mode:
+            ctx.out.write(
+                {
+                    "bot": {"id": bot_id, "name": name},
+                    "reply": exc.partial_reply,
+                    "pending": [item.to_dict() for item in items],
+                },
+                "",
+            )
+        else:
+            if streamed:
+                print()
+            elif exc.partial_reply:
+                print(exc.partial_reply)
+            print(render(items))
+        return 2
     ctx.out.write({"bot": {"id": bot_id, "name": name}, "reply": reply}, reply)
     return 0
