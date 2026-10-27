@@ -1,7 +1,7 @@
 # Windows collection is an audited allowlist; POSIX collection stays unchanged.
 # To add a module, run .venv/Scripts/python -m pytest -q -p no:cacheprovider
 # tests/test_<module>.py on Windows, then add its filename after it passes.
-# tests/gbot/ is always collected; required modules stay listed while being fixed.
+# tests/gbot_suite/ is always collected; required modules stay listed while being fixed.
 import sys
 from pathlib import Path
 
@@ -74,7 +74,7 @@ def pytest_ignore_collect(collection_path: Path) -> bool | None:
     if sys.platform != "win32":
         return None
     relative = collection_path.relative_to(Path(__file__).resolve().parent)
-    if relative.parts[0] == "gbot":
+    if relative.parts[0] == "gbot_suite":
         return None
     if collection_path.suffix == ".py":
         return relative.as_posix() not in WINDOWS_TEST_MODULES
