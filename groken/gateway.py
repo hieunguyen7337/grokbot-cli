@@ -21,6 +21,23 @@ _REPLY_QUIET_S = 2.0
 MAX_BOT_NAME_LENGTH = 256
 
 
+# Preserve ConnectError catches even though the transport base is annotated final.
+class ReplyIncompleteError(ConnectError):  # pyright: ignore[reportGeneralTypeIssues]
+    def __init__(self, bot_id: str, elapsed_s: float) -> None:
+        self.bot_id: str = bot_id
+        self.elapsed_s: float = elapsed_s
+        super().__init__(0, "reply incomplete")
+
+
+class UnknownBotError(ValueError):
+    def __init__(self, requested_name: str, available_names: list[str]) -> None:
+        self.requested_name: str = requested_name
+        self.available_names: list[str] = list(available_names)
+        super().__init__(
+            f"unknown bot: {requested_name} (available: {', '.join(available_names)})"
+        )
+
+
 def _decode_json(value: str | bytes) -> object:
     return cast(object, json.loads(value))
 
@@ -446,9 +463,18 @@ class GatewaySession:
                 _ = self.send_prompt(agent_id, text, client_nonce=client_nonce)
 
             prompt_sender = default_send_prompt
+        prompt_sent = False
+
+        def send_prompt_once() -> None:
+            nonlocal prompt_sent
+            if not prompt_sent:
+                prompt_sent = True
+                prompt_sender()
+
         seen_ids: set[object] = set()
         anchor_ids: list[object] = []
         deadline = deadline if deadline is not None else self._now() + timeout_s
+        started = deadline - timeout_s
         send_epoch_ms = time.time() * 1000
         attempts: int = 0
 
@@ -472,52 +498,75 @@ class GatewaySession:
             if on_chunk is not None:
                 on_chunk(content)
 
+        def finished(now: float) -> bool:
+            if completion.complete(now):
+                return True
+            if (
+                completion.chunks and now - completion.last_change >= idle_s
+            ) or now >= deadline:
+                raise ReplyIncompleteError(agent_id, now - started)
+            return False
+
+        def accept_line(line: str, now: float) -> None:
+            if not line.startswith("data:"):
+                return
+            try:
+                decoded = _decode_json(line[5:].strip())
+            except ValueError:
+                return
+            frame = _require_object_dict(decoded)
+            channel = frame.get("channel")
+            payload = _require_object_dict(frame.get("payload") or {})
+            if channel == "transcript" and payload.get("type") == "appended":
+                if payload.get("agentId") not in (None, agent_id):
+                    return
+                accept(_require_object_dict(payload.get("entry") or {}), now)
+            elif channel == "agent-upserted":
+                agent = _require_object_dict(payload.get("agent") or {})
+                if agent.get("id") == agent_id:
+                    completion.observe(self._authoritative_busy(agent))
+
+        quiet_reconnect = False
         while attempts <= 6 and self._now() < deadline:
             try:
+                remaining = deadline - self._now()
                 with self.http.stream(
                     "GET",
                     f"{self.gateway_url}/events",
                     headers=self._headers(),
-                    timeout=httpx.Timeout(30.0, read=_REPLY_QUIET_S),
+                    timeout=httpx.Timeout(
+                        30.0, read=min(_REPLY_QUIET_S, max(remaining, 0.01))
+                    ),
                 ) as response:
                     if response.status_code != 200:
                         raise ConnectError(
                             response.status_code, "events stream rejected"
                         )
-                    prompt_sender()
+                    send_prompt_once()
+                    if quiet_reconnect:
+                        # Subscribe before backfilling so entries in the gap are not lost.
+                        quiet_reconnect = False
+                        for entry in self.transcript_tail(agent_id):
+                            accept(entry, self._now())
+                        completion.observe(self.agent_busy(agent_id))
+                        if finished(self._now()):
+                            return "\n".join(completion.chunks)
                     for line in response.iter_lines():
                         now = self._now()
-                        if now >= deadline:
-                            break
-                        if not line.startswith("data:"):
-                            continue
-                        try:
-                            decoded = _decode_json(line[5:].strip())
-                        except ValueError:
-                            continue
-                        frame = _require_object_dict(decoded)
-                        channel = frame.get("channel")
-                        payload = _require_object_dict(frame.get("payload") or {})
-                        if (
-                            channel == "transcript"
-                            and payload.get("type") == "appended"
-                        ):
-                            if payload.get("agentId") not in (None, agent_id):
-                                continue
-                            accept(
-                                _require_object_dict(payload.get("entry") or {}), now
-                            )
-                        elif channel == "agent-upserted":
-                            agent = _require_object_dict(payload.get("agent") or {})
-                            if agent.get("id") == agent_id:
-                                completion.observe(self._authoritative_busy(agent))
-                        if completion.complete(self._now()):
+                        if now < deadline:
+                            accept_line(line, now)
+                        if finished(now):
                             return "\n".join(completion.chunks)
-                        if (
-                            completion.chunks
-                            and self._now() - completion.last_change >= idle_s
-                        ):
-                            raise ConnectError(0, "reply incomplete")
+            except ReplyIncompleteError:
+                raise
+            except httpx.ReadTimeout:
+                if not prompt_sent:
+                    # The stream never opened: keep the poll fallback.
+                    raise
+                if finished(self._now()):
+                    return "\n".join(completion.chunks)
+                quiet_reconnect = True
+                continue
             except (ConnectError, httpx.HTTPError):
                 # A stream that never opened is the normal signal to use polling;
                 # only a post-anchor disconnect is eligible for transcript resume.
@@ -547,7 +596,7 @@ class GatewaySession:
                 attempts += 1
                 continue
             break
-        raise ConnectError(0, "reply incomplete")
+        raise ReplyIncompleteError(agent_id, self._now() - started)
 
     def _ask_via_poll(
         self,
@@ -570,10 +619,11 @@ class GatewaySession:
 
             prompt_sender = default_send_prompt
         deadline = deadline if deadline is not None else self._now() + timeout_s
+        started = deadline - timeout_s
         if self._now() >= deadline:
-            raise ConnectError(0, "reply incomplete")
+            raise ReplyIncompleteError(agent_id, self._now() - started)
         if completion.chunks and self._now() - completion.last_change >= idle_s:
-            raise ConnectError(0, "reply incomplete")
+            raise ReplyIncompleteError(agent_id, self._now() - started)
         before = {e.get("id") for e in self.transcript_tail(agent_id)}
         prompt_sender()
         while self._now() < deadline:
@@ -604,7 +654,7 @@ class GatewaySession:
                 return "\n".join(completion.chunks)
             if completion.chunks and now - completion.last_change >= idle_s:
                 break
-        raise ConnectError(0, "reply incomplete")
+        raise ReplyIncompleteError(agent_id, self._now() - started)
 
 
 class GatewayManager:
@@ -867,10 +917,13 @@ class GatewayManager:
 
     def resolve_agent(self, bot: str | None = None) -> str:
         if bot:
-            for a in _require_object_dicts(self.command("listAgents")):
+            agents = _require_object_dicts(self.command("listAgents"))
+            for a in agents:
                 if a.get("id") == bot or a.get("name") == bot:
                     return str(a["id"])
-            raise ValueError(f"unknown bot: {bot}")
+            raise UnknownBotError(
+                bot, [name for a in agents if isinstance(name := a.get("name"), str)]
+            )
         return self.own_agent_id()
 
     def own_agent_id(self) -> str:
