@@ -7,7 +7,12 @@ import pytest
 from typing_extensions import override
 
 from groken.client import ConnectError
-from groken.gateway import GatewayManager, GatewaySession, ReplyIncompleteError
+from groken.gateway import (
+    AwaitingUserError,
+    GatewayManager,
+    GatewaySession,
+    ReplyIncompleteError,
+)
 
 JsonObject = Mapping[str, object]
 
@@ -333,6 +338,8 @@ def test_manager_ask_stream_delegates_to_session(
             idle_s: float = 45,
             client_nonce: str | None = None,
             on_chunk: Callable[[str], None] | None = None,
+            *,
+            on_entry: Callable[[dict[str, object]], bool] | None = None,
         ) -> str:
             calls.append((agent_id, text, timeout_s, idle_s, client_nonce, on_chunk))
             return "reply"
@@ -603,3 +610,188 @@ def test_heartbeat_checks_reply_completion_without_another_data_frame() -> None:
     ])
     assert session.ask("a1", "q", timeout_s=60) == "answer"
     assert clock.now == 2
+
+
+def waiting_entry() -> dict[str, object]:
+    return {
+        "id": "approval-entry", "kind": "send-message", "timestampMs": 9999999999999,
+        "message": {"type": "auto-review-approval", "approval": {
+            "requestId": "request", "status": "pending", "summary": "Run report",
+            "reason": "User permission required", "surface": "box_shell",
+            "command": "python report.py",
+        }},
+    }
+
+
+def waiting_frame(kind: str = "appended", agent_id: str = "a1") -> dict[str, object]:
+    return {
+        "channel": "transcript",
+        "payload": {"type": kind, "agentId": agent_id, "entry": waiting_entry()},
+    }
+
+
+def stop_on_approval(entry: dict[str, object]) -> bool:
+    return require_object(entry.get("message", {})).get("type") == "auto-review-approval"
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("kind", ["appended", "updated"])
+def test_awaiting_hook_on_stream_entries(stream: bool, kind: str) -> None:
+    session, _, prompts = make_session([
+        (0, appended("reply", "Partial reply")), (0, waiting_frame(kind)),
+    ])
+    method = session.ask_stream if stream else session.ask
+    with pytest.raises(AwaitingUserError) as raised:
+        method("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.bot_id == "a1"
+    assert raised.value.entry == waiting_entry()
+    assert raised.value.partial_reply == "Partial reply"
+    assert len(prompts) == 1
+
+
+@pytest.mark.parametrize("hook", [False, True])
+def test_awaiting_upsert_is_opt_in_and_scoped_to_agent(hook: bool) -> None:
+    waiting = {"reason": "Approval required", "since": 1000, "tabId": "chat"}
+    frames: list[tuple[float, JsonObject | None]] = [
+        (0, {"channel": "agent-upserted", "payload": {"agent": {
+            "id": "a2", "awaitingUserResponse": waiting,
+        }}}),
+        (0, appended("reply", "Partial reply")),
+        (0, {"channel": "agent-upserted", "payload": {"agent": {
+            "id": "a1", "awaitingUserResponse": waiting,
+        }}}),
+        (0, upsert(False, False)), (2, upsert(False, False)),
+    ]
+    session, _, prompts = make_session(frames)
+    if hook:
+        with pytest.raises(AwaitingUserError) as raised:
+            session.ask("a1", "q", on_entry=lambda entry: False)
+        assert raised.value.entry == {} and raised.value.partial_reply == "Partial reply"
+    else:
+        assert session.ask("a1", "q", on_entry=None) == "Partial reply"
+    assert len(prompts) == 1
+
+
+def test_entry_hook_filters_stale_wrong_agent_and_duplicates() -> None:
+    stale = waiting_frame()
+    require_object(require_object(stale["payload"])["entry"])["timestampMs"] = 1
+    missing_agent = waiting_frame()
+    require_object(missing_agent["payload"]).pop("agentId")
+    reply = appended("reply", "answer")
+    session, _, _ = make_session([
+        (0, stale), (0, missing_agent), (0, waiting_frame(agent_id="a2")),
+        (0, reply), (0, reply), (0, upsert(False, False)), (2, upsert(False, False)),
+    ])
+    accepted: list[dict[str, object]] = []
+
+    def callback(entry: dict[str, object]) -> bool:
+        accepted.append(entry)
+        return stop_on_approval(entry)
+
+    assert session.ask("a1", "q", on_entry=callback) == "answer"
+    assert [entry["id"] for entry in accepted] == ["reply"]
+
+
+def test_entry_hook_sees_changed_updated_entry() -> None:
+    frame = waiting_frame()
+    resolved = json.loads(json.dumps(frame))
+    resolved["payload"]["entry"]["message"]["approval"]["status"] = "expired"
+    session, _, _ = make_session([(0, resolved), (0, waiting_frame("updated"))])
+    accepted: list[dict[str, object]] = []
+
+    def callback(entry: dict[str, object]) -> bool:
+        accepted.append(entry)
+        return require_object(require_object(entry["message"])["approval"])["status"] == "pending"
+
+    with pytest.raises(AwaitingUserError):
+        session.ask("a1", "q", on_entry=callback)
+    assert len(accepted) == 2
+
+
+@pytest.mark.parametrize("kind", ["appended", "updated"])
+def test_none_hook_keeps_non_text_cards_ignored(kind: str) -> None:
+    session, _, _ = make_session([
+        (0, waiting_frame(kind)), (0, appended("reply", "answer")),
+        (0, upsert(False, False)), (2, upsert(False, False)),
+    ])
+    assert session.ask_stream("a1", "q", on_entry=None) == "answer"
+
+
+def test_entry_hook_quiet_reconnect_backfill() -> None:
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[(0, appended("reply", "Partial reply"))], []],
+        tails=[[transcript_entry("reply", "Partial reply"), waiting_entry()]],
+    )
+    with pytest.raises(AwaitingUserError) as raised:
+        session.ask("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.entry == waiting_entry()
+    assert raised.value.partial_reply == "Partial reply"
+    assert clock.now == 2 and len(prompts) == 1
+
+
+def test_entry_hook_disconnect_backfill() -> None:
+    clock = FakeClock()
+    paths: list[str] = []
+
+    class DroppedEvents(ScriptedEvents):
+        def __iter__(self) -> Iterator[bytes]:
+            yield from super().__iter__()
+            raise httpx.ReadError("stream dropped")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.path)
+        if request.url.path == "/events":
+            return httpx.Response(200, stream=DroppedEvents(clock, [(0, appended("reply", "Partial reply"))]))
+        if request.url.path == "/api/sendPrompt":
+            return httpx.Response(200, json={"accepted": True})
+        if request.url.path == "/api/getAgentTranscriptTail":
+            return httpx.Response(200, json={"entries": [transcript_entry("reply", "Partial reply"), waiting_entry()]})
+        pytest.fail(f"Unexpected request: {request.url.path}")
+
+    session = GatewaySession("https://gw.example", "gt", "nt", "pod", monotonic=clock.monotonic, sleeper=clock.sleep)
+    session.http = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(AwaitingUserError) as raised:
+        session.ask("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.partial_reply == "Partial reply"
+    assert paths == ["/events", "/api/sendPrompt", "/api/getAgentTranscriptTail"]
+
+
+def test_entry_hook_poll_fallback() -> None:
+    session, _, prompts = make_session(
+        [], events_status=404, tails=[[], [waiting_entry()]],
+    )
+    with pytest.raises(AwaitingUserError) as raised:
+        session.ask("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.entry == waiting_entry() and raised.value.partial_reply == ""
+    assert len(prompts) == 1
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("retry", [False, True])
+def test_manager_forwards_entry_hook_without_retrying_awaiting(
+    monkeypatch: pytest.MonkeyPatch, stream: bool, retry: bool,
+) -> None:
+    manager = GatewayManager.__new__(GatewayManager)
+    session, _, _ = make_session([])
+    calls: list[tuple[object, ...]] = []
+    forces: list[bool] = []
+
+    def get_session(force: bool = False) -> GatewaySession:
+        forces.append(force)
+        return session
+
+    def ask(*args: object, **kwargs: object) -> str:
+        calls.append(args)
+        assert kwargs["on_entry"] is stop_on_approval
+        if retry and len(calls) == 1:
+            raise ConnectError(502, "retry")
+        raise AwaitingUserError("a1", waiting_entry(), "Partial reply")
+
+    monkeypatch.setattr(manager, "session", get_session)
+    monkeypatch.setattr(session, "ask_stream" if stream else "ask", ask)
+    method = manager.ask_stream if stream else manager.ask
+    with pytest.raises(AwaitingUserError):
+        method("a1", "q", on_entry=stop_on_approval)
+    assert forces == ([False, True] if retry else [False])
+    if retry:
+        assert calls[0][4] == calls[1][4]
