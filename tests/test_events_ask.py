@@ -7,7 +7,7 @@ import pytest
 from typing_extensions import override
 
 from groken.client import ConnectError
-from groken.gateway import GatewayManager, GatewaySession
+from groken.gateway import GatewayManager, GatewaySession, ReplyIncompleteError
 
 JsonObject = Mapping[str, object]
 
@@ -56,6 +56,21 @@ class ScriptedEvents(httpx.SyncByteStream):
                 yield b"event: message\ndata: " + json.dumps(frame).encode() + b"\n\n"
 
 
+class QuietEvents(ScriptedEvents):
+    def __init__(
+        self, clock: FakeClock,
+        frames: Sequence[tuple[float, JsonObject | None]], read_s: float,
+    ) -> None:
+        super().__init__(clock, frames)
+        self.read_s: float = read_s
+
+    @override
+    def __iter__(self) -> Iterator[bytes]:
+        yield from super().__iter__()
+        self.clock.sleep(self.read_s)
+        raise httpx.ReadTimeout("quiet stream")
+
+
 def appended(entry_id: str, content: str) -> dict[str, object]:
     return {
         "channel": "transcript",
@@ -99,8 +114,11 @@ def make_session(
     tails: Sequence[Sequence[JsonObject]] | None = None,
     agents: Sequence[Sequence[JsonObject]] | None = None,
     events_status: int = 200,
+    quiet_streams: Sequence[Sequence[tuple[float, JsonObject | None]]] | None = None,
+    event_reads: list[float] | None = None,
 ) -> tuple[GatewaySession, FakeClock, list[dict[str, object]]]:
     clock = FakeClock()
+    stream_script = list(quiet_streams or [])
     prompts: list[dict[str, object]] = []
     tail_script: list[Sequence[JsonObject]] = list(tails or [[]])
     agent_script: list[Sequence[JsonObject]] = list(agents or [[]])
@@ -122,9 +140,16 @@ def make_session(
         if path.endswith("/events"):
             if events_status != 200:
                 return httpx.Response(events_status, text="events unavailable")
+            read_s = cast(dict[str, float], request.extensions["timeout"])["read"]
+            if event_reads is not None:
+                event_reads.append(read_s)
+            stream = (
+                QuietEvents(clock, stream_script.pop(0), read_s)
+                if stream_script else ScriptedEvents(clock, frames)
+            )
             return httpx.Response(
                 200,
-                stream=ScriptedEvents(clock, frames),
+                stream=stream,
                 headers={"content-type": "text/event-stream"},
             )
         return httpx.Response(404)
@@ -477,3 +502,104 @@ def test_post_send_event_fallback_does_not_resend_prompt() -> None:
     assert len(prompts) == 1
     assert prompts[0]["prompt"] == "q"
     assert prompts[0]["clientNonce"] == "nonce-1"
+
+
+def test_events_wait_for_first_chunk_beyond_reply_quiet_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reads: list[float] = []
+    session, clock, prompts = make_session(
+        [],
+        quiet_streams=[[], [], [
+            (1, appended("r1", "stream reply")),
+            (0, upsert(False, False)),
+            (2, upsert(False, False)),
+        ]],
+        event_reads=reads,
+    )
+
+    def no_poll(*_args: object, **_kwargs: object) -> str:
+        pytest.fail("a thinking bot must stay on the event stream")
+
+    monkeypatch.setattr(session, "_ask_via_poll", no_poll)
+    assert session.ask("a1", "q", timeout_s=30) == "stream reply"
+    assert reads == [2, 2, 2]
+    assert clock.now == 7
+    assert len(prompts) == 1
+
+
+@pytest.mark.parametrize("events_status", [200, 404])
+def test_incomplete_reply_carries_bot_and_elapsed_time(events_status: int) -> None:
+    session, clock, _ = make_session(
+        [(0, appended("r1", "partial")), (4, None)],
+        events_status=events_status,
+    )
+    with pytest.raises(ReplyIncompleteError) as raised:
+        session.ask("a1", "q", timeout_s=3)
+    assert isinstance(raised.value, ConnectError)
+    assert raised.value.bot_id == "a1"
+    assert raised.value.elapsed_s == clock.now == 4
+
+
+def test_quiet_tick_completes_reply_after_one_idle_frame(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[
+            (0, appended("r1", "answer")), (0, upsert(False, False)),
+        ], []],
+        tails=[[transcript_entry("r1", "answer")]],
+        agents=[[{"id": "a1", "isRunning": False, "isComposingMessage": False}]],
+    )
+
+    def no_poll(*_args: object, **_kwargs: object) -> str:
+        pytest.fail("quiet completion must not poll")
+
+    monkeypatch.setattr(session, "_ask_via_poll", no_poll)
+    assert session.ask("a1", "q", timeout_s=60) == "answer"
+    assert clock.now == 2
+    assert len(prompts) == 1
+
+
+def test_prompt_sent_once_across_two_quiet_reconnects() -> None:
+    reads: list[float] = []
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[], [], [
+            (0, appended("r1", "answer")),
+            (0, upsert(False, False)), (2, upsert(False, False)),
+        ]], event_reads=reads,
+    )
+    assert session._ask_via_events("a1", "q", 60, 45, "nonce-1") == "answer"
+    assert reads == [2, 2, 2]
+    assert clock.now == 6
+    assert len(prompts) == 1
+    assert prompts[0]["clientNonce"] == "nonce-1"
+
+
+def test_quiet_reconnect_backfills_gap_and_deduplicates_stream_chunk() -> None:
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[
+            (0, appended("r1", "first")), (0, upsert(True, True)),
+        ], [
+            (0, appended("r2", "gap")), (0, upsert(False, False)), (2, None),
+        ]],
+        tails=[[
+            transcript_entry("r1", "first"), transcript_entry("r2", "gap"),
+        ]],
+        agents=[[{"id": "a1", "isRunning": False, "isComposingMessage": False}]],
+    )
+    chunks: list[str] = []
+    assert session.ask("a1", "q", timeout_s=60, on_chunk=chunks.append) == "first\ngap"
+    assert chunks == ["first", "gap"]
+    assert clock.now == 4
+    assert len(prompts) == 1
+
+
+def test_heartbeat_checks_reply_completion_without_another_data_frame() -> None:
+    session, clock, _ = make_session([
+        (0, appended("r1", "answer")),
+        (0, upsert(False, False)), (0, upsert(False, False)), (2, None),
+        (1, appended("r2", "too late")),
+    ])
+    assert session.ask("a1", "q", timeout_s=60) == "answer"
+    assert clock.now == 2

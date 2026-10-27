@@ -8,7 +8,7 @@ from typing_extensions import override
 
 import groken.gateway as gw_mod
 from groken.client import ConnectError
-from groken.gateway import GatewayManager, GatewaySession
+from groken.gateway import GatewayManager, GatewaySession, UnknownBotError
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
@@ -307,3 +307,19 @@ def test_ensure_sandbox_refreshes_only_once(monkeypatch: pytest.MonkeyPatch) -> 
         _ = manager.ensure_sandbox_metadata()
 
     assert requests == 2
+
+
+@pytest.mark.parametrize("names", [["a", "b"], []])
+def test_unknown_bot_has_requested_and_available_names(
+    monkeypatch: pytest.MonkeyPatch, names: list[str],
+) -> None:
+    manager = GatewayManager.__new__(GatewayManager)
+    monkeypatch.setattr(manager, "command", lambda _method: [
+        {"id": f"id-{name}", "name": name} for name in names
+    ])
+    with pytest.raises(UnknownBotError) as raised:
+        manager.resolve_agent("missing")
+    assert isinstance(raised.value, ValueError)
+    assert raised.value.requested_name == "missing"
+    assert raised.value.available_names == names
+    assert str(raised.value) == f"unknown bot: missing (available: {', '.join(names)})"
