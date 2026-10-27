@@ -1,0 +1,540 @@
+import argparse
+import io
+import json
+from collections.abc import Callable, Iterator
+
+import httpx
+import pytest
+
+from gbot import cli, config, context
+from gbot.bots import resolve_bot
+from gbot.commands import tail
+from gbot.context import Context
+from groken import auth
+from groken.client import ConnectError
+from groken.gateway import ReplyIncompleteError
+
+
+class FakeManager:
+    def __init__(self) -> None:
+        self.bots: list[dict[str, object]] = [
+            {"id": "a", "name": "Alpha", "isComposingMessage": True},
+            {"id": "b", "name": "Beta", "isRunning": True},
+            {"id": "c", "name": "Gamma"},
+        ]
+        self.entries: list[dict[str, object]] = [
+            {
+                "id": "1",
+                "timestampMs": 0,
+                "kind": "user",
+                "message": {"content": "hello"},
+            },
+            {"id": "2", "timestampMs": 1000, "kind": "assistant", "content": "x" * 180},
+        ]
+        self.calls: list[object] = []
+        self.failure: Exception | None = None
+        self.streams = 0
+
+    def own_agent_id(self):
+        pytest.fail("own_agent_id is forbidden")
+
+    def create_bot(self, *args):
+        pytest.fail("create_bot is forbidden")
+
+    def duplicate_bot(self, *args):
+        pytest.fail("duplicate_bot is forbidden")
+
+    def resolve_agent(self, *args):
+        pytest.fail("resolve_agent is forbidden")
+
+    def command(self, method: str, args: dict[str, object] | None = None) -> object:
+        assert method not in {
+            "createAgent",
+            "updateAgent",
+            "duplicateAgent",
+            "deleteAgent",
+        }
+        self.calls.append((method, args))
+        if self.failure:
+            raise self.failure
+        return {
+            "listAgents": {"agents": self.bots},
+            "getForeverBoxStatus": {"state": "running"},
+            "getHostStatus": {
+                "hostVersion": "0.30",
+                "latestHostVersion": "0.31",
+                "hostUpdateAvailable": True,
+                "isBusy": True,
+            },
+            "getBoxSecretsStatus": {"isApplied": True, "secretNames": ["DO_NOT_PRINT"]},
+            "listBoxMcpServers": {
+                "servers": [
+                    {"serverIdentifier": "mcp1", "status": "connected", "toolCount": 2}
+                ]
+            },
+        }[method]
+
+    def send_prompt(self, agent_id: str, text: str) -> dict[str, object]:
+        self.calls.append(("send", agent_id, text))
+        return {"ok": True}
+
+    def ask(
+        self, agent_id: str, text: str, timeout_s: float = 600, idle_s: float = 45
+    ) -> str:
+        self.calls.append(("ask", agent_id, text, timeout_s, idle_s))
+        return "reply ?"
+
+    def ask_stream(
+        self,
+        agent_id: str,
+        text: str,
+        timeout_s: float = 600,
+        idle_s: float = 45,
+        on_chunk: Callable[[str], None] | None = None,
+    ) -> str:
+        self.calls.append(("stream", agent_id, text, timeout_s, idle_s))
+        if on_chunk:
+            on_chunk("reply ")
+            on_chunk("?")
+        return "reply ?"
+
+    def transcript_tail(self, agent_id: str) -> list[dict[str, object]]:
+        assert agent_id == "a"
+        return self.entries
+
+    def events(self, channels: list[str] | None = None) -> Iterator[dict[str, object]]:
+        assert channels == ["transcript"]
+        self.streams += 1
+        if self.streams == 1:
+            # Appended while the stream is down: only the backfill can show it.
+            self.entries.append({"id": "6", "kind": "assistant", "content": "gap"})
+            raise httpx.ReadError("dropped")
+        if self.streams == 3:
+            raise KeyboardInterrupt
+        # The real gateway wraps each frame as {"event", "data": {"channel", "payload"}}.
+        yield {
+            "event": "message",
+            "data": {
+                "channel": "agent-upserted",
+                "payload": {
+                    "type": "appended",
+                    "agentId": "a",
+                    "entry": {"id": "7", "content": "wrong channel"},
+                },
+            },
+        }
+        for bot, kind, entry in [
+            ("b", "appended", {"id": "3", "content": "wrong bot"}),
+            ("a", "updated", {"id": "4", "content": "wrong type"}),
+            ("a", "appended", self.entries[0]),
+            ("a", "appended", {"id": "5", "kind": "assistant", "content": "fresh"}),
+        ]:
+            yield {
+                "event": "message",
+                "data": {
+                    "channel": "transcript",
+                    "payload": {"type": kind, "agentId": bot, "entry": entry},
+                },
+            }
+
+
+@pytest.fixture(autouse=True)
+def isolate(monkeypatch, tmp_path):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    monkeypatch.setattr(auth, "TOKEN_FILE", tmp_path / "tokens.json")
+    monkeypatch.setattr(auth, "load_tokens", lambda: {"accessToken": "fake"})
+    monkeypatch.setattr(auth, "save_tokens", lambda tokens: None)
+    monkeypatch.setattr(
+        "webbrowser.open", lambda url: pytest.fail("unexpected browser")
+    )
+    monkeypatch.setattr(
+        "httpx.Client", lambda *a, **kw: pytest.fail("network forbidden")
+    )
+    monkeypatch.setattr("gbot.commands.status.detect_client_version", lambda: "0.30")
+
+
+@pytest.fixture
+def fake(monkeypatch):
+    manager = FakeManager()
+    monkeypatch.setattr(context, "manager_factory", lambda: manager)
+    config.set_default(("a", "Alpha"))
+    return manager
+
+
+@pytest.mark.parametrize("requested", ["a", "Alpha", "ALPHA"])
+def test_resolve(fake, requested):
+    assert resolve_bot(Context(argparse.Namespace(debug=False)), requested) == (
+        "a",
+        "Alpha",
+    )
+
+
+def test_resolve_default_renamed_deleted_none(fake):
+    ctx = Context(argparse.Namespace(debug=False))
+    fake.bots[0]["name"] = "Renamed"
+    assert resolve_bot(ctx, None) == ("a", "Renamed")
+    assert config.default_bot() == {"id": "a", "name": "Renamed"}
+    fake.bots.pop(0)
+    with pytest.raises(
+        ValueError, match=r"Default bot Renamed \(a\) no longer exists.*Beta, Gamma"
+    ):
+        resolve_bot(ctx, None)
+    config.set_default(None)
+    with pytest.raises(ValueError, match="No bot selected.*Beta, Gamma"):
+        resolve_bot(ctx, None)
+
+
+def test_ambiguous_and_exact_priority(fake):
+    fake.bots.append({"id": "d", "name": "ALPHA"})
+    ctx = Context(argparse.Namespace(debug=False))
+    assert resolve_bot(ctx, "Alpha") == ("a", "Alpha")
+    with pytest.raises(ValueError, match=r"Ambiguous.*Alpha \[a\].*ALPHA \[d\]"):
+        resolve_bot(ctx, "alpha")
+    fake.bots.append({"id": "Alpha", "name": "ID wins"})
+    assert resolve_bot(ctx, "Alpha") == ("Alpha", "ID wins")
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+@pytest.mark.parametrize("command", ["bots", "use", "ask", "send", "tail", "status"])
+def test_command_outputs(fake, capsys, command, json_mode):
+    args = [command] + (["--json"] if json_mode else [])
+    if command in {"ask", "send"}:
+        args += ["hello", "world"]
+    assert cli.main(args) == 0
+    output = capsys.readouterr().out
+    assert "DO_NOT_PRINT" not in output
+    if json_mode:
+        value = json.loads(output)
+        if command == "bots":
+            assert [row["state"] for row in value] == ["composing", "running", "idle"]
+            assert value[0]["default"] is True
+        elif command == "use":
+            assert value["default_bot"]["id"] == "a"
+        elif command == "ask":
+            assert value == {"bot": {"id": "a", "name": "Alpha"}, "reply": "reply ?"}
+        elif command == "send":
+            assert value == {"ok": True}
+        elif command == "tail":
+            assert [row["id"] for row in value] == ["1", "2"]
+        else:
+            assert value["host"] == {
+                "version": "0.30",
+                "latest_version": "0.31",
+                "update_available": True,
+                "busy": True,
+            }
+            assert value["mcp"]["servers"] == [
+                {"id": "mcp1", "status": "connected", "tool_count": 2}
+            ]
+            assert value["secrets"] == {"is_applied": True}
+    else:
+        assert {
+            "bots": "*  a  Alpha  composing",
+            "use": "Default bot: Alpha (a)",
+            "ask": "reply ?",
+            "send": "Sent to Alpha.",
+            "tail": "user: hello",
+            "status": "Computer: running",
+        }[command] in output
+    if command == "status":
+        assert ("getForeverBoxStatus", {"id": "a"}) in fake.calls
+        assert ("listBoxMcpServers", {"serverIdentifiers": []}) in fake.calls
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_login(fake, monkeypatch, capsys, json_mode):
+    saved = []
+    opened = []
+    monkeypatch.setattr(
+        auth,
+        "start_login",
+        lambda: {
+            "login_url": "https://example.invalid/login",
+            "uuid": "uid",
+            "verifier": "proof",
+        },
+    )
+
+    def poll(uid, verifier, timeout_s):
+        assert (uid, verifier, timeout_s) == ("uid", "proof", 42)
+        return {"accessToken": "TOP_SECRET"}
+
+    monkeypatch.setattr(auth, "poll_for_tokens", poll)
+    monkeypatch.setattr(auth, "save_tokens", saved.append)
+    monkeypatch.setattr("webbrowser.open", opened.append)
+    assert (
+        cli.main(["login", "--timeout", "42"] + (["--json"] if json_mode else [])) == 0
+    )
+    output = capsys.readouterr().out
+    assert "TOP_SECRET" not in output
+    assert "https://example.invalid/login" in output
+    assert ('"signed_in": true' if json_mode else "Signed in.") in output
+    assert opened == ["https://example.invalid/login"]
+    assert saved == [{"accessToken": "TOP_SECRET"}]
+
+
+def test_login_timeout_no_browser(monkeypatch, capsys):
+    monkeypatch.setattr(auth, "poll_for_tokens", lambda *a, **kw: None)
+    assert cli.main(["login", "--no-browser"]) == 3
+    assert "gbot login" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+@pytest.mark.parametrize("removed", [False, True])
+def test_logout(monkeypatch, capsys, removed, json_mode):
+    monkeypatch.setattr(auth, "clear_tokens", lambda: removed)
+    assert cli.main(["logout"] + (["--json"] if json_mode else [])) == 0
+    output = capsys.readouterr().out
+    if json_mode:
+        assert json.loads(output) == {"removed": removed}
+    else:
+        assert output.strip() == (
+            "Session removed." if removed else "No saved session."
+        )
+
+
+def test_use_set_clear(fake, capsys):
+    assert cli.main(["use", "Beta"]) == 0
+    assert config.default_bot() == {"id": "b", "name": "Beta"}
+    assert cli.main(["use", "--clear", "--json"]) == 0
+    assert config.default_bot() is None
+    assert "Default bot: Beta" in capsys.readouterr().out
+    assert cli.main(["use", "--clear"]) == 0
+    assert "cleared" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_ask_stdin_stream(fake, monkeypatch, capsys, stream, json_mode):
+    monkeypatch.setattr("sys.stdin", io.StringIO("from stdin"))
+    args = ["ask", "--bot", "b", "--timeout", "17", "--idle", "3"]
+    args += (["--stream"] if stream else []) + (["--json"] if json_mode else []) + ["-"]
+    assert cli.main(args) == 0
+    assert ("stream" if stream else "ask", "b", "from stdin", 17, 3) in fake.calls
+    output = capsys.readouterr().out
+    if json_mode:
+        assert json.loads(output)["reply"] == "reply ?"
+    else:
+        assert output == "reply ?\n"
+
+
+@pytest.mark.parametrize(
+    "failure,code,hint",
+    [
+        (ConnectError(401, "expired"), 3, "gbot login"),
+        (ReplyIncompleteError("a", 600), 1, "longer --timeout"),
+        (RuntimeError("one\ntwo"), 1, "one two"),
+    ],
+)
+def test_error_codes(fake, capsys, failure, code, hint):
+    fake.failure = failure
+    assert cli.main(["bots"]) == code
+    output = capsys.readouterr()
+    assert not output.out
+    assert hint in output.err
+    assert output.err.count("\n") == 1
+    assert "Traceback" not in output.err
+
+
+def test_missing_auth(monkeypatch, capsys):
+    def missing():
+        raise SystemExit("No tokens. Run: groken login")
+
+    monkeypatch.setattr(context, "manager_factory", missing)
+    assert cli.main(["bots"]) == 3
+    assert "gbot login" in capsys.readouterr().err
+
+
+def test_unknown_bot(fake, capsys):
+    assert cli.main(["use", "missing"]) == 1
+    assert "available: Alpha, Beta, Gamma" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_unsigned_status_lazy(monkeypatch, capsys, json_mode):
+    monkeypatch.setattr(auth, "load_tokens", lambda: None)
+    monkeypatch.setattr(
+        context, "manager_factory", lambda: pytest.fail("manager must stay lazy")
+    )
+    assert cli.main(["status"] + (["--json"] if json_mode else [])) == 3
+    output = capsys.readouterr().out
+    assert (
+        (json.loads(output)["signed_in"] is False)
+        if json_mode
+        else "Not signed in" in output
+    )
+
+
+def test_signed_in_without_selection_lazy(monkeypatch, capsys):
+    monkeypatch.setattr(
+        context, "manager_factory", lambda: pytest.fail("manager must stay lazy")
+    )
+    assert cli.main(["status", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["default_bot"] is None
+
+
+def test_tail_options(fake, capsys):
+    assert cli.main(["tail", "--since", "1", "-n", "1", "--full"]) == 0
+    output = capsys.readouterr().out
+    assert "x" * 180 in output and "hello" not in output
+    assert cli.main(["tail"]) == 0
+    output = capsys.readouterr().out
+    assert "x" * 160 in output and "x" * 161 not in output
+    assert cli.main(["tail", "-n", "0", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == []
+    assert cli.main(["tail", "--since", "missing"]) == 1
+    assert "not found" in capsys.readouterr().err
+    assert cli.main(["tail", "-n", "-1"]) == 1
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_follow_reconnect_interrupt(fake, monkeypatch, capsys, json_mode):
+    waits = []
+    monkeypatch.setattr(tail.Event, "wait", lambda self, delay: waits.append(delay))
+    assert cli.main(["tail", "--follow"] + (["--json"] if json_mode else [])) == 0
+    output = capsys.readouterr()
+    assert output.out.count("fresh") == 1
+    assert output.out.count("gap") == 1
+    assert output.out.count("hello") == 1
+    for noise in ("wrong bot", "wrong type", "wrong channel"):
+        assert noise not in output.out
+    if json_mode:
+        lines = output.out.splitlines()
+        assert [json.loads(line)["id"] for line in lines] == ["1", "2", "6", "5"]
+    assert "dropped" in output.err
+    assert waits == [0.25, 0.25]
+    assert fake.streams == 3
+
+
+def test_debug_and_interrupt(fake, monkeypatch):
+    fake.failure = RuntimeError("broken")
+    with pytest.raises(RuntimeError, match="broken"):
+        cli.main(["--debug", "bots"])
+
+    def interrupt():
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(context, "manager_factory", interrupt)
+    assert cli.main(["bots"]) == 130
+
+
+def test_config_corrupt_warn_once(tmp_path, capsys):
+    path = tmp_path / "gbot.json"
+    assert config.load() == {}
+    for content in ["{", "[]", '{"default_bot": {"id": 2}}']:
+        path.write_text(content)
+        assert config.load() == {}
+    assert capsys.readouterr().err.count("Ignoring corrupt") == 1
+    config.set_default(("a", "?"))
+    assert config.default_bot() == {"id": "a", "name": "?"}
+
+
+def test_private_config_writer(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(
+        config,
+        "write_private_text",
+        lambda path, content: calls.append((path, content)),
+    )
+    config.set_default(("a", "Alpha"))
+    assert calls[0][0] == tmp_path / "gbot.json"
+    assert json.loads(calls[0][1])["default_bot"]["id"] == "a"
+
+
+def test_discovery_help_version(monkeypatch, capsys):
+    registered = []
+    real_import = cli.importlib.import_module
+
+    def importing(name):
+        module = real_import(name)
+        registered.append(name)
+        return module
+
+    monkeypatch.setattr(cli.importlib, "import_module", importing)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["--help"])
+    assert exc.value.code == 0
+    output = capsys.readouterr().out
+    for name in ["login", "logout", "status", "bots", "use", "ask", "send", "tail"]:
+        assert "gbot.commands." + name in registered
+        assert name in output
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["--version"])
+    assert exc.value.code == 0
+    assert "0.3.0" in capsys.readouterr().out
+    assert cli.main([]) == 0
+
+
+def test_context_cached_factory(fake):
+    count = []
+
+    def factory():
+        count.append(1)
+        return fake
+
+    ctx = Context(argparse.Namespace(debug=False), factory)
+    assert not count
+    assert ctx.manager() is ctx.manager() is fake
+    assert count == [1]
+
+
+def test_empty_prompt(fake, monkeypatch, capsys):
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    assert cli.main(["ask", "-"]) == 1
+    assert "empty" in capsys.readouterr().err
+    assert not fake.calls
+
+
+def test_console_reconfigure(monkeypatch):
+    from gbot.output import Output
+
+    calls = []
+
+    class Console(io.StringIO):
+        def reconfigure(self, **kwargs):
+            calls.append(kwargs)
+
+    monkeypatch.setattr("sys.stdout", Console())
+    monkeypatch.setattr("sys.stderr", Console())
+    Output().write({"name": "?"}, "?")
+    assert calls == [{"errors": "replace"}, {"errors": "replace"}]
+
+
+def test_new_command_is_discovered(monkeypatch, capsys):
+    from types import SimpleNamespace
+
+    def register(subparsers):
+        parser = subparsers.add_parser("future-command")
+        parser.set_defaults(func=lambda args, ctx: 0)
+
+    monkeypatch.setattr(
+        cli.pkgutil, "iter_modules", lambda path: [SimpleNamespace(name="future")]
+    )
+    monkeypatch.setattr(
+        cli.importlib, "import_module", lambda name: SimpleNamespace(register=register)
+    )
+    assert cli.main(["future-command"]) == 0
+    assert not capsys.readouterr().out
+
+
+def test_follow_backoff_is_bounded(fake, monkeypatch):
+    waits = []
+
+    def wait(self, delay):
+        waits.append(delay)
+        if len(waits) == 8:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(fake, "events", lambda channels: iter([]))
+    monkeypatch.setattr(tail.Event, "wait", wait)
+    assert cli.main(["tail", "--follow"]) == 0
+    assert waits == [0.25, 0.5, 1.0, 2.0, 4.0, 5.0, 5.0, 5.0]
+
+
+def test_follow_auth_expired(fake, monkeypatch, capsys):
+    def events(channels):
+        raise ConnectError(401, "expired")
+
+    monkeypatch.setattr(fake, "events", events)
+    assert cli.main(["tail", "--follow"]) == 3
+    assert "gbot login" in capsys.readouterr().err
