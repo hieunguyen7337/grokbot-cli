@@ -79,7 +79,13 @@ class FakeManager:
         return {"ok": True}
 
     def ask(
-        self, agent_id: str, text: str, timeout_s: float = 600, idle_s: float = 45
+        self,
+        agent_id: str,
+        text: str,
+        timeout_s: float = 600,
+        idle_s: float = 45,
+        *,
+        on_entry: Callable[[dict[str, object]], bool] | None = None,
     ) -> str:
         self.calls.append(("ask", agent_id, text, timeout_s, idle_s))
         return "reply ?"
@@ -91,6 +97,8 @@ class FakeManager:
         timeout_s: float = 600,
         idle_s: float = 45,
         on_chunk: Callable[[str], None] | None = None,
+        *,
+        on_entry: Callable[[dict[str, object]], bool] | None = None,
     ) -> str:
         self.calls.append(("stream", agent_id, text, timeout_s, idle_s))
         if on_chunk:

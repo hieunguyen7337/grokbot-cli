@@ -14,7 +14,13 @@ class Manager(Protocol):
     def send_prompt(self, agent_id: str, text: str) -> dict[str, object]: ...
     def transcript_tail(self, agent_id: str) -> list[dict[str, object]]: ...
     def ask(
-        self, agent_id: str, text: str, timeout_s: float = 600, idle_s: float = 45
+        self,
+        agent_id: str,
+        text: str,
+        timeout_s: float = 600,
+        idle_s: float = 45,
+        *,
+        on_entry: Callable[[dict[str, object]], bool] | None = None,
     ) -> str: ...
     def ask_stream(
         self,
@@ -23,6 +29,8 @@ class Manager(Protocol):
         timeout_s: float = 600,
         idle_s: float = 45,
         on_chunk: Callable[[str], None] | None = None,
+        *,
+        on_entry: Callable[[dict[str, object]], bool] | None = None,
     ) -> str: ...
     def events(
         self, channels: list[str] | None = None

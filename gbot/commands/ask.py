@@ -1,12 +1,9 @@
 import argparse
-import inspect
-from collections.abc import Callable
-from typing import cast
 
 from gbot.bots import resolve_bot
 from gbot.context import Context, prompt
 from gbot.pending import discover, is_pending, render
-from groken.gateway import AwaitingUserError, GatewayManager
+from groken.gateway import AwaitingUserError
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -23,15 +20,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 def run(args: argparse.Namespace, ctx: Context) -> int:
     text = prompt(args)
     bot_id, name = resolve_bot(ctx, args.bot)
-    manager = cast(GatewayManager, ctx.manager())
-    method = manager.ask_stream if args.stream else manager.ask
-    # Older injected/relay managers retain the original ask interface.
-    parameters = inspect.signature(method).parameters
-    options: dict[str, Callable[[dict[str, object]], bool]] = {}
-    if "on_entry" in parameters or any(
-        p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values()
-    ):
-        options["on_entry"] = is_pending
+    manager = ctx.manager()
     streamed: list[str] = []
 
     def chunk(value: str) -> None:
@@ -46,13 +35,15 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
                 args.timeout,
                 args.idle,
                 on_chunk=None if ctx.out.json_mode else chunk,
-                **options,
+                on_entry=is_pending,
             )
             if not ctx.out.json_mode:
                 print()
                 return 0
         else:
-            reply = manager.ask(bot_id, text, args.timeout, args.idle, **options)
+            reply = manager.ask(
+                bot_id, text, args.timeout, args.idle, on_entry=is_pending
+            )
     except AwaitingUserError as exc:
         items = discover(ctx, bot_id)
         if ctx.out.json_mode:
