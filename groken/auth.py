@@ -11,13 +11,14 @@ from typing import Literal, cast
 import httpx
 from typing_extensions import override
 
+from . import winplat
 from .private_files import write_private_text
 
 WEBSITE_URL = "https://cursor.com"
 API_BASE_URL = "https://api2.cursor.sh"
 PROD_AUTH_CLIENT_ID = "KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB"
 
-TOKEN_FILE = Path.home() / ".config" / "groken" / "tokens.json"
+TOKEN_FILE = winplat.data_dir() / "tokens.json"
 
 LocalStateReason = Literal["malformed JSON", "expected a JSON object"]
 
@@ -57,7 +58,9 @@ def start_login(redirect_target: str = "sand") -> dict[str, str]:
     return {"uuid": uid, "verifier": verifier, "login_url": login_url}
 
 
-def poll_for_tokens(uid: str, verifier: str, timeout_s: float = 300.0) -> dict[str, object] | None:
+def poll_for_tokens(
+    uid: str, verifier: str, timeout_s: float = 300.0
+) -> dict[str, object] | None:
     deadline = time.monotonic() + timeout_s
     with httpx.Client(timeout=15.0) as http:
         while time.monotonic() < deadline:
@@ -70,7 +73,11 @@ def poll_for_tokens(uid: str, verifier: str, timeout_s: float = 300.0) -> dict[s
                 if r.status_code == 200:
                     value = cast("object", r.json())
                     data = _object_dict(value)
-                    if data is not None and "accessToken" in data and "refreshToken" in data:
+                    if (
+                        data is not None
+                        and "accessToken" in data
+                        and "refreshToken" in data
+                    ):
                         save_tokens(data)
                         return data
             except httpx.HTTPError:
@@ -106,6 +113,9 @@ def refresh_tokens(refresh_token: str) -> dict[str, object] | None:
 
 
 def save_tokens(tokens: dict[str, object]) -> None:
+    if winplat.IS_WINDOWS:
+        blob = winplat.protect(json.dumps(tokens).encode("utf-8"))
+        tokens = {"format": "dpapi-v1", "blob": base64.b64encode(blob).decode("ascii")}
     write_private_text(TOKEN_FILE, json.dumps(tokens, indent=2))
 
 
@@ -119,7 +129,25 @@ def load_tokens() -> dict[str, object] | None:
     tokens = _object_dict(value)
     if tokens is None:
         raise TokenStateError(TOKEN_FILE, "expected a JSON object")
+    if winplat.IS_WINDOWS and tokens.get("format") == "dpapi-v1":
+        try:
+            blob = tokens["blob"]
+            if not isinstance(blob, str):
+                return None
+            return _object_dict(
+                json.loads(winplat.unprotect(base64.b64decode(blob, validate=True)))
+            )
+        except (OSError, ValueError, KeyError, UnicodeError):
+            return None
     return tokens
+
+
+def clear_tokens() -> bool:
+    try:
+        TOKEN_FILE.unlink()
+    except FileNotFoundError:
+        return False
+    return True
 
 
 def get_access_token() -> str:
