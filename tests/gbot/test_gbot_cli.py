@@ -560,3 +560,30 @@ def test_follow_auth_expired(fake, monkeypatch, capsys):
     monkeypatch.setattr(fake, "events", events)
     assert cli.main(["tail", "--follow"]) == 3
     assert "gbot login" in capsys.readouterr().err
+
+
+def test_untrusted_text_cannot_drive_the_terminal(fake, monkeypatch, capsys):
+    hostile = "hi\x1b[2J\x1b]52;c;ZXZpbA==\x07\r\nok\u202e"
+    monkeypatch.setattr(fake, "ask", lambda *a, **kw: hostile)
+    assert cli.main(["ask", "--bot", "Alpha", "x"]) == 0
+    out = capsys.readouterr().out
+    assert not any(c in out for c in "\x1b\x07\r\u202e")
+    assert "hi\\u001b[2J\\u001b]52;c;ZXZpbA==\\u0007\nok\\u202e" in out
+    assert cli.main(["ask", "--bot", "Alpha", "--json", "x"]) == 0
+    assert json.loads(capsys.readouterr().out)["reply"] == hostile
+
+    def ask_stream(*args, on_chunk=None, **kwargs):
+        assert on_chunk is not None
+        for part in ("a\x1b", "[2Jb"):
+            on_chunk(part)
+        return "a\x1b[2Jb"
+
+    monkeypatch.setattr(fake, "ask_stream", ask_stream)
+    assert cli.main(["ask", "--bot", "Alpha", "--stream", "x"]) == 0
+    out = capsys.readouterr().out
+    assert "\x1b" not in out and "a\\u001b[2Jb" in out
+
+    fake.failure = ConnectError(500, "\x1b[31mboom")
+    assert cli.main(["bots"]) == 1
+    err = capsys.readouterr().err
+    assert "\x1b" not in err and "\\u001b[31mboom" in err

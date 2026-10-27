@@ -4,7 +4,14 @@ import sys
 import warnings
 
 from gbot.context import Context
-from gbot.pending import APP_ONLY, PendingItem, discover, render, resolve_ref
+from gbot.pending import (
+    APP_ONLY,
+    PendingItem,
+    command_block,
+    discover,
+    render,
+    resolve_ref,
+)
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -141,7 +148,7 @@ def answer(args: argparse.Namespace, ctx: Context) -> int:
     )
     print(f"Summary: {item.summary}")
     if item.tool_text:
-        print(f"Tool/command: {item.tool_text}")
+        print(command_block(item.tool_text))
     print(
         f"Answer: {method}"
         + (f" ({payload['resolution']})" if "resolution" in payload else "")

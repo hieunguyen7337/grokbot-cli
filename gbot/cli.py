@@ -7,15 +7,33 @@ from groken.client import ConnectError
 
 from . import __version__, commands
 from .context import Context
-from .output import Output
+from .output import Output, safe_streams
+
+_UNRECOGNIZED = "unrecognized arguments: "
+
+
+def _redact(token: str) -> str:
+    # Keep option names so the user can see what was wrong, never their values:
+    # `gbot secret REF --value=...` must not echo a secret into logs.
+    if token.startswith("-"):
+        return token.split("=", 1)[0] + ("=<hidden>" if "=" in token else "")
+    return "<hidden>"
 
 
 class Parser(argparse.ArgumentParser):
     def error(self, message: str) -> NoReturn:
+        if message.startswith(_UNRECOGNIZED):
+            tokens = message[len(_UNRECOGNIZED) :].split(" ")
+            message = _UNRECOGNIZED + " ".join(_redact(token) for token in tokens)
         raise ValueError(message)
 
 
 def main(argv: list[str] | None = None) -> int:
+    with safe_streams():
+        return _main(argv)
+
+
+def _main(argv: list[str] | None) -> int:
     parser = Parser(prog="gbot", description="Talk to your existing Grok Bot bots.")
     parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument("--debug", action="store_true")

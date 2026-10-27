@@ -195,7 +195,7 @@ class FakeManager:
         }
         self.calls.append((method, copy.deepcopy(args)))
         if method == "listAgents":
-            return {"agents": self.bots}
+            return self.bots
         assert args is not None
         if method == "getAgentTranscriptTail":
             key = (
@@ -788,3 +788,42 @@ def test_render_age_and_one_line(monkeypatch):
     assert item is not None and "  ?  " in render([item])
     item = classify(entry("mobile-tool-permission"), "a", "Alpha")
     assert item is not None and item.summary == "Allow camera"
+
+
+def test_multiline_command_is_shown_line_by_line(fake, capsys):
+    item = entry("auto-review-approval")
+    record(record(item["message"])["approval"])["command"] = (
+        "Write-Output report # reviewed\nRemove-Item C:\\data -Recurse"
+    )
+    fake.tails[("a", None)] = [item]
+    assert cli.main(["approve", "abcdef01", "--yes"]) == 0
+    out = capsys.readouterr().out
+    assert "2 lines, all run if approved" in out
+    assert " 1| Write-Output report # reviewed\n" in out
+    assert " 2| Remove-Item C:\\data -Recurse" in out
+    assert "reviewed Remove-Item" not in out
+
+
+def test_confirmation_escapes_terminal_controls(fake, capsys):
+    item = entry("auto-review-approval")
+    record(record(item["message"])["approval"])["command"] = (
+        "safe\x1b[2K\rrm -rf ~ \u202e"
+    )
+    fake.tails[("a", None)] = [item]
+    fake.bots[0]["name"] = "Alpha\x1b]52;c;ZXZpbA==\x07"
+    assert cli.main(["approve", "abcdef01", "--yes"]) == 0
+    out = capsys.readouterr().out
+    assert not any(c in out for c in "\x1b\x07\r\u202e")
+    assert " 1| safe\\u001b[2K\n" in out and " 2| rm -rf ~ \\u202e" in out
+    assert "Alpha\\u001b]52;c;ZXZpbA==\\u0007" in out
+
+
+def test_parser_errors_never_echo_values(fake, capsys):
+    fake.tails[("a", None)] = [entry("secret-request")]
+    assert cli.main(["secret", "abcdef01", "--value=SYNTHETIC_SECRET"]) == 1
+    err = capsys.readouterr().err
+    assert "SYNTHETIC_SECRET" not in err and "--value=<hidden>" in err
+    assert cli.main(["bots", "POSITIONAL_SECRET"]) == 1
+    err = capsys.readouterr().err
+    assert "POSITIONAL_SECRET" not in err and "<hidden>" in err
+    assert not mutations(fake)

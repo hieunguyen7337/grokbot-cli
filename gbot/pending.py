@@ -54,6 +54,20 @@ def one_line(value: str) -> str:
     return " ".join("".join(c if c.isprintable() else " " for c in value).split())
 
 
+def command_text(value: str) -> str:
+    return "\n".join(line.rstrip() for line in value.strip().splitlines())
+
+
+def command_block(value: str) -> str:
+    lines = value.split("\n")
+    if len(lines) == 1:
+        return f"Tool/command: {value}"
+    numbered = (f"  {n:>2}| {line}" for n, line in enumerate(lines, 1))
+    return f"Tool/command ({len(lines)} lines, all run if approved):\n" + "\n".join(
+        numbered
+    )
+
+
 def is_pending(entry: dict[str, object]) -> bool:
     if entry.get("kind") != "send-message":
         return False
@@ -148,11 +162,13 @@ def classify(
         ),
         one_line(str(message.get("title") or message.get("text") or kind)),
     )
+    # Executable text keeps its line structure: joining lines would let a newline
+    # hide a second command behind a `#` comment in the confirmation.
     tool = ""
     if kind == "local-tool-permission":
-        tool = one_line(f"{body.get('action', '')}: {body.get('target', '')}")
+        tool = command_text(f"{body.get('action', '')}: {body.get('target', '')}")
     elif kind == "auto-review-approval":
-        tool = one_line(str(body.get("command") or ""))
+        tool = command_text(str(body.get("command") or ""))
     created = entry.get("timestampMs")
     request_id = body.get("requestId")
     return PendingItem(
