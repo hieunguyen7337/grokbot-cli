@@ -1,4 +1,108 @@
+# gbot — Windows CLI for Grok Bot (unofficial)
+
+`gbot` is an **alpha** Windows terminal client for driving your existing Grok Bot
+bots without the desktop app running. Bots keep the connectors they already have,
+such as Gmail, Drive and Calendar; this CLI does not create or link accounts.
+
+> **Unofficial:** Not affiliated with or endorsed by SpaceXAI, xAI, Cursor or
+> Anysphere. This client uses an undocumented protocol that can change with any
+> app update. Use at your own risk and within the service terms.
+
+## Install on Windows
+
+You need Windows, Python 3.13, uv, Git, and a legitimate Grok Bot account with
+existing bots. In PowerShell, clone this fork and install the editable CLI:
+
+```powershell
+git clone https://github.com/hieunguyen7337/grokbot-cli.git
+cd grokbot-cli
+uv tool install --editable .
+gbot --help
+```
+
+Alternatively, use the project environment from the clone:
+
+```powershell
+uv sync
+.venv\Scripts\gbot --help
+```
+
+Use `.venv\Scripts\gbot` in place of `gbot` below with that installation.
+The desktop app only needs to be installed for client version detection and
+`doctor`'s protocol drift check; it does not need to be running.
+Set `SAND_CLIENT_VERSION` to override the detected version, and `GBOT_APP_DIR`
+to point detection and drift checking at an app installation in another location:
+
+```powershell
+$env:SAND_CLIENT_VERSION = "0.72.1"
+$env:GBOT_APP_DIR = "C:\path\to\Grok Bot"
+```
+
+A version override alone cannot provide an app command table for the drift check.
+The protocol note describes the audited 0.72.1 contract; compatibility with later
+versions is not guaranteed.
+
+## Sign in and ask
+
+```powershell
+gbot login
+gbot bots
+gbot use "My Bot"
+gbot ask "Summarize my next three calendar events."
+gbot approvals
+gbot doctor
+```
+
+Complete sign-in in the browser opened by `login`. Choose an existing bot name
+or ID from `bots`; quote names containing spaces. No bot is created automatically.
+`ask` waits for a reply; `send` submits without waiting. `tail` reads the transcript.
+If a bot needs your input, `ask` returns exit code 2 and lists pending items.
+
+## Answer safely
+
+Run `gbot approvals` to inspect requests. Copy a REF from its output and use the
+suggested action, for example `gbot approve REF` or `gbot deny REF`.
+Every answer shows the bot, request summary, available tool/command details and
+answer being sent, then asks for confirmation. `--yes` skips that confirmation
+on `approve`, `deny`, `respond`, `dismiss` and `secret`; review the target first.
+`secret` reads the value at a hidden prompt; never put a secret on the command line.
+Payment, publishing and account-linking requests are app-only. Open the Grok Bot
+app when the CLI says to answer there. `connectors` is read-only: it lists existing
+connections and cannot authorize or link an account.
+
+On Windows, saved tokens are DPAPI-encrypted under
+`%LOCALAPPDATA%\grokbot-cli`. Set `GBOT_HOME` before sign-in to move the data directory.
+DPAPI protection is tied to the Windows user; moving files is not a portable login.
+`gbot logout` removes the locally saved session.
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | OK |
+| 1 | Error, including invalid arguments |
+| 2 | Needs attention: pending approval, drift or warnings |
+| 3 | Not signed in / authentication failure |
+| 130 | Interrupted |
+
+Stopping `tail` while following with Ctrl+C is a clean stop (0).
+Use `gbot doctor` to diagnose compatibility; its offline option skips gateway calls
+but still inspects local sign-in state and the installed app.
+
+## Reference
+
+- [Full command reference](docs/gbot.md): every command, option and JSON output.
+- [Protocol 0.72.1 note](docs/protocol-0.72.md): transport, used commands and pending items.
+- [NOTICE](NOTICE): fork attribution and independence; [LICENSE](LICENSE): MIT terms.
+
+The upstream README follows. Its macOS instructions describe the original
+`groken` tools; use the Windows instructions above for `gbot`.
+
+---
+
 # groken
+
+This is a fork of `trac3r00/groken`.
 
 <p align="center"><img src="docs/assets/groken-hero.png" alt="groken connects agent harnesses to Grok Bot cloud computers" width="900"></p>
 
