@@ -21,8 +21,8 @@ _REPLY_QUIET_S = 2.0
 MAX_BOT_NAME_LENGTH = 256
 
 
-# Preserve ConnectError catches even though the transport base is annotated final.
-class ReplyIncompleteError(ConnectError):  # pyright: ignore[reportGeneralTypeIssues]
+# Subclasses ConnectError so existing `except ConnectError` callers keep working.
+class ReplyIncompleteError(ConnectError):
     def __init__(self, bot_id: str, elapsed_s: float) -> None:
         self.bot_id: str = bot_id
         self.elapsed_s: float = elapsed_s

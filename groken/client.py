@@ -68,7 +68,6 @@ GROK_BOT = "aiserver.v1.GrokBotService"
 DASHBOARD = "aiserver.v1.DashboardService"
 
 
-@final
 class ConnectError(Exception):
     def __init__(self, status: int, body: str):
         super().__init__(f"connect error {status}: {body[:400]}")
