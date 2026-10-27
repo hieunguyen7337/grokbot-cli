@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -70,8 +71,11 @@ def test_save_config_uses_atomic_private_replace(
     temporary, destination = replacements[0]
     assert temporary.parent == target.parent
     assert destination == target
+    assert config.load_config() == {"bot_id": "id-atomic"}
+    assert not temporary.exists()
     assert fsync_calls
-    assert (target.stat().st_mode & 0o777) == 0o600
+    if sys.platform != "win32":
+        assert (target.stat().st_mode & 0o777) == 0o600
 
 
 def test_remember_bot_roundtrip(
@@ -83,4 +87,5 @@ def test_remember_bot_roundtrip(
     assert config.cached_bot_id() == "id-1"
     assert config.bot_name() == "groken"
     mode = (tmp_path / "config.json").stat().st_mode & 0o777
-    assert mode == 0o600
+    if sys.platform != "win32":
+        assert mode == 0o600

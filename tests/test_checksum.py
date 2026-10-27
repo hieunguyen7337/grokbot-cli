@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import NoReturn
 
@@ -25,7 +26,8 @@ def test_machine_id_generates_and_persists(
     mid_file = _force_uuid_fallback(monkeypatch, tmp_path)
     first = checksum.get_machine_id()
     assert mid_file.read_text() == first
-    assert (mid_file.stat().st_mode & 0o777) == 0o600
+    if sys.platform != "win32":
+        assert (mid_file.stat().st_mode & 0o777) == 0o600
     assert checksum.get_machine_id() == first
 
 
@@ -55,7 +57,8 @@ def test_machine_id_fallback_uses_atomic_private_replace(
     assert temporary.parent == mid_file.parent
     assert destination == mid_file
     assert fsync_calls
-    assert (mid_file.stat().st_mode & 0o777) == 0o600
+    if sys.platform != "win32":
+        assert (mid_file.stat().st_mode & 0o777) == 0o600
 
 
 def test_machine_id_reads_existing_file(

@@ -8,6 +8,7 @@ from xml.parsers.expat import ExpatError
 
 import httpx
 
+from . import winplat
 from .auth import get_access_token, load_tokens, refresh_tokens
 from .checksum import create_cursor_checksum, get_machine_id
 from .config import load_config, save_config
@@ -27,19 +28,31 @@ def detect_client_version() -> str:
     override = os.environ.get("SAND_CLIENT_VERSION")
     if override:
         return override
-    try:
-        plist_value = cast("object", plistlib.loads(APP_PATH.read_bytes()))
-        plist = _object_dict(plist_value)
-        if plist is None:
-            raise ValueError("application plist must contain a dictionary")
-        version = plist.get("CFBundleShortVersionString")
-        if isinstance(version, str) and version:
-            cfg = load_config()
-            cfg["client_version"] = version
-            save_config(cfg)
-            return version
-    except (OSError, ValueError, ExpatError):
-        pass
+    if sys.platform == "darwin":
+        try:
+            plist_value = cast("object", plistlib.loads(APP_PATH.read_bytes()))
+            plist = _object_dict(plist_value)
+            if plist is None:
+                raise ValueError("application plist must contain a dictionary")
+            version = plist.get("CFBundleShortVersionString")
+            if isinstance(version, str) and version:
+                cfg = load_config()
+                cfg["client_version"] = version
+                save_config(cfg)
+                return version
+        except (OSError, ValueError, ExpatError):
+            pass
+    elif sys.platform == "win32":
+        for directory in winplat.app_install_dirs():
+            executable = directory / "Grok Bot.exe"
+            if executable.is_file():
+                version = winplat.exe_version(executable)
+                if version:
+                    cfg = load_config()
+                    cfg["client_version"] = version
+                    save_config(cfg)
+                    return version
+                break
 
     try:
         cached = load_config().get("client_version")
@@ -49,6 +62,7 @@ def detect_client_version() -> str:
         print("Cursor app not found; using cached client version", file=sys.stderr)
         return cached
     return "0.20.0"
+
 
 GROK_BOT = "aiserver.v1.GrokBotService"
 DASHBOARD = "aiserver.v1.DashboardService"
@@ -94,7 +108,9 @@ class SandClient:
             return True
         return False
 
-    def unary(self, service: str, method: str, payload: dict[str, object]) -> dict[str, object]:
+    def unary(
+        self, service: str, method: str, payload: dict[str, object]
+    ) -> dict[str, object]:
         url = f"{BACKEND_URL}/{service}/{method}"
         for attempt in range(2):
             r = self.http.post(url, headers=self._headers(), json=payload)
@@ -112,7 +128,9 @@ class SandClient:
     def list_sandboxes(self) -> dict[str, object]:
         return self.unary(GROK_BOT, "ListSandBoxes", {})
 
-    def list_sand_mcp_tools(self, server_identifiers: list[str] | None = None) -> dict[str, object]:
+    def list_sand_mcp_tools(
+        self, server_identifiers: list[str] | None = None
+    ) -> dict[str, object]:
         return self.unary(
             DASHBOARD,
             "ListSandMcpTools",

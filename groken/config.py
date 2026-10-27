@@ -6,9 +6,10 @@ from typing import Literal, cast
 
 from typing_extensions import override
 
+from . import winplat
 from .private_files import write_private_text
 
-CONFIG_DIR = Path.home() / ".config" / "groken"
+CONFIG_DIR = winplat.data_dir()
 CONFIG_FILE = CONFIG_DIR / "config.json"
 DEFAULT_BOT_NAME = "groken"
 

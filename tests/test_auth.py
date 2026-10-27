@@ -2,6 +2,7 @@ import base64
 import hashlib
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from types import TracebackType
@@ -60,9 +61,7 @@ class _FakeClock:
         self.now += seconds
 
 
-def _install_client(
-    monkeypatch: pytest.MonkeyPatch, response: _Response
-) -> None:
+def _install_client(monkeypatch: pytest.MonkeyPatch, response: _Response) -> None:
     def make_client(*, timeout: float) -> _FakeClient:
         assert timeout == 15.0
         return _FakeClient(response)
@@ -77,9 +76,11 @@ def test_start_login_pkce_shape(
     params = auth.start_login()
     assert params["login_url"].startswith("https://cursor.com/loginDeepControl?")
     assert "redirectTarget=sand" in params["login_url"]
-    expected_challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(params["verifier"].encode()).digest()
-    ).decode().rstrip("=")
+    expected_challenge = (
+        base64.urlsafe_b64encode(hashlib.sha256(params["verifier"].encode()).digest())
+        .decode()
+        .rstrip("=")
+    )
     assert f"challenge={expected_challenge}" in params["login_url"]
     assert f"uuid={params['uuid']}" in params["login_url"]
 
@@ -87,10 +88,12 @@ def test_start_login_pkce_shape(
 def test_token_roundtrip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(auth, "TOKEN_FILE", tmp_path / "tokens.json")
     auth.save_tokens({"accessToken": "a", "refreshToken": "r"})
+    assert not (tmp_path / "tokens.json.tmp").exists()
     assert auth.load_tokens() == {"accessToken": "a", "refreshToken": "r"}
     assert auth.get_access_token() == "a"
     mode = (tmp_path / "tokens.json").stat().st_mode & 0o777
-    assert mode == 0o600
+    if sys.platform != "win32":
+        assert mode == 0o600
 
 
 def test_save_tokens_repairs_existing_temporary_file_mode(
@@ -104,7 +107,9 @@ def test_save_tokens_repairs_existing_temporary_file_mode(
 
     auth.save_tokens({"accessToken": "secret", "refreshToken": "refresh"})
 
-    assert token_file.stat().st_mode & 0o777 == 0o600
+    if sys.platform != "win32":
+        assert token_file.stat().st_mode & 0o777 == 0o600
+    assert auth.load_tokens() == {"accessToken": "secret", "refreshToken": "refresh"}
     assert not temporary.exists()
 
 
@@ -268,4 +273,5 @@ def test_save_tokens_is_atomic_and_temp_file_is_private(
     assert auth.load_tokens() == {"accessToken": "old", "refreshToken": "r"}
     temporary = token_file.with_suffix(f"{token_file.suffix}.tmp")
     assert temporary.is_file()
-    assert temporary.stat().st_mode & 0o777 == 0o600
+    if sys.platform != "win32":
+        assert temporary.stat().st_mode & 0o777 == 0o600

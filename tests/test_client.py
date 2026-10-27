@@ -164,6 +164,7 @@ def test_detect_client_version_override(monkeypatch: pytest.MonkeyPatch) -> None
 def test_detect_client_version_falls_back_on_unreadable_plist(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    monkeypatch.setattr(client_mod.sys, "platform", "darwin")
     monkeypatch.delenv("SAND_CLIENT_VERSION", raising=False)
     monkeypatch.setattr(client_mod, "APP_PATH", tmp_path / "missing.plist")
     monkeypatch.setattr(config, "CONFIG_FILE", tmp_path / "config.json")
@@ -173,6 +174,7 @@ def test_detect_client_version_falls_back_on_unreadable_plist(
 def test_detect_client_version_falls_back_on_malformed_plist(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    monkeypatch.setattr(client_mod.sys, "platform", "darwin")
     monkeypatch.delenv("SAND_CLIENT_VERSION", raising=False)
     bad = tmp_path / "Info.plist"
     _ = bad.write_bytes(b"not a plist at all")
@@ -184,6 +186,7 @@ def test_detect_client_version_falls_back_on_malformed_plist(
 def test_detect_client_version_uses_outer_bundle_when_embedded_version_differs(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    monkeypatch.setattr(client_mod.sys, "platform", "darwin")
     monkeypatch.delenv("SAND_CLIENT_VERSION", raising=False)
     app = tmp_path / "Grok Bot.app" / "Contents"
     resources = app / "Resources"
@@ -200,6 +203,7 @@ def test_detect_client_version_uses_outer_bundle_when_embedded_version_differs(
 def test_detect_client_version_reads_unrecognized_outer_version_without_rejection(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    monkeypatch.setattr(client_mod.sys, "platform", "darwin")
     monkeypatch.delenv("SAND_CLIENT_VERSION", raising=False)
     good = tmp_path / "Info.plist"
     _ = good.write_bytes(plistlib.dumps({"CFBundleShortVersionString": "1.2.3"}))
@@ -215,6 +219,7 @@ def test_detect_client_version_uses_cached_version_with_warning(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    monkeypatch.setattr(client_mod.sys, "platform", "darwin")
     monkeypatch.delenv("SAND_CLIENT_VERSION", raising=False)
     monkeypatch.setattr(client_mod, "APP_PATH", tmp_path / "missing.plist")
     monkeypatch.setattr(config, "CONFIG_FILE", tmp_path / "config.json")
