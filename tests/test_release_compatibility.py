@@ -146,8 +146,11 @@ def test_ci_workflow_tests_supported_pythons_deterministically_when_configured()
     text = WORKFLOW.read_text()
 
     # When
+    # The fork's windows job pins a single python-version; the matrix is a list.
     matrix_line = next(
-        line for line in text.splitlines() if line.strip().startswith("python-version:")
+        line
+        for line in text.splitlines()
+        if line.strip().startswith("python-version: [")
     )
     matrix_versions = set(re.findall(r'"(\d+\.\d+)"', matrix_line))
 
@@ -173,8 +176,9 @@ def test_ci_pins_runner_uv_and_runs_an_error_only_type_gate_when_configured() ->
     ]
 
     # Then
-    assert runners == ["macos-15", "macos-15", "macos-15"]
-    assert text.count('version: "0.11.30"') == 3
+    # The fork adds one windows job (same pinned uv) beside the three macOS jobs.
+    assert sorted(runners) == ["macos-15", "macos-15", "macos-15", "windows-latest"]
+    assert text.count('version: "0.11.30"') == 4
     assert "uv run --no-sync basedpyright --level error" in text
     assert "uvx --from basedpyright" not in text
     assert config["typeCheckingMode"] == "standard"
