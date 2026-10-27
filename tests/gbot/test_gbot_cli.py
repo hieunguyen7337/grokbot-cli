@@ -12,7 +12,7 @@ from gbot.commands import tail
 from gbot.context import Context
 from groken import auth
 from groken.client import ConnectError
-from groken.gateway import ReplyIncompleteError, UnknownBotError
+from groken.gateway import ReplyIncompleteError
 
 
 class FakeManager:
@@ -106,9 +106,23 @@ class FakeManager:
         assert channels == ["transcript"]
         self.streams += 1
         if self.streams == 1:
+            # Appended while the stream is down: only the backfill can show it.
+            self.entries.append({"id": "6", "kind": "assistant", "content": "gap"})
             raise httpx.ReadError("dropped")
         if self.streams == 3:
             raise KeyboardInterrupt
+        # The real gateway wraps each frame as {"event", "data": {"channel", "payload"}}.
+        yield {
+            "event": "message",
+            "data": {
+                "channel": "agent-upserted",
+                "payload": {
+                    "type": "appended",
+                    "agentId": "a",
+                    "entry": {"id": "7", "content": "wrong channel"},
+                },
+            },
+        }
         for bot, kind, entry in [
             ("b", "appended", {"id": "3", "content": "wrong bot"}),
             ("a", "updated", {"id": "4", "content": "wrong type"}),
@@ -116,8 +130,11 @@ class FakeManager:
             ("a", "appended", {"id": "5", "kind": "assistant", "content": "fresh"}),
         ]:
             yield {
-                "channel": "transcript",
-                "payload": {"type": kind, "agentId": bot, "entry": entry},
+                "event": "message",
+                "data": {
+                    "channel": "transcript",
+                    "payload": {"type": kind, "agentId": bot, "entry": entry},
+                },
             }
 
 
@@ -158,7 +175,9 @@ def test_resolve_default_renamed_deleted_none(fake):
     assert resolve_bot(ctx, None) == ("a", "Renamed")
     assert config.default_bot() == {"id": "a", "name": "Renamed"}
     fake.bots.pop(0)
-    with pytest.raises(UnknownBotError, match="Beta, Gamma"):
+    with pytest.raises(
+        ValueError, match=r"Default bot Renamed \(a\) no longer exists.*Beta, Gamma"
+    ):
         resolve_bot(ctx, None)
     config.set_default(None)
     with pytest.raises(ValueError, match="No bot selected.*Beta, Gamma"):
@@ -375,7 +394,13 @@ def test_follow_reconnect_interrupt(fake, monkeypatch, capsys, json_mode):
     assert cli.main(["tail", "--follow"] + (["--json"] if json_mode else [])) == 0
     output = capsys.readouterr()
     assert output.out.count("fresh") == 1
-    assert "wrong bot" not in output.out and "wrong type" not in output.out
+    assert output.out.count("gap") == 1
+    assert output.out.count("hello") == 1
+    for noise in ("wrong bot", "wrong type", "wrong channel"):
+        assert noise not in output.out
+    if json_mode:
+        lines = output.out.splitlines()
+        assert [json.loads(line)["id"] for line in lines] == ["1", "2", "6", "5"]
     assert "dropped" in output.err
     assert waits == [0.25, 0.25]
     assert fake.streams == 3

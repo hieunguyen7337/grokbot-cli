@@ -1,4 +1,5 @@
 import argparse
+import json
 from datetime import UTC, datetime
 from threading import Event
 
@@ -50,28 +51,48 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
             raise ValueError(f"Transcript entry not found: {args.since}")
         entries = entries[index + 1 :]
     entries = entries[-args.n :] if args.n else []
-    ctx.out.write(entries, "\n".join(render(entry, args.full) for entry in entries))
     if not args.follow:
+        ctx.out.write(entries, "\n".join(render(entry, args.full) for entry in entries))
         return 0
+
+    def emit(entry: dict[str, object]) -> None:
+        entry_id = entry.get("id")
+        if not entry or (entry_id is not None and str(entry_id) in seen):
+            return
+        if entry_id is not None:
+            seen.add(str(entry_id))
+        # One compact object per line, so `--follow --json` is JSON Lines.
+        print(
+            json.dumps(entry, ensure_ascii=False)
+            if ctx.out.json_mode
+            else render(entry, args.full),
+            flush=True,
+        )
+
+    seen.difference_update(str(entry["id"]) for entry in entries if "id" in entry)
+    for entry in entries:
+        emit(entry)
     delay = 0.25
+    reconnecting = False
     try:
         while True:
             try:
+                if reconnecting:
+                    # Entries appended while the stream was down.
+                    for entry in manager.transcript_tail(bot_id):
+                        emit(entry)
+                reconnecting = True
                 for event in manager.events(["transcript"]):
-                    payload = record(event.get("payload"))
+                    # Gateway frames are {"event", "data": {"channel", "payload"}}.
+                    envelope = record(event.get("data"))
+                    payload = record(envelope.get("payload"))
                     if (
-                        event.get("channel", "transcript") != "transcript"
+                        envelope.get("channel") != "transcript"
                         or payload.get("type") != "appended"
                         or payload.get("agentId") != bot_id
                     ):
                         continue
-                    entry = record(payload.get("entry"))
-                    entry_id = entry.get("id")
-                    if not entry or (entry_id is not None and str(entry_id) in seen):
-                        continue
-                    if entry_id is not None:
-                        seen.add(str(entry_id))
-                    ctx.out.write(entry, render(entry, args.full))
+                    emit(record(payload.get("entry")))
                     delay = 0.25
             except (ConnectError, httpx.HTTPError) as exc:
                 if isinstance(exc, ConnectError) and exc.status == 401:

@@ -33,7 +33,10 @@ def resolve_bot(ctx: Context, requested: str | None) -> tuple[str, str]:
             )
         matches = [bot for bot in bots if bot["id"] == default["id"]]
         if not matches:
-            raise UnknownBotError(default["id"], names)
+            raise ValueError(
+                f"Default bot {default['name']} ({default['id']}) no longer exists."
+                " Run: gbot use <name> (available: " + ", ".join(names) + ")"
+            )
         selected = (str(matches[0]["id"]), str(matches[0]["name"]))
         if selected[1] != default["name"]:
             config.set_default(selected)
