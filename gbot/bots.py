@@ -12,7 +12,8 @@ def record(value: object) -> dict[str, object]:
 
 def list_bots(ctx: Context) -> list[dict[str, object]]:
     result = ctx.manager().command("listAgents")
-    rows = record(result).get("agents", [])
+    # The 0.72 gateway replies with a bare array; accept {"agents": [...]} too.
+    rows = result if isinstance(result, list) else record(result).get("agents", [])
     if not isinstance(rows, list):
         raise TypeError("Invalid bot list from gateway.")
     return [

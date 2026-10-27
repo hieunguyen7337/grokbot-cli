@@ -58,7 +58,7 @@ class FakeManager:
         if self.failure:
             raise self.failure
         return {
-            "listAgents": {"agents": self.bots},
+            "listAgents": self.bots,
             "getForeverBoxStatus": {"state": "running"},
             "getHostStatus": {
                 "hostVersion": "0.30",
@@ -167,6 +167,20 @@ def test_resolve(fake, requested):
         "a",
         "Alpha",
     )
+
+
+def test_list_bots_accepts_bare_array_and_wrapped(fake, monkeypatch):
+    ctx = Context(argparse.Namespace(debug=False))
+    assert resolve_bot(ctx, "Beta") == ("b", "Beta")
+    original = fake.command
+    monkeypatch.setattr(
+        fake,
+        "command",
+        lambda method, args=None: (
+            {"agents": fake.bots} if method == "listAgents" else original(method, args)
+        ),
+    )
+    assert resolve_bot(ctx, "Beta") == ("b", "Beta")
 
 
 def test_resolve_default_renamed_deleted_none(fake):
