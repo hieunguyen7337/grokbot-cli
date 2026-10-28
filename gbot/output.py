@@ -49,7 +49,7 @@ class Output:
         for stream in (sys.stdout, sys.stderr):
             reconfigure = getattr(stream, "reconfigure", None)
             if reconfigure is not None:
-                reconfigure(errors="replace")
+                reconfigure(encoding="utf-8", errors="replace")
 
     def write(self, obj: object, text: str) -> None:
         print(json.dumps(obj, indent=2, ensure_ascii=False) if self.json_mode else text)

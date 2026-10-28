@@ -544,7 +544,21 @@ def test_console_reconfigure(monkeypatch):
     monkeypatch.setattr("sys.stdout", Console())
     monkeypatch.setattr("sys.stderr", Console())
     Output().write({"name": "?"}, "?")
-    assert calls == [{"errors": "replace"}, {"errors": "replace"}]
+    assert calls == [{"encoding": "utf-8", "errors": "replace"}] * 2
+
+
+def test_redirected_output_is_utf8(monkeypatch):
+    # Windows gives a redirected stdout the ANSI code page; --json must still be UTF-8.
+    from gbot.output import Output
+
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252", newline="\n")
+    monkeypatch.setattr("sys.stdout", stream)
+    Output(json_mode=True).write({"note": "Inbox → Outbox — 알림"}, "")
+    stream.flush()
+    assert json.loads(raw.getvalue().decode("utf-8")) == {
+        "note": "Inbox → Outbox — 알림"
+    }
 
 
 def test_new_command_is_discovered(monkeypatch, capsys):

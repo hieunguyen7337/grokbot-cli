@@ -218,8 +218,9 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         lines.append(line)
         if "error" in row:
             lines.append(f"  error: {row['error']}")
-        if isinstance(row.get("tools"), list):
-            lines.extend(f"  {tool}" for tool in row["tools"])
+        tools = row.get("tools")
+        if isinstance(tools, list):
+            lines.extend(f"  {tool}" for tool in tools)
     if unmatched:
         lines.append("Plugins without a connector: " + ", ".join(unmatched))
     ctx.out.write(
