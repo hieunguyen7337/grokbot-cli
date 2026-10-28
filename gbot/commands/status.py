@@ -68,7 +68,12 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         )
         lines.extend(
             [
-                f"Computer: {computer.get('state')}",
+                "Desktop computer: "
+                + {
+                    "absent": "none started (starts when the bot needs one)",
+                    "hibernated": "asleep",
+                    "running": "running",
+                }.get(str(computer.get("state")), str(computer.get("state"))),
                 f"Host: {host.get('hostVersion')}; update available={host.get('hostUpdateAvailable') is True}; busy={host.get('isBusy') is True}",
                 f"Secrets: applied={secrets.get('isApplied') is True}",
             ]

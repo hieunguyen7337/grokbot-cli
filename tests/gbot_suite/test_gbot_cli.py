@@ -256,7 +256,7 @@ def test_command_outputs(fake, capsys, command, json_mode):
             "ask": "reply ?",
             "send": "Sent to Alpha.",
             "tail": "user: hello",
-            "status": "Computer: running",
+            "status": "Desktop computer: running",
         }[command] in output
     if command == "status":
         assert ("getForeverBoxStatus", {"id": "a"}) in fake.calls
