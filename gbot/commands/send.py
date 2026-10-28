@@ -15,6 +15,16 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 def run(args: argparse.Namespace, ctx: Context) -> int:
     text = prompt(args)
     bot_id, name = resolve_bot(ctx, args.bot)
-    result = ctx.manager().send_prompt(bot_id, text)
-    ctx.out.write(result, f"Sent to {name}.")
+    manager = ctx.manager()
+    entries = manager.transcript_tail(bot_id)
+    seqs = [seq for entry in entries if type(seq := entry.get("seq")) is int]
+    result = manager.send_prompt(bot_id, text)
+    ctx.out.write(
+        {
+            "accepted": bool(result.get("accepted", False)),
+            "bot": {"id": bot_id, "name": name},
+            "last_seq": max(seqs, default=None),
+        },
+        f"Sent to {name}.",
+    )
     return 0
