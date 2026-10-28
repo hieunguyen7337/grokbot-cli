@@ -21,7 +21,11 @@ _BODIES = {
     "mobile-tool-permission": "permission",
     "permission-request": "permission",
     "app-secrets-request": "request",
+    "email-draft": "draft",
+    "slack-draft": "draft",
+    "meeting-chat-draft": "draft",
 }
+_DRAFT_TYPES = {"email-draft", "slack-draft", "meeting-chat-draft"}
 _STATUS_TYPES = {
     "auto-review-approval",
     "meeting-join-consent",
@@ -45,6 +49,7 @@ class PendingItem:
     allowed_actions: tuple[str, ...]
     request_id: str | None = None
     tool_text: str = ""
+    draft: dict[str, object] | None = None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -58,14 +63,13 @@ def command_text(value: str) -> str:
     return "\n".join(line.rstrip() for line in value.strip().splitlines())
 
 
-def command_block(value: str) -> str:
+def command_block(value: str, heading: str | None = None) -> str:
     lines = value.split("\n")
-    if len(lines) == 1:
+    if len(lines) == 1 and heading is None:
         return f"Tool/command: {value}"
     numbered = (f"  {n:>2}| {line}" for n, line in enumerate(lines, 1))
-    return f"Tool/command ({len(lines)} lines, all run if approved):\n" + "\n".join(
-        numbered
-    )
+    title = heading or "Tool/command ({count} lines, all run if approved):"
+    return title.format(count=len(lines)) + "\n" + "\n".join(numbered)
 
 
 def is_pending(entry: dict[str, object]) -> bool:
@@ -76,6 +80,8 @@ def is_pending(entry: dict[str, object]) -> bool:
     if kind not in _BODIES:
         return False
     body = record(message.get(_BODIES[kind]))
+    if kind in _DRAFT_TYPES:
+        return entry.get("draftSendState") is None
     if kind in _STATUS_TYPES:
         return body.get("status") == "pending"
     if kind == "widget":
@@ -113,7 +119,11 @@ def classify(
     kind = str(message["type"])
     body = record(message.get(_BODIES[kind]))
     actions: tuple[str, ...] = ()
-    if kind in {
+    if kind in {"email-draft", "slack-draft"}:
+        actions = ("approve", "deny")
+    elif kind == "meeting-chat-draft":
+        actions = ("deny",)
+    elif kind in {
         "auto-review-approval",
         "meeting-join-consent",
         "local-tool-permission",
@@ -169,6 +179,41 @@ def classify(
         tool = command_text(f"{body.get('action', '')}: {body.get('target', '')}")
     elif kind == "auto-review-approval":
         tool = command_text(str(body.get("command") or ""))
+    elif kind in _DRAFT_TYPES:
+
+        def addresses(key: str) -> str:
+            value = body.get(key)
+            return (
+                ", ".join(str(part) for part in value)
+                if isinstance(value, list)
+                else ""
+            )
+
+        if kind == "email-draft":
+            lines = [f"From: {body.get('from', '')}", f"To: {addresses('to')}"]
+            if "cc" in body:
+                lines.append(f"Cc: {addresses('cc')}")
+            lines.append(f"Subject: {body.get('subject', '')}")
+            summary = one_line(
+                f"From: {body.get('from', '')}; To: {addresses('to')}; "
+                f"Subject: {body.get('subject', '')}"
+            )
+        elif kind == "slack-draft":
+            lines = [f"To: {body.get('target', '')}"]
+            for key, label in (("thread", "Thread"), ("workspace", "Workspace")):
+                if key in body:
+                    lines.append(f"{label}: {body[key]}")
+            first_line = str(body.get("body", "")).split("\n", 1)[0]
+            workspace = (
+                f"; Workspace: {body['workspace']}" if "workspace" in body else ""
+            )
+            summary = one_line(f"To: {body.get('target', '')}{workspace}; {first_line}")
+        else:
+            meeting = body.get("meetingTitle") or body.get("meetingId", "")
+            lines = [f"Meeting: {meeting}"]
+            summary = one_line(f"Meeting: {meeting}")
+        # Shown verbatim, line by line: approving sends exactly this draft.
+        tool = "\n".join([*lines, "", str(body.get("body", ""))])
     created = entry.get("timestampMs")
     request_id = body.get("requestId")
     return PendingItem(
@@ -182,6 +227,9 @@ def classify(
         actions,
         request_id if isinstance(request_id, str) else None,
         tool,
+        body.copy()
+        if kind in _DRAFT_TYPES and isinstance(message.get("draft"), dict)
+        else None,
     )
 
 

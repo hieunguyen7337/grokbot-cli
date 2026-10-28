@@ -17,6 +17,31 @@ from groken.gateway import AwaitingUserError
 
 # protocol-0.72.json: $defs.SandSendMessage and its referenced request types.
 MESSAGES: dict[str, dict[str, object]] = {
+    "email-draft": {
+        "draft": {
+            "from": "ada@example.com",
+            "to": ["bob@example.com", "cat@example.com"],
+            "cc": ["dee@example.com"],
+            "subject": "Report",
+            "body": "First line\nSecond line",
+        }
+    },
+    "slack-draft": {
+        "draft": {
+            "target": "#reports",
+            "thread": "thread-1",
+            "workspace": "Example",
+            "body": "First line\nSecond line",
+        }
+    },
+    "meeting-chat-draft": {
+        "draft": {
+            "meetingId": "meeting-1",
+            "meetingTitle": "Planning",
+            "body": "Hello",
+        },
+        "meetingInternal": True,
+    },
     "auto-review-approval": {
         "approval": {
             "requestId": "review-request",
@@ -178,6 +203,7 @@ class FakeManager:
         self.pages: dict[tuple[str, str | None, object], dict[str, object]] = {}
         self.calls: list[tuple[str, dict[str, object] | None]] = []
         self.failure: Exception | None = None
+        self.reply: object = None
         self.partial = "Work so far"
         self.wait_entry = entry("widget")
 
@@ -192,6 +218,8 @@ class FakeManager:
             "submitSecret",
             "submitUserForm",
             "dismissUserForm",
+            "sendDraft",
+            "discardDraft",
         }
         self.calls.append((method, copy.deepcopy(args)))
         if method == "listAgents":
@@ -207,7 +235,7 @@ class FakeManager:
             )
         if self.failure:
             raise self.failure
-        return None
+        return self.reply
 
     def ask(
         self,
@@ -827,3 +855,177 @@ def test_parser_errors_never_echo_values(fake, capsys):
     err = capsys.readouterr().err
     assert "POSITIONAL_SECRET" not in err and "<hidden>" in err
     assert not mutations(fake)
+
+
+@pytest.mark.parametrize("kind", ["email-draft", "slack-draft", "meeting-chat-draft"])
+@pytest.mark.parametrize(
+    "state", ["discarded", "draft-created", "sending", "sent", "unconfirmed"]
+)
+def test_draft_pending_state(kind, state):
+    item = entry(kind)
+    assert is_pending(item)
+    item["draftSendState"] = None
+    assert is_pending(item)
+    item["draftSendState"] = state
+    assert not is_pending(item)
+
+
+@pytest.mark.parametrize(
+    "kind,actions,summary,display",
+    [
+        (
+            "email-draft",
+            ("approve", "deny"),
+            "From: ada@example.com; To: bob@example.com, cat@example.com; Subject: Report",
+            (
+                "From: ada@example.com\nTo: bob@example.com, cat@example.com\n"
+                "Cc: dee@example.com\nSubject: Report\n\nFirst line\nSecond line"
+            ),
+        ),
+        (
+            "slack-draft",
+            ("approve", "deny"),
+            "To: #reports; Workspace: Example; First line",
+            "To: #reports\nThread: thread-1\nWorkspace: Example\n\nFirst line\nSecond line",
+        ),
+        (
+            "meeting-chat-draft",
+            ("deny",),
+            "Meeting: Planning",
+            "Meeting: Planning\n\nHello",
+        ),
+    ],
+)
+def test_draft_classification(kind, actions, summary, display):
+    row = entry(kind)
+    item = classify(row, "a", "Alpha")
+    assert item is not None
+    assert (item.allowed_actions, item.summary, item.tool_text) == (
+        actions,
+        summary,
+        display,
+    )
+    draft = record(record(row["message"])["draft"])
+    assert item.draft == draft and item.draft is not draft
+
+
+@pytest.mark.parametrize("session_id", [None, "task-1"])
+@pytest.mark.parametrize("kind", ["email-draft", "slack-draft", "meeting-chat-draft"])
+def test_discard_draft_payload(fake, capsys, session_id, kind):
+    fake.tails[("a", session_id)] = [entry(kind)]
+    assert cli.main(["deny", "abcdef01", "--yes"]) == 0
+    payload = {"agentId": "a", "entryId": "abcdef01-entry"}
+    if session_id:
+        payload["sessionId"] = session_id
+    assert mutations(fake) == [("discardDraft", payload)]
+    assert "Answer: discardDraft (discards it)" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("session_id", [None, "task-1"])
+@pytest.mark.parametrize("kind", ["email-draft", "slack-draft"])
+def test_send_draft_payload_and_confirmation(fake, capsys, session_id, kind):
+    row = entry(kind)
+    draft = record(record(row["message"])["draft"])
+    draft["body"] = "First \x1b[2J\nSecond  \n"
+    fake.tails[("a", session_id)] = [row]
+    assert cli.main(["approve", "abcdef01"]) == 1
+    captured = capsys.readouterr()
+    assert "Re-run with --yes" in captured.err and not mutations(fake)
+    assert (
+        "Draft (" in captured.out
+        and "sent exactly as shown if approved" in captured.out
+    )
+    assert "| First \\u001b[2J\n" in captured.out
+    assert "| Second  \n" in captured.out and "\x1b" not in captured.out
+    assert "Answer: sendDraft (sends it now)" in captured.out
+    assert cli.main(["approve", "abcdef01", "--yes"]) == 0
+    payload = {
+        "agentId": "a",
+        "entryId": "abcdef01-entry",
+        "draft": {"type": kind, "draft": draft},
+    }
+    if session_id:
+        payload["sessionId"] = session_id
+    assert mutations(fake) == [("sendDraft", payload)]
+
+
+@pytest.mark.parametrize("kind", ["email-draft", "slack-draft", "meeting-chat-draft"])
+@pytest.mark.parametrize("action,flag", [("approve", "--always"), ("deny", "--never")])
+def test_draft_persistent_flags_refused(fake, capsys, kind, action, flag):
+    fake.tails[("a", None)] = [entry(kind)]
+    assert cli.main([action, "abcdef01", flag, "--yes"]) == 1
+    error = capsys.readouterr().err
+    assert (
+        "gbot deny REF" in error
+        if kind == "meeting-chat-draft" and action == "approve"
+        else "do not apply to drafts" in error
+    )
+    assert not mutations(fake)
+
+
+def test_meeting_draft_approve_refused(fake, capsys):
+    fake.tails[("a", None)] = [entry("meeting-chat-draft")]
+    assert cli.main(["approve", "abcdef01", "--yes"]) == 1
+    assert "gbot deny REF" in capsys.readouterr().err
+    assert not mutations(fake)
+
+
+@pytest.mark.parametrize("action", ["approve", "deny"])
+def test_missing_draft_record_refused(fake, capsys, action):
+    row = entry("email-draft")
+    record(row["message"]).pop("draft")
+    fake.tails[("a", None)] = [row]
+    assert cli.main([action, "abcdef01", "--yes"]) == 1
+    assert "missing its draft record" in capsys.readouterr().err
+    assert not mutations(fake)
+
+
+@pytest.mark.parametrize("action", ["approve", "deny"])
+def test_answer_rejected(fake, capsys, action):
+    fake.tails[("a", None)] = [entry("email-draft")]
+    fake.reply = {"accepted": False}
+    assert cli.main([action, "abcdef01", "--yes"]) == 1
+    captured = capsys.readouterr()
+    assert "not accepted" in captured.err and "gbot approvals" in captured.err
+    assert "Answered." not in captured.out
+
+
+def test_secret_rejected_without_disclosing_value(fake, monkeypatch, capsys):
+    fake.tails[("a", None)] = [entry("secret-request")]
+    fake.reply = {"accepted": False}
+    monkeypatch.setattr(getpass, "getpass", lambda prompt: "SENSITIVE_TEST_VALUE")
+    assert cli.main(["secret", "abcdef01", "--yes"]) == 1
+    captured = capsys.readouterr()
+    assert "not accepted" in captured.err and "gbot approvals" in captured.err
+    assert "Answered." not in captured.out
+    assert "SENSITIVE_TEST_VALUE" not in captured.out + captured.err
+
+
+def test_draft_ask_and_approvals_json(fake, capsys):
+    config.set_default(("a", "Alpha"))
+    fake.wait_entry = entry("email-draft")
+    assert cli.main(["ask", "question"]) == 2
+    assert "email-draft" in capsys.readouterr().out
+    assert cli.main(["approvals", "--json"]) == 2
+    result = json.loads(capsys.readouterr().out)[0]
+    assert result["draft"] == MESSAGES["email-draft"]["draft"]
+    assert result["tool_text"].endswith("First line\nSecond line")
+    assert result["allowed_actions"] == ["approve", "deny"]
+
+
+def test_draft_optional_fields_and_meeting_id():
+    email = entry("email-draft")
+    record(record(email["message"])["draft"]).pop("cc")
+    item = classify(email, "a", "Alpha")
+    assert item is not None and "Cc:" not in item.tool_text
+    slack = entry("slack-draft")
+    draft = record(record(slack["message"])["draft"])
+    draft.pop("thread")
+    draft.pop("workspace")
+    item = classify(slack, "a", "Alpha")
+    assert item is not None and item.summary == "To: #reports; First line"
+    assert item.tool_text == "To: #reports\n\nFirst line\nSecond line"
+    meeting = entry("meeting-chat-draft")
+    record(record(meeting["message"])["draft"]).pop("meetingTitle")
+    item = classify(meeting, "a", "Alpha")
+    assert item is not None and item.summary == "Meeting: meeting-1"

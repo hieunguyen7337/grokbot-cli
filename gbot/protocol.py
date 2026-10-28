@@ -18,4 +18,6 @@ USED_COMMANDS: dict[str, str] = {
     "submitSecret": "object",
     "submitUserForm": "object",
     "dismissUserForm": "object",
+    "sendDraft": "object",
+    "discardDraft": "object",
 }
