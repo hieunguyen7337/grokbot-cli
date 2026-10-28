@@ -26,12 +26,13 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         }
         for bot in list_bots(ctx)
     ]
-    ctx.out.write(
-        rows,
-        "DEFAULT  ID  NAME  STATE\n"
-        + "\n".join(
-            f"{'*' if row['default'] else ' '}  {row['id']}  {row['name']}  {row['state']}"
-            for row in rows
-        ),
+    name_width = max([len("NAME"), *(len(str(row["name"])) for row in rows)])
+    state_width = max([len("STATE"), *(len(str(row["state"])) for row in rows)])
+    lines = [f"   {'NAME':<{name_width}}  {'STATE':<{state_width}}  ID"]
+    lines.extend(
+        f"{'*' if row['default'] else ' '}  {row['name']!s:<{name_width}}  "
+        f"{row['state']!s:<{state_width}}  {row['id']}"
+        for row in rows
     )
+    ctx.out.write(rows, "\n".join(lines))
     return 0

@@ -3,7 +3,7 @@ import sys
 from collections.abc import Callable, Iterator
 from typing import Protocol
 
-from groken.client import ConnectError
+from groken.client import ConnectError, SandClient
 from groken.gateway import GatewayManager
 
 from .output import Output
@@ -37,7 +37,14 @@ class Manager(Protocol):
     ) -> Iterator[dict[str, object]]: ...
 
 
+class Backend(Protocol):
+    def list_sand_mcp_tools(
+        self, server_identifiers: list[str] | None = None
+    ) -> dict[str, object]: ...
+
+
 manager_factory: Callable[[], Manager] = GatewayManager
+backend_factory: Callable[[], Backend] = SandClient
 
 
 class Context:
@@ -49,6 +56,7 @@ class Context:
         self.out = Output(getattr(args, "json", False))
         self._factory = factory or manager_factory
         self._manager: Manager | None = None
+        self._backend: Backend | None = None
 
     def manager(self) -> Manager:
         if self._manager is None:
@@ -57,6 +65,14 @@ class Context:
             except SystemExit as exc:
                 raise ConnectError(401, "not signed in") from exc
         return self._manager
+
+    def backend(self) -> Backend:
+        if self._backend is None:
+            try:
+                self._backend = backend_factory()
+            except SystemExit as exc:
+                raise ConnectError(401, "not signed in") from exc
+        return self._backend
 
 
 def prompt(args: argparse.Namespace) -> str:
