@@ -251,7 +251,7 @@ def test_command_outputs(fake, capsys, command, json_mode):
             assert value["secrets"] == {"is_applied": True}
     else:
         assert {
-            "bots": "*  a  Alpha  composing",
+            "bots": "*  Alpha  composing  a",
             "use": "Default bot: Alpha (a)",
             "ask": "reply ?",
             "send": "Sent to Alpha.",
@@ -261,6 +261,31 @@ def test_command_outputs(fake, capsys, command, json_mode):
     if command == "status":
         assert ("getForeverBoxStatus", {"id": "a"}) in fake.calls
         assert ("listBoxMcpServers", {"serverIdentifiers": []}) in fake.calls
+
+
+def test_bots_columns_align_and_json_unchanged(fake, capsys):
+    fake.bots[1]["name"] = "A much longer name"
+    assert cli.main(["bots"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    starts = [lines[0].index(label) for label in ("NAME", "STATE", "ID")]
+    assert lines[0].startswith("   NAME")
+    for line, values in zip(
+        lines[1:],
+        [
+            ("Alpha", "composing", "a"),
+            ("A much longer name", "running", "b"),
+            ("Gamma", "idle", "c"),
+        ],
+    ):
+        for start, value in zip(starts, values):
+            assert line[start:].startswith(value)
+    assert lines[1].startswith("*") and all(line.startswith(" ") for line in lines[2:])
+    assert cli.main(["bots", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == [
+        {"id": "a", "name": "Alpha", "state": "composing", "default": True},
+        {"id": "b", "name": "A much longer name", "state": "running", "default": False},
+        {"id": "c", "name": "Gamma", "state": "idle", "default": False},
+    ]
 
 
 @pytest.mark.parametrize("json_mode", [False, True])
