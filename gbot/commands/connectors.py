@@ -38,6 +38,12 @@ def display(value: object) -> str:
     return "-" if value is None or value == "" else str(value)
 
 
+def display_status(row: dict[str, object]) -> str:
+    if row["status"] == "connected" and row["tool_count"] == 0:
+        return "connected, no tools"
+    return "starting" if row["status"] == "initializing" else display(row["status"])
+
+
 def merge_servers(
     backend: object, state: object, box: object, plugins: object
 ) -> tuple[list[dict[str, object]], list[str], dict[str, dict[str, object]]]:
@@ -61,7 +67,14 @@ def merge_servers(
         gateway = sources.get("getMcpState", {})
         box_server = sources.get("listBoxMcpServers", {})
         gateway_by_id[identifier] = gateway
-        plugin_id = gateway.get("pluginId")
+        plugin_id = next(
+            (
+                server["pluginId"]
+                for server in sources.values()
+                if server.get("pluginId")
+            ),
+            None,
+        )
         plugin = next(
             (
                 p
@@ -109,6 +122,18 @@ def merge_servers(
                 *(["getEffectiveMcpPlugins"] if plugin is not None else []),
             ],
         }
+        row["kind"] = (
+            "plugin"
+            if plugin_id or (plugin is not None and plugin.get("pluginId"))
+            else "cursor"
+            if identifier.startswith("cursor-")
+            or any(server.get("cursorScmProvider") for server in sources.values())
+            else "team"
+            if any(server.get("isTeamServer") is True for server in sources.values())
+            else "custom"
+        )
+        count = row["tool_count"]
+        row["usable"] = status == "connected" and isinstance(count, int) and count > 0
         rows.append(row)
     rows.sort(
         key=lambda row: (str(row["name"]).casefold(), str(row["account"]).casefold())
@@ -195,13 +220,18 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
 
     columns = [
         ("NAME", "name"),
+        ("KIND", "kind"),
         ("ACCOUNT", "account"),
         ("STATUS", "status"),
         ("TOOLS", "tool_count"),
         ("PLUGIN", "plugin"),
     ]
+
+    def cell(row: dict[str, object], key: str) -> str:
+        return display_status(row) if key == "status" else display(row[key])
+
     widths = [
-        max([len(title), *(len(display(row[key])) for row in rows)])
+        max([len(title), *(len(cell(row, key)) for row in rows)])
         for title, key in columns
     ]
     lines = [
@@ -211,7 +241,7 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
     ]
     for row in rows:
         line = "  ".join(
-            display(row[key]).ljust(width) for (_, key), width in zip(columns, widths)
+            cell(row, key).ljust(width) for (_, key), width in zip(columns, widths)
         ).rstrip()
         if row["auth"] == "needs sign-in":
             line += " - connect it in the Grok Bot app"
@@ -221,6 +251,11 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         tools = row.get("tools")
         if isinstance(tools, list):
             lines.extend(f"  {tool}" for tool in tools)
+    lines.extend(
+        f"{row['name']} ({row['kind']}) is connected but exposes no tools; check its setup in the Grok Bot app."
+        for row in rows
+        if row["status"] == "connected" and row["tool_count"] == 0
+    )
     if unmatched:
         lines.append("Plugins without a connector: " + ", ".join(unmatched))
     ctx.out.write(

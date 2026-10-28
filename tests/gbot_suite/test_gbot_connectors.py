@@ -148,6 +148,8 @@ def test_merge_json(fake, capsys):
     ]
     assert rows["user-Gmail"] == {
         "name": "Gmail",
+        "kind": "plugin",
+        "usable": True,
         "server_identifier": "user-Gmail",
         "account": "first@example.test",
         "status": "connected",
@@ -183,21 +185,25 @@ def test_table_alignment_and_ascii(fake, capsys):
     lines = output.splitlines()
     starts = [
         lines[0].index(title)
-        for title in ("NAME", "ACCOUNT", "STATUS", "TOOLS", "PLUGIN")
+        for title in ("NAME", "KIND", "ACCOUNT", "STATUS", "TOOLS", "PLUGIN")
     ]
     for line, values in zip(
         lines[1:5],
         [
-            ("BackendOnly", "-", "connected", "0", "-"),
-            ("Gateway Only", "-", "connected", "1", "-"),
-            ("Gmail", "first@example.test", "connected", "2", "on"),
-            ("Gmail", "second@example.test", "needsAuth", "4", "on"),
+            ("BackendOnly", "custom", "-", "connected, no tools", "0", "-"),
+            ("Gateway Only", "cursor", "-", "connected", "1", "-"),
+            ("Gmail", "plugin", "first@example.test", "connected", "2", "on"),
+            ("Gmail", "plugin", "second@example.test", "needsAuth", "4", "on"),
         ],
     ):
         for start, value in zip(starts, values):
             assert line[start:].startswith(value)
     assert lines[4].endswith("- connect it in the Grok Bot app")
-    assert lines[5] == "Plugins without a connector: Extra Plugin"
+    assert lines[5] == (
+        "BackendOnly (custom) is connected but exposes no tools; "
+        "check its setup in the Grok Bot app."
+    )
+    assert lines[6] == "Plugins without a connector: Extra Plugin"
 
 
 @pytest.mark.parametrize(
@@ -329,3 +335,83 @@ def test_used_command_source_scan():
         "getAgentTranscriptTail",
         "listAgents",
     } <= USED_COMMANDS.keys()
+
+
+@pytest.mark.parametrize(
+    "identifier,fields,kind",
+    [
+        ("custom", {}, "custom"),
+        ("custom", {"isTeamServer": True}, "team"),
+        ("cursor-scm", {"isTeamServer": True}, "cursor"),
+        ("scm", {"cursorScmProvider": "github"}, "cursor"),
+        ("cursor-plugin", {"pluginId": "example", "isTeamServer": True}, "plugin"),
+        ("plugin", {"pluginId": "gmail"}, "plugin"),
+    ],
+)
+def test_connector_kind(fake, capsys, identifier, fields, kind):
+    manager, backend = fake
+    backend.response = {"servers": []}
+    manager.responses["listBoxMcpServers"] = {"servers": []}
+    manager.responses["getMcpState"] = {
+        "servers": [{"serverIdentifier": identifier, **fields}]
+    }
+    assert cli.main(["connectors", "--json"]) == 0
+    row = json.loads(capsys.readouterr().out)["connectors"][0]
+    assert row["kind"] == kind
+    assert row["usable"] is False
+
+
+def test_two_github_connectors(fake, capsys):
+    manager, backend = fake
+    backend.response = {"servers": []}
+    manager.responses["listBoxMcpServers"] = {"servers": []}
+    manager.responses["getMcpState"] = {
+        "servers": [
+            {
+                "serverIdentifier": "user-Github",
+                "name": "GitHub",
+                "pluginId": "synthetic-github",
+                "status": "connected",
+                "toolCount": 0,
+            },
+            {
+                "serverIdentifier": "cursor-github",
+                "name": "GitHub",
+                "cursorScmProvider": "github",
+                "status": "connected",
+                "toolCount": 12,
+            },
+        ]
+    }
+    assert cli.main(["connectors"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[1].split()[:2] == ["GitHub", "plugin"]
+    assert lines[2].split()[:2] == ["GitHub", "cursor"]
+    assert "connected, no tools" in lines[1]
+    assert lines[3] == (
+        "GitHub (plugin) is connected but exposes no tools; "
+        "check its setup in the Grok Bot app."
+    )
+    assert cli.main(["connectors", "--json"]) == 0
+    rows = json.loads(capsys.readouterr().out)["connectors"]
+    assert [row["usable"] for row in rows] == [False, True]
+    assert [row["status"] for row in rows] == ["connected", "connected"]
+
+
+def test_initializing_display(fake, capsys):
+    manager, backend = fake
+    backend.response = {"servers": []}
+    manager.responses["listBoxMcpServers"] = {"servers": []}
+    manager.responses["getMcpState"] = {
+        "servers": [
+            {"serverIdentifier": "waking", "status": "initializing", "toolCount": 3}
+        ]
+    }
+    assert cli.main(["connectors"]) == 0
+    text = capsys.readouterr().out
+    assert "starting" in text and "initializing" not in text
+    assert "exposes no tools" not in text
+    assert cli.main(["connectors", "--json"]) == 0
+    row = json.loads(capsys.readouterr().out)["connectors"][0]
+    assert row["status"] == "initializing"
+    assert row["usable"] is False
