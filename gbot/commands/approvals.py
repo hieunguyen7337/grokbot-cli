@@ -32,6 +32,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         parser = subparsers.add_parser(name, help=help_text)
         parser.add_argument("ref", metavar="REF")
         parser.add_argument("--yes", action="store_true")
+        parser.add_argument("--json", action="store_true")
         if name == "approve":
             parser.add_argument("--always", action="store_true")
         elif name == "deny":
@@ -120,6 +121,14 @@ def _plan(args: argparse.Namespace, item: PendingItem) -> tuple[str, dict[str, o
         if item.type == "widget":
             if args.value is None or args.field:
                 raise ValueError("Use: gbot respond REF VALUE for a widget.")
+            if (
+                item.validate_options
+                and item.options is not None
+                and args.value not in item.options
+            ):
+                raise ValueError(
+                    "Invalid widget value. Options: " + " | ".join(item.options)
+                )
             payload["value"] = args.value
             return "RespondGrokBotWidget", payload
         if args.value is not None or not args.field:
@@ -134,6 +143,25 @@ def _plan(args: argparse.Namespace, item: PendingItem) -> tuple[str, dict[str, o
                     "Each --field must have a unique, nonempty NAME=VALUE."
                 )
             values[name] = value
+        if item.fields is not None:
+            valid = [
+                field["id"] for field in item.fields if isinstance(field.get("id"), str)
+            ]
+            unknown = [name for name in values if name not in valid]
+            if unknown:
+                raise ValueError(
+                    "Unknown field id: "
+                    + ", ".join(unknown)
+                    + ". Valid ids: "
+                    + ", ".join(str(name) for name in valid)
+                )
+            for field in item.fields:
+                if (
+                    field.get("required")
+                    and isinstance(field.get("id"), str)
+                    and field["id"] not in values
+                ):
+                    raise ValueError(f"Missing required field: {field['id']}")
         payload.update(values=values, saveToVault=False, platform=1)
         return "SubmitGrokBotUserForm", payload
     if action == "dismiss":
@@ -149,9 +177,13 @@ def _require_confirmation(yes: bool) -> None:
         raise ValueError("Re-run with --yes to confirm")
 
 
-def _confirm(yes: bool) -> None:
+def _confirm(yes: bool, *, json_mode: bool = False) -> None:
     _require_confirmation(yes)
-    if not yes and input("Confirm [y/N]: ").strip().casefold() not in {"y", "yes"}:
+    if not yes and json_mode:
+        print("Confirm [y/N]: ", end="", file=sys.stderr, flush=True)
+    if not yes and input(
+        "" if json_mode else "Confirm [y/N]: "
+    ).strip().casefold() not in {"y", "yes"}:
         raise ValueError("Cancelled.")
 
 
@@ -181,7 +213,7 @@ def _submit_secret(ctx: Context, payload: dict[str, object], yes: bool) -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("error", getpass.GetPassWarning)
             value = getpass.getpass("Secret (hidden): ")
-        _confirm(yes)
+        _confirm(yes, json_mode=ctx.out.json_mode)
         reply = ctx.backend().unary(
             GROK_BOT, "SubmitGrokBotSecret", {**payload, "value": value}
         )
@@ -210,37 +242,46 @@ def answer(args: argparse.Namespace, ctx: Context) -> int:
         raise ValueError("Secret values must be entered at the hidden prompt.")
     item = resolve_ref(ctx, args.ref)
     method, payload = _plan(args, item)
+    preview = sys.stderr if ctx.out.json_mode else sys.stdout
     print(
-        f"Bot: {item.bot_name} ({item.bot_id})  Type: {item.type}  REF: {item.entry_id}"
+        f"Bot: {item.bot_name} ({item.bot_id})  Type: {item.type}  REF: {item.entry_id}",
+        file=preview,
     )
-    print(f"Summary: {item.summary}")
+    print(f"Summary: {item.summary}", file=preview)
     if item.tool_text:
         heading = (
             "Draft ({count} lines, sent exactly as shown if approved):"
             if item.draft is not None
             else None
         )
-        print(command_block(item.tool_text, heading))
+        print(command_block(item.tool_text, heading), file=preview)
     effect = {
         "SendGrokBotDraft": "sends it now",
         "DiscardGrokBotDraft": "discards it",
     }.get(method)
-    print(
-        f"Answer: {method}"
-        + (
-            f" ({effect})"
-            if effect
-            else f" ({_resolution_word(args, item)})"
-            if "resolution" in payload
-            else ""
-        )
-    )
+    if effect is None and "resolution" in payload:
+        effect = _resolution_word(args, item)
+    print(f"Answer: {method}" + (f" ({effect})" if effect else ""), file=preview)
     _require_confirmation(args.yes)
     if method == "SubmitGrokBotSecret":
         _submit_secret(ctx, payload, args.yes)
     else:
-        _confirm(args.yes)
+        _confirm(args.yes, json_mode=ctx.out.json_mode)
         reply = ctx.backend().unary(GROK_BOT, method, payload)
         _check_reply(reply, method)
-    print("Answered.")
+    if ctx.out.json_mode:
+        ctx.out.write(
+            {
+                "answered": True,
+                "bot_id": item.bot_id,
+                "bot_name": item.bot_name,
+                "entry_id": item.entry_id,
+                "type": item.type,
+                "rpc": method,
+                "effect": effect,
+            },
+            "",
+        )
+    else:
+        print("Answered.")
     return 0

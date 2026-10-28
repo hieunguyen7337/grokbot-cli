@@ -1,9 +1,11 @@
+import sys
 import time
 from dataclasses import asdict, dataclass
 
 from gbot import config
 from gbot.bots import list_bots, record, resolve_bot
 from gbot.context import Context
+from groken.client import ConnectError
 
 APP_ONLY = "answer in the Grok Bot app"
 _BODIES = {
@@ -50,9 +52,14 @@ class PendingItem:
     request_id: str | None = None
     tool_text: str = ""
     draft: dict[str, object] | None = None
+    options: list[str] | None = None
+    fields: list[dict[str, object]] | None = None
+    validate_options: bool = False
 
     def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+        data = asdict(self)
+        data.pop("validate_options")
+        return data
 
 
 def one_line(value: str) -> str:
@@ -115,6 +122,12 @@ def classify(
 ) -> PendingItem | None:
     if not is_pending(entry) or not isinstance(entry.get("id"), str):
         return None
+    return _classify(entry, bot_id, bot_name, session_id)
+
+
+def _classify(
+    entry: dict[str, object], bot_id: str, bot_name: str, session_id: str | None
+) -> PendingItem:
     message = record(entry.get("message"))
     kind = str(message["type"])
     body = record(message.get(_BODIES[kind]))
@@ -213,6 +226,24 @@ def classify(
         tool = "\n".join([*lines, "", str(body.get("body", ""))])
     created = entry.get("timestampMs")
     request_id = body.get("requestId")
+    options = None
+    fields = None
+    if kind == "widget":
+        steps = body.get("steps")
+        option_body = record(steps[0]) if isinstance(steps, list) and steps else body
+        raw_options = option_body.get("options")
+        if isinstance(raw_options, list):
+            options = [
+                label
+                for option in raw_options
+                if isinstance(label := record(option).get("label"), str)
+            ]
+    if kind == "user-form" and isinstance(body.get("fields"), list):
+        fields = [
+            {key: record(field).get(key) for key in ("id", "label", "type", "required")}
+            for field in body["fields"]
+            if isinstance(field, dict)
+        ]
     return PendingItem(
         bot_id,
         bot_name,
@@ -227,7 +258,37 @@ def classify(
         body.copy()
         if kind in _DRAFT_TYPES and isinstance(message.get("draft"), dict)
         else None,
+        options,
+        fields,
+        kind == "widget"
+        and not (
+            body.get("multiSelect") or body.get("steps") or body.get("allowCustom")
+        )
+        and options is not None,
     )
+
+
+def describe(entry: dict[str, object]) -> str:
+    message = record(entry.get("message"))
+    kind = str(message.get("type") or "unknown")
+    if kind not in _BODIES:
+        return kind
+    item = _classify({**entry, "id": str(entry.get("id", ""))}, "", "", None)
+    if is_pending(entry):
+        state = "pending"
+    elif kind == "widget":
+        if entry.get("respondedValue") is not None:
+            state = f"answered: {one_line(str(entry['respondedValue']))}"
+        else:
+            state = "dismissed" if entry.get("widgetDismissed") else "skipped"
+    elif kind == "user-form":
+        state = str(entry.get("formResolution"))
+    elif kind in _DRAFT_TYPES:
+        state = str(entry.get("draftSendState"))
+    else:
+        body = record(message.get(_BODIES[kind]))
+        state = str(body.get("status") or "answered")
+    return f"{kind}: {item.summary} ({one_line(state)})"
 
 
 def _tail(ctx: Context, bot_id: str, session_id: str | None) -> list[dict[str, object]]:
@@ -271,14 +332,24 @@ def discover(
         if selected is not None:
             if selected != bot_id:
                 continue
-        elif awaiting_only and not bot.get("awaitingUserResponse"):
+        elif not all_bots and awaiting_only and not bot.get("awaitingUserResponse"):
             continue
         sessions: list[str | None] = [None]
         awaiting = bot.get("awaitingSessionIds")
         if isinstance(awaiting, list):
             sessions.extend(dict.fromkeys(s for s in awaiting if isinstance(s, str)))
-        for session_id in sessions:
-            for entry in _tail(ctx, bot_id, session_id):
+        try:
+            scanned = [
+                (session_id, _tail(ctx, bot_id, session_id)) for session_id in sessions
+            ]
+        except Exception as exc:
+            # Auth failures must fail the command, or an expired login reads as "nothing pending".
+            if not all_bots or (isinstance(exc, ConnectError) and exc.status == 401):
+                raise
+            print(f"warning: {one_line(name)}: {one_line(str(exc))}", file=sys.stderr)
+            continue
+        for session_id, entries in scanned:
+            for entry in entries:
                 key = (bot_id, str(entry["id"]))
                 item = classify(entry, bot_id, name, session_id)
                 if item is not None:
@@ -310,16 +381,43 @@ def render(items: list[PendingItem]) -> str:
         age = "?"
         if item.created_at is not None:
             seconds = max(0, int(time.time() - item.created_at / 1000))
-            age = f"{seconds}s" if seconds < 60 else f"{seconds // 60}m"
+            if seconds < 60:
+                age = f"{seconds}s"
+            elif seconds < 3600:
+                age = f"{seconds // 60}m"
+            elif seconds < 172800:
+                age = f"{seconds // 3600}h"
+            else:
+                age = f"{seconds // 86400}d"
         suffix = "" if item.allowed_actions else f" ({APP_ONLY})"
         lines.append(
             f"{item.entry_id[:8]}  {one_line(item.bot_name)}  {item.type}  {age}  "
             f"{item.summary}{suffix}"
         )
+        if item.options is not None:
+            lines.append(
+                "  options: " + " | ".join(one_line(option) for option in item.options)
+            )
+        if item.fields is not None:
+            fields = [
+                f"{one_line(str(field.get('id') or ''))} ({one_line(str(field.get('type') or ''))}, {'required' if field.get('required') else 'optional'})"
+                for field in item.fields
+            ]
+            lines.append("  fields: " + ", ".join(fields))
     hints = dict.fromkeys(
         f"{item.type}: "
         + (
-            " / ".join(f"gbot {action} REF" for action in item.allowed_actions)
+            " / ".join(
+                f"gbot {action} REF"
+                + (
+                    " VALUE"
+                    if action == "respond" and item.type == "widget"
+                    else " --field ID=VALUE"
+                    if action == "respond" and item.type == "user-form"
+                    else ""
+                )
+                for action in item.allowed_actions
+            )
             if item.allowed_actions
             else APP_ONLY
         )

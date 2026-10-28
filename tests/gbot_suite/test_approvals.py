@@ -13,6 +13,7 @@ from gbot import cli, config, context
 from gbot.bots import record
 from gbot.context import Context
 from gbot.pending import classify, discover, is_pending, render, resolve_ref
+from groken.client import ConnectError
 from groken.gateway import AwaitingUserError
 
 # protocol-0.72.json: $defs.SandSendMessage and its referenced request types.
@@ -301,7 +302,7 @@ def mutations(fake: FakeManager) -> list[tuple[str, dict[str, object] | None]]:
     "selection,expected",
     [
         ([], ["a", "b"]),
-        (["--all"], ["a", "b"]),
+        (["--all"], ["a", "b", "c"]),
         (["--bot", "Alpha"], ["a"]),
         (["--bot", "Gamma"], ["c"]),
     ],
@@ -326,7 +327,7 @@ def test_discovery_selection_default_and_sessions(fake, capsys, selection, expec
     assert "secret01  Beta  secret-request" in output and "gbot secret REF" in output
     assert "Alpha" not in output
     assert cli.main(["approvals", "--all", "--json"]) == 2
-    assert len(json.loads(capsys.readouterr().out)) == 3
+    assert len(json.loads(capsys.readouterr().out)) == 4
 
 
 @pytest.mark.parametrize("json_mode", [False, True])
@@ -450,14 +451,14 @@ def test_ref_from_explicit_bot_listing_without_roster_flag(fake, capsys):
     fake.tails[("c", None)] = [entry("widget")]
     assert cli.main(["approvals", "--bot", "Gamma"]) == 2
     assert "Gamma" in capsys.readouterr().out
-    assert cli.main(["respond", "abcdef01", "blue", "--yes"]) == 0
+    assert cli.main(["respond", "abcdef01", "Blue", "--yes"]) == 0
     assert mutations(fake) == [
         (
             "RespondGrokBotWidget",
             {
                 "agentId": "c",
                 "entryId": "abcdef01-entry",
-                "value": "blue",
+                "value": "Blue",
             },
         )
     ]
@@ -529,14 +530,14 @@ def test_pagination_and_duplicate_sessions(fake):
             "ResolveGrokBotLocalToolPermission",
             {"requestId": "tool-request", "resolution": 4},
         ),
-        ("widget", ["respond", "blue"], "RespondGrokBotWidget", {"value": "blue"}),
+        ("widget", ["respond", "Blue"], "RespondGrokBotWidget", {"value": "Blue"}),
         ("widget", ["dismiss"], "DismissGrokBotWidget", {}),
         (
             "user-form",
-            ["respond", "--field", "label=a=b", "--field", "empty="],
+            ["respond", "--field", "label=a=b"],
             "SubmitGrokBotUserForm",
             {
-                "values": {"label": "a=b", "empty": ""},
+                "values": {"label": "a=b"},
                 "saveToVault": False,
                 "platform": 1,
             },
@@ -1072,3 +1073,113 @@ def test_draft_optional_fields(fake, kind):
         assert sent["cc"] == []
     else:
         assert "workspace" not in sent and "thread" not in sent
+
+
+def test_all_scan_failure(fake, monkeypatch, capsys):
+    fake.tails[("c", None)] = [entry("widget")]
+    original = fake.command
+
+    def command(method, args=None):
+        if method == "getAgentTranscriptTail" and args and args["id"] == "b":
+            raise RuntimeError("offline")
+        return original(method, args)
+
+    monkeypatch.setattr(fake, "command", command)
+    assert cli.main(["approvals", "--all", "--json"]) == 2
+    output = capsys.readouterr()
+    assert json.loads(output.out)[0]["bot_id"] == "c"
+    assert output.err == "warning: Beta: offline\n"
+
+
+def test_all_scan_auth_failure_is_not_a_warning(fake, monkeypatch, capsys):
+    fake.tails[("c", None)] = [entry("widget")]
+    original = fake.command
+
+    def command(method, args=None):
+        if method == "getAgentTranscriptTail" and args and args["id"] == "b":
+            raise ConnectError(401, "unauthorized after refresh")
+        return original(method, args)
+
+    monkeypatch.setattr(fake, "command", command)
+    assert cli.main(["approvals", "--all"]) == 3
+    assert "warning:" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "seconds,age", [(59, "59s"), (3599, "59m"), (172799, "47h"), (172800, "2d")]
+)
+def test_age_ranges(monkeypatch, seconds, age):
+    monkeypatch.setattr("gbot.pending.time.time", lambda: seconds + 1)
+    item = classify(entry("widget"), "a", "Alpha")
+    assert item is not None and f"  {age}  " in render([item])
+
+
+def test_card_details_and_validation(fake, capsys):
+    widget = entry("widget")
+    form = entry("user-form", "form0001-entry")
+    body = record(record(form["message"])["formRequest"])
+    body["fields"] = [
+        {"id": "color", "label": "Color", "type": "text", "required": False},
+        {"id": "email", "label": "Email", "type": "email", "required": True},
+    ]
+    fake.tails[("a", None)] = [widget, form]
+    assert cli.main(["approvals", "--all"]) == 2
+    out = capsys.readouterr().out
+    assert (
+        "options: Blue" in out
+        and "fields: color (text, optional), email (email, required)" in out
+    )
+    assert (
+        "gbot respond REF VALUE" in out and "gbot respond REF --field ID=VALUE" in out
+    )
+    assert cli.main(["approvals", "--all", "--json"]) == 2
+    items = json.loads(capsys.readouterr().out)
+    assert items[0]["options"] == ["Blue"] and items[1]["fields"] == body["fields"]
+    for args, error in [
+        (["respond", "abcdef01", "bad"], "Blue"),
+        (["respond", "form0001", "--field", "bad=x"], "color, email"),
+        (["respond", "form0001", "--field", "color=x"], "email"),
+    ]:
+        assert cli.main([*args, "--yes"]) == 1
+        assert error in capsys.readouterr().err
+        assert not mutations(fake)
+
+
+@pytest.mark.parametrize(
+    "action,kind,extra,rpc,effect",
+    [
+        ("approve", "email-draft", [], "SendGrokBotDraft", "sends it now"),
+        ("deny", "email-draft", [], "DiscardGrokBotDraft", "discards it"),
+        ("respond", "widget", ["Blue"], "RespondGrokBotWidget", None),
+        ("dismiss", "widget", [], "DismissGrokBotWidget", None),
+        ("secret", "secret-request", [], "SubmitGrokBotSecret", None),
+    ],
+)
+def test_answer_json(fake, monkeypatch, capsys, action, kind, extra, rpc, effect):
+    fake.tails[("a", None)] = [entry(kind)]
+    monkeypatch.setattr(getpass, "getpass", lambda prompt: "PRIVATE_VALUE")
+    assert cli.main([action, "abcdef01", *extra, "--yes", "--json"]) == 0
+    output = capsys.readouterr()
+    assert json.loads(output.out) == {
+        "answered": True,
+        "bot_id": "a",
+        "bot_name": "Alpha",
+        "entry_id": "abcdef01-entry",
+        "type": kind,
+        "rpc": rpc,
+        "effect": effect,
+    }
+    assert (
+        "Bot: Alpha" in output.err
+        and "Summary:" in output.err
+        and "Answer:" in output.err
+    )
+    assert "PRIVATE_VALUE" not in output.out + output.err
+
+
+def test_widget_step_options():
+    row = entry("widget")
+    body = record(record(row["message"])["widget"])
+    body["steps"] = [{"options": [{"label": "First"}]}]
+    item = classify(row, "a", "Alpha")
+    assert item is not None and item.options == ["First"] and not item.validate_options

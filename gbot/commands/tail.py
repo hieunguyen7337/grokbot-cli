@@ -7,6 +7,7 @@ import httpx
 
 from gbot.bots import record, resolve_bot
 from gbot.context import Context
+from gbot.pending import describe
 from groken.client import ConnectError
 
 
@@ -15,6 +16,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--bot")
     parser.add_argument("-n", type=int, default=20)
     parser.add_argument("--since")
+    parser.add_argument("--after", type=int)
     parser.add_argument("--full", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--follow", action="store_true")
@@ -22,7 +24,14 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 
 
 def render(entry: dict[str, object], full: bool) -> str:
-    content = str(record(entry.get("message")).get("content", entry.get("content", "")))
+    message = record(entry.get("message"))
+    kind = message.get("type")
+    if entry.get("kind") == "send-message" and kind and kind != "text":
+        content = describe(entry)
+        prefix = ""
+    else:
+        content = str(message.get("content", entry.get("content", "")))
+        prefix = f"{entry.get('kind', 'unknown')}: "
     content = " ".join(content.splitlines())
     if not full:
         content = content[:160]
@@ -32,7 +41,7 @@ def render(entry: dict[str, object], full: bool) -> str:
         if isinstance(stamp, (int, float))
         else "--:--:--"
     )
-    return f"[{time}] {entry.get('kind', 'unknown')}: {content}"
+    return f"[{time}] {prefix}{content}"
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
@@ -50,6 +59,12 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         if index is None:
             raise ValueError(f"Transcript entry not found: {args.since}")
         entries = entries[index + 1 :]
+
+    def after(entry: dict[str, object]) -> bool:
+        seq = entry.get("seq")
+        return args.after is None or (type(seq) is int and seq > args.after)
+
+    entries = [entry for entry in entries if after(entry)]
     entries = entries[-args.n :] if args.n else []
     if not args.follow:
         ctx.out.write(entries, "\n".join(render(entry, args.full) for entry in entries))
@@ -57,7 +72,11 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
 
     def emit(entry: dict[str, object]) -> None:
         entry_id = entry.get("id")
-        if not entry or (entry_id is not None and str(entry_id) in seen):
+        if (
+            not entry
+            or not after(entry)
+            or (entry_id is not None and str(entry_id) in seen)
+        ):
             return
         if entry_id is not None:
             seen.add(str(entry_id))
