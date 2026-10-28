@@ -22,8 +22,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--json", action="store_true")
     parser.set_defaults(func=list_pending)
     for name, help_text in (
-        ("approve", "Approve a pending review or tool permission"),
-        ("deny", "Deny a pending review or tool permission"),
+        ("approve", "Approve a pending review, tool permission or draft"),
+        ("deny", "Deny a pending review, tool permission or draft"),
         ("respond", "Answer a widget or user form"),
         ("dismiss", "Dismiss a widget or user form"),
         ("secret", "Supply a requested secret without echoing it"),
@@ -62,6 +62,15 @@ def _plan(args: argparse.Namespace, item: PendingItem) -> tuple[str, dict[str, o
     payload: dict[str, object] = {"agentId": item.bot_id, "entryId": item.entry_id}
     if item.session_id is not None:
         payload["sessionId"] = item.session_id
+    if item.type in {"email-draft", "slack-draft", "meeting-chat-draft"}:
+        if getattr(args, "always", False) or getattr(args, "never", False):
+            raise ValueError("--always and --never do not apply to drafts.")
+        if item.draft is None:
+            raise ValueError("Pending draft is missing its draft record.")
+        if action == "deny":
+            return "discardDraft", payload
+        payload["draft"] = {"type": item.type, "draft": item.draft}
+        return "sendDraft", payload
     if action in {"approve", "deny"}:
         tool = item.type == "local-tool-permission"
         if not item.request_id:
@@ -124,17 +133,24 @@ def _submit_secret(ctx: Context, payload: dict[str, object], yes: bool) -> None:
     # This boundary must sanitize even transport exceptions and disable getpass's
     # fallback to echoed input. Never expose the gateway reply or exception body.
     failed = False
+    rejected = False
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", getpass.GetPassWarning)
             value = getpass.getpass("Secret (hidden): ")
         _confirm(yes)
-        ctx.manager().command("submitSecret", {**payload, "value": value})
+        reply = ctx.manager().command("submitSecret", {**payload, "value": value})
+        rejected = isinstance(reply, dict) and reply.get("accepted") is False
     except Exception:  # noqa: BLE001 - secret submission is a redaction boundary
         failed = True
     if failed:
         raise ValueError(
             "Secret was not submitted successfully; no value is displayed."
+        )
+    if rejected:
+        raise ValueError(
+            "Answer was not accepted; the item may already be answered. "
+            "Run: gbot approvals"
         )
 
 
@@ -148,16 +164,33 @@ def answer(args: argparse.Namespace, ctx: Context) -> int:
     )
     print(f"Summary: {item.summary}")
     if item.tool_text:
-        print(command_block(item.tool_text))
+        heading = (
+            "Draft ({count} lines, sent exactly as shown if approved):"
+            if item.draft is not None
+            else None
+        )
+        print(command_block(item.tool_text, heading))
+    effect = {"sendDraft": "sends it now", "discardDraft": "discards it"}.get(method)
     print(
         f"Answer: {method}"
-        + (f" ({payload['resolution']})" if "resolution" in payload else "")
+        + (
+            f" ({effect})"
+            if effect
+            else f" ({payload['resolution']})"
+            if "resolution" in payload
+            else ""
+        )
     )
     _require_confirmation(args.yes)
     if method == "submitSecret":
         _submit_secret(ctx, payload, args.yes)
     else:
         _confirm(args.yes)
-        ctx.manager().command(method, payload)
+        reply = ctx.manager().command(method, payload)
+        if isinstance(reply, dict) and reply.get("accepted") is False:
+            raise ValueError(
+                "Answer was not accepted; the item may already be answered. "
+                "Run: gbot approvals"
+            )
     print("Answered.")
     return 0

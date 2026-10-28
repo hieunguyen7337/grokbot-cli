@@ -47,7 +47,10 @@ Example: `gbot approvals --all`.
 
 `--bot BOT` selects one bot; `--all` scans waiting bots across the roster. These are mutually exclusive. Without either, use the selected bot, or waiting bots if no default exists.
 
-`--json`: Array of pending items: bot_id, bot_name, entry_id, session_id, type, summary, created_at, allowed_actions, request_id and tool_text. Returns 2 when nonempty.
+`--json`: Array of pending items: bot_id, bot_name, entry_id, session_id, type, summary, created_at, allowed_actions, request_id, tool_text and draft. Returns 2 when nonempty.
+
+Email and Slack draft cards can be approved to send the unchanged draft, or denied to discard it.
+Meeting-chat drafts are deny-only. The signature shown in the app is not added by gbot.
 
 ## approve
 
