@@ -7,7 +7,7 @@ import pytest
 
 from gbot import cli, config, context
 from gbot.commands import doctor
-from gbot.protocol import USED_COMMANDS
+from gbot.protocol import USED_COMMANDS, USED_RPCS
 from groken import app_archive, auth, client, winplat
 from groken.client import ConnectError
 
@@ -28,13 +28,22 @@ def build_app(
             )
             + "};"
         ).encode()
+    proto = ",".join(f'name:"{name}"' for name in USED_RPCS).encode()
     tree = {
         "files": {
             "dist": {
                 "files": {
+                    "electron-main": {
+                        "files": {
+                            "proto.cjs": {
+                                "offset": str(len(source)),
+                                "size": len(proto),
+                            }
+                        }
+                    },
                     "node-agent-coordinator": {
                         "files": {"main.cjs": {"offset": "0", "size": len(source)}}
-                    }
+                    },
                 }
             }
         }
@@ -47,6 +56,7 @@ def build_app(
         + payload
         + b"\0" * padding
         + source
+        + proto
     )
     return root
 
@@ -119,7 +129,7 @@ def test_pass(fake, capsys, json_mode):
         assert all(row["status"] == "pass" for row in rows.values())
         assert (
             rows["protocol"]["detail"]
-            == f"{len(USED_COMMANDS)} commands; all {len(USED_COMMANDS)} used commands present"
+            == f"{len(USED_COMMANDS)} commands; all {len(USED_COMMANDS)} used commands and {len(USED_RPCS)} RPCs present"
         )
     else:
         output = capsys.readouterr().out
@@ -251,3 +261,20 @@ def test_find_app_platform_defaults(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "platform", "darwin")
     monkeypatch.setattr(app_archive, "DEFAULT_APP_PATH", tmp_path)
     assert doctor.find_app() == tmp_path
+
+
+def test_missing_rpc(monkeypatch, tmp_path):
+    app = build_app(tmp_path / "rpc")
+    original = app_archive.read_asar_entry
+
+    def read(archive, header, name):
+        data = original(archive, header, name)
+        return (
+            data.replace(b'name:"RespondGrokBotWidget"', b"")
+            if name.endswith("proto.cjs")
+            else data
+        )
+
+    monkeypatch.setattr(app_archive, "read_asar_entry", read)
+    status, detail = doctor.protocol_check(app)
+    assert status == "warn" and "RespondGrokBotWidget: missing" in detail

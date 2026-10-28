@@ -12,6 +12,7 @@ from gbot.pending import (
     render,
     resolve_ref,
 )
+from groken.client import GROK_BOT
 
 
 def register(subparsers: argparse._SubParsersAction) -> None:
@@ -60,7 +61,7 @@ def _plan(args: argparse.Namespace, item: PendingItem) -> tuple[str, dict[str, o
         right = " or ".join(f"gbot {name} REF" for name in item.allowed_actions)
         raise ValueError(f"{action} cannot answer {item.type}. Use: {right}")
     payload: dict[str, object] = {"agentId": item.bot_id, "entryId": item.entry_id}
-    if item.session_id is not None:
+    if item.session_id:
         payload["sessionId"] = item.session_id
     if item.type in {"email-draft", "slack-draft", "meeting-chat-draft"}:
         if getattr(args, "always", False) or getattr(args, "never", False):
@@ -68,9 +69,19 @@ def _plan(args: argparse.Namespace, item: PendingItem) -> tuple[str, dict[str, o
         if item.draft is None:
             raise ValueError("Pending draft is missing its draft record.")
         if action == "deny":
-            return "discardDraft", payload
-        payload["draft"] = {"type": item.type, "draft": item.draft}
-        return "sendDraft", payload
+            return "DiscardGrokBotDraft", payload
+        if item.type == "email-draft":
+            payload["email"] = {
+                key: item.draft.get(key, [] if key == "cc" else "")
+                for key in ("from", "to", "cc", "subject", "body")
+            }
+        else:
+            payload["slack"] = {
+                key: item.draft[key]
+                for key in ("target", "body", "workspace", "thread")
+                if key in item.draft
+            }
+        return "SendGrokBotDraft", payload
     if action in {"approve", "deny"}:
         tool = item.type == "local-tool-permission"
         if not item.request_id:
@@ -86,16 +97,31 @@ def _plan(args: argparse.Namespace, item: PendingItem) -> tuple[str, dict[str, o
             resolution = "always"
         elif action == "deny" and args.never:
             resolution = "never"
-        payload.update(requestId=item.request_id, resolution=resolution)
+        payload.update(
+            requestId=item.request_id,
+            resolution={
+                "approved": 1,
+                "denied": 2,
+                "allow-once": 1,
+                "deny": 2,
+                "always": 3,
+                "never": 4,
+            }[resolution],
+        )
+        if not tool:
+            payload.pop("entryId")
+            payload["approvalPlatform"] = "desktop"
         return (
-            "resolveLocalToolPermission" if tool else "resolveAutoReviewApproval"
+            "ResolveGrokBotLocalToolPermission"
+            if tool
+            else "ResolveGrokBotAutoReviewApproval"
         ), payload
     if action == "respond":
         if item.type == "widget":
             if args.value is None or args.field:
                 raise ValueError("Use: gbot respond REF VALUE for a widget.")
             payload["value"] = args.value
-            return "respondToWidget", payload
+            return "RespondGrokBotWidget", payload
         if args.value is not None or not args.field:
             raise ValueError(
                 "Use: gbot respond REF --field NAME=VALUE for a user-form."
@@ -108,14 +134,14 @@ def _plan(args: argparse.Namespace, item: PendingItem) -> tuple[str, dict[str, o
                     "Each --field must have a unique, nonempty NAME=VALUE."
                 )
             values[name] = value
-        payload.update(values=values, saveToVault=False)
-        return "submitUserForm", payload
+        payload.update(values=values, saveToVault=False, platform=1)
+        return "SubmitGrokBotUserForm", payload
     if action == "dismiss":
         if item.type == "widget":
-            return "dismissWidget", payload
-        payload["mode"] = "dismissed"
-        return "dismissUserForm", payload
-    return "submitSecret", payload
+            return "DismissGrokBotWidget", payload
+        payload.update(mode=1, platform=1)
+        return "DismissGrokBotUserForm", payload
+    return "SubmitGrokBotSecret", payload
 
 
 def _require_confirmation(yes: bool) -> None:
@@ -129,29 +155,54 @@ def _confirm(yes: bool) -> None:
         raise ValueError("Cancelled.")
 
 
+def _check_reply(
+    reply: dict[str, object], method: str, *, secret: bool = False
+) -> None:
+    refusal = reply.get("refusal")
+    if isinstance(refusal, dict):
+        code = refusal.get("failureCode", "unknown")
+        message = refusal.get("message")
+        detail = f"Answer refused: {code}"
+        if message and not secret:
+            detail += f": {message}"
+        raise ValueError(detail)  # noqa: TRY004 - refusal is a service error
+    flag = "dispatched" if method.startswith("ResolveGrokBot") else "accepted"
+    if reply.get(flag) is not True:
+        raise ValueError(
+            "Answer was not accepted; the item may already be answered. Run: gbot approvals"
+        )
+
+
 def _submit_secret(ctx: Context, payload: dict[str, object], yes: bool) -> None:
     # This boundary must sanitize even transport exceptions and disable getpass's
-    # fallback to echoed input. Never expose the gateway reply or exception body.
-    failed = False
-    rejected = False
+    # fallback to echoed input. Never expose the reply body or a refusal message.
+    failure = None
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", getpass.GetPassWarning)
             value = getpass.getpass("Secret (hidden): ")
         _confirm(yes)
-        reply = ctx.manager().command("submitSecret", {**payload, "value": value})
-        rejected = isinstance(reply, dict) and reply.get("accepted") is False
+        reply = ctx.backend().unary(
+            GROK_BOT, "SubmitGrokBotSecret", {**payload, "value": value}
+        )
+        try:
+            _check_reply(reply, "SubmitGrokBotSecret", secret=True)
+        except ValueError as exc:
+            failure = str(exc)
     except Exception:  # noqa: BLE001 - secret submission is a redaction boundary
-        failed = True
-    if failed:
-        raise ValueError(
-            "Secret was not submitted successfully; no value is displayed."
-        )
-    if rejected:
-        raise ValueError(
-            "Answer was not accepted; the item may already be answered. "
-            "Run: gbot approvals"
-        )
+        failure = "Secret was not submitted successfully; no value is displayed."
+    if failure:
+        raise ValueError(failure)
+
+
+def _resolution_word(args: argparse.Namespace, item: PendingItem) -> str:
+    if getattr(args, "always", False):
+        return "always"
+    if getattr(args, "never", False):
+        return "never"
+    if item.type == "local-tool-permission":
+        return "allow-once" if args.command == "approve" else "deny"
+    return "approved" if args.command == "approve" else "denied"
 
 
 def answer(args: argparse.Namespace, ctx: Context) -> int:
@@ -170,27 +221,26 @@ def answer(args: argparse.Namespace, ctx: Context) -> int:
             else None
         )
         print(command_block(item.tool_text, heading))
-    effect = {"sendDraft": "sends it now", "discardDraft": "discards it"}.get(method)
+    effect = {
+        "SendGrokBotDraft": "sends it now",
+        "DiscardGrokBotDraft": "discards it",
+    }.get(method)
     print(
         f"Answer: {method}"
         + (
             f" ({effect})"
             if effect
-            else f" ({payload['resolution']})"
+            else f" ({_resolution_word(args, item)})"
             if "resolution" in payload
             else ""
         )
     )
     _require_confirmation(args.yes)
-    if method == "submitSecret":
+    if method == "SubmitGrokBotSecret":
         _submit_secret(ctx, payload, args.yes)
     else:
         _confirm(args.yes)
-        reply = ctx.manager().command(method, payload)
-        if isinstance(reply, dict) and reply.get("accepted") is False:
-            raise ValueError(
-                "Answer was not accepted; the item may already be answered. "
-                "Run: gbot approvals"
-            )
+        reply = ctx.backend().unary(GROK_BOT, method, payload)
+        _check_reply(reply, method)
     print("Answered.")
     return 0

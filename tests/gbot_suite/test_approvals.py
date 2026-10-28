@@ -203,7 +203,7 @@ class FakeManager:
         self.pages: dict[tuple[str, str | None, object], dict[str, object]] = {}
         self.calls: list[tuple[str, dict[str, object] | None]] = []
         self.failure: Exception | None = None
-        self.reply: object = None
+        self.reply: dict[str, object] = {"accepted": True, "dispatched": True}
         self.partial = "Work so far"
         self.wait_entry = entry("widget")
 
@@ -211,15 +211,6 @@ class FakeManager:
         assert method in {
             "listAgents",
             "getAgentTranscriptTail",
-            "resolveAutoReviewApproval",
-            "resolveLocalToolPermission",
-            "respondToWidget",
-            "dismissWidget",
-            "submitSecret",
-            "submitUserForm",
-            "dismissUserForm",
-            "sendDraft",
-            "discardDraft",
         }
         self.calls.append((method, copy.deepcopy(args)))
         if method == "listAgents":
@@ -233,6 +224,13 @@ class FakeManager:
             return self.pages.get(
                 (*key, args.get("beforeSeq")), {"entries": self.tails.get(key, [])}
             )
+        if self.failure:
+            raise self.failure
+        return self.reply
+
+    def unary(self, service, method, payload):
+        assert service == "aiserver.v1.GrokBotService"
+        self.calls.append((method, copy.deepcopy(payload)))
         if self.failure:
             raise self.failure
         return self.reply
@@ -283,6 +281,7 @@ def isolate(monkeypatch, tmp_path):
 def fake(monkeypatch):
     manager = FakeManager()
     monkeypatch.setattr(context, "manager_factory", lambda: manager)
+    monkeypatch.setattr(context, "backend_factory", lambda: manager)
     return manager
 
 
@@ -454,7 +453,7 @@ def test_ref_from_explicit_bot_listing_without_roster_flag(fake, capsys):
     assert cli.main(["respond", "abcdef01", "blue", "--yes"]) == 0
     assert mutations(fake) == [
         (
-            "respondToWidget",
+            "RespondGrokBotWidget",
             {
                 "agentId": "c",
                 "entryId": "abcdef01-entry",
@@ -491,78 +490,72 @@ def test_pagination_and_duplicate_sessions(fake):
         (
             "auto-review-approval",
             ["approve"],
-            "resolveAutoReviewApproval",
-            {"requestId": "review-request", "resolution": "approved"},
+            "ResolveGrokBotAutoReviewApproval",
+            {"requestId": "review-request", "resolution": 1},
         ),
         (
             "auto-review-approval",
             ["approve", "--always"],
-            "resolveAutoReviewApproval",
-            {"requestId": "review-request", "resolution": "always"},
+            "ResolveGrokBotAutoReviewApproval",
+            {"requestId": "review-request", "resolution": 3},
         ),
         (
             "auto-review-approval",
             ["deny"],
-            "resolveAutoReviewApproval",
-            {"requestId": "review-request", "resolution": "denied"},
-        ),
-        (
-            "meeting-join-consent",
-            ["approve"],
-            "resolveAutoReviewApproval",
-            {"requestId": "meeting-request", "resolution": "approved"},
-        ),
-        (
-            "meeting-join-consent",
-            ["approve", "--always"],
-            "resolveAutoReviewApproval",
-            {"requestId": "meeting-request", "resolution": "always"},
-        ),
-        (
-            "meeting-join-consent",
-            ["deny"],
-            "resolveAutoReviewApproval",
-            {"requestId": "meeting-request", "resolution": "denied"},
+            "ResolveGrokBotAutoReviewApproval",
+            {"requestId": "review-request", "resolution": 2},
         ),
         (
             "local-tool-permission",
             ["approve"],
-            "resolveLocalToolPermission",
-            {"requestId": "tool-request", "resolution": "allow-once"},
+            "ResolveGrokBotLocalToolPermission",
+            {"requestId": "tool-request", "resolution": 1},
         ),
         (
             "local-tool-permission",
             ["approve", "--always"],
-            "resolveLocalToolPermission",
-            {"requestId": "tool-request", "resolution": "always"},
+            "ResolveGrokBotLocalToolPermission",
+            {"requestId": "tool-request", "resolution": 3},
         ),
         (
             "local-tool-permission",
             ["deny"],
-            "resolveLocalToolPermission",
-            {"requestId": "tool-request", "resolution": "deny"},
+            "ResolveGrokBotLocalToolPermission",
+            {"requestId": "tool-request", "resolution": 2},
         ),
         (
             "local-tool-permission",
             ["deny", "--never"],
-            "resolveLocalToolPermission",
-            {"requestId": "tool-request", "resolution": "never"},
+            "ResolveGrokBotLocalToolPermission",
+            {"requestId": "tool-request", "resolution": 4},
         ),
-        ("widget", ["respond", "blue"], "respondToWidget", {"value": "blue"}),
-        ("widget", ["dismiss"], "dismissWidget", {}),
+        ("widget", ["respond", "blue"], "RespondGrokBotWidget", {"value": "blue"}),
+        ("widget", ["dismiss"], "DismissGrokBotWidget", {}),
         (
             "user-form",
             ["respond", "--field", "label=a=b", "--field", "empty="],
-            "submitUserForm",
-            {"values": {"label": "a=b", "empty": ""}, "saveToVault": False},
+            "SubmitGrokBotUserForm",
+            {
+                "values": {"label": "a=b", "empty": ""},
+                "saveToVault": False,
+                "platform": 1,
+            },
         ),
-        ("user-form", ["dismiss"], "dismissUserForm", {"mode": "dismissed"}),
+        (
+            "user-form",
+            ["dismiss"],
+            "DismissGrokBotUserForm",
+            {"mode": 1, "platform": 1},
+        ),
     ],
 )
 def test_exact_answer_contract(fake, capsys, kind, argv, method, extra, session_id):
     fake.tails[("a", session_id)] = [entry(kind)]
     assert cli.main([argv[0], "abcdef01", *argv[1:], "--yes"]) == 0
     args = {"agentId": "a", "entryId": "abcdef01-entry", **extra}
+    if method == "ResolveGrokBotAutoReviewApproval":
+        args.pop("entryId")
+        args["approvalPlatform"] = "desktop"
     if session_id:
         args["sessionId"] = session_id
     assert mutations(fake) == [(method, args)]
@@ -575,6 +568,7 @@ def test_exact_answer_contract(fake, capsys, kind, argv, method, extra, session_
 @pytest.mark.parametrize(
     "kind",
     [
+        "meeting-join-consent",
         "virtual-card-approval",
         "publish-approval",
         "cookie-origin-approval",
@@ -712,7 +706,7 @@ def test_secret_getpass_confirm_exact_args(fake, monkeypatch, capsys, session_id
     }
     if session_id:
         payload["sessionId"] = session_id
-    assert mutations(fake) == [("submitSecret", payload)]
+    assert mutations(fake) == [("SubmitGrokBotSecret", payload)]
     captured = capsys.readouterr()
     assert "SENSITIVE_TEST_VALUE" not in captured.out + captured.err
 
@@ -917,8 +911,8 @@ def test_discard_draft_payload(fake, capsys, session_id, kind):
     payload = {"agentId": "a", "entryId": "abcdef01-entry"}
     if session_id:
         payload["sessionId"] = session_id
-    assert mutations(fake) == [("discardDraft", payload)]
-    assert "Answer: discardDraft (discards it)" in capsys.readouterr().out
+    assert mutations(fake) == [("DiscardGrokBotDraft", payload)]
+    assert "Answer: DiscardGrokBotDraft (discards it)" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("session_id", [None, "task-1"])
@@ -937,16 +931,16 @@ def test_send_draft_payload_and_confirmation(fake, capsys, session_id, kind):
     )
     assert "| First \\u001b[2J\n" in captured.out
     assert "| Second  \n" in captured.out and "\x1b" not in captured.out
-    assert "Answer: sendDraft (sends it now)" in captured.out
+    assert "Answer: SendGrokBotDraft (sends it now)" in captured.out
     assert cli.main(["approve", "abcdef01", "--yes"]) == 0
     payload = {
         "agentId": "a",
         "entryId": "abcdef01-entry",
-        "draft": {"type": kind, "draft": draft},
+        kind.removesuffix("-draft"): draft,
     }
     if session_id:
         payload["sessionId"] = session_id
-    assert mutations(fake) == [("sendDraft", payload)]
+    assert mutations(fake) == [("SendGrokBotDraft", payload)]
 
 
 @pytest.mark.parametrize("kind", ["email-draft", "slack-draft", "meeting-chat-draft"])
@@ -1029,3 +1023,52 @@ def test_draft_optional_fields_and_meeting_id():
     record(record(meeting["message"])["draft"]).pop("meetingTitle")
     item = classify(meeting, "a", "Alpha")
     assert item is not None and item.summary == "Meeting: meeting-1"
+
+
+@pytest.mark.parametrize(
+    "kind,action,reply",
+    [
+        ("widget", ["dismiss"], {}),
+        ("auto-review-approval", ["approve"], {}),
+        (
+            "widget",
+            ["dismiss"],
+            {"refusal": {"failureCode": "BLOCKED", "message": "No longer available"}},
+        ),
+    ],
+)
+def test_backend_rejections(fake, capsys, kind, action, reply):
+    fake.tails[("a", None)] = [entry(kind)]
+    fake.reply = reply
+    assert cli.main([*action, "abcdef01", "--yes"]) == 1
+    output = capsys.readouterr()
+    assert "Answered." not in output.out
+    assert ("BLOCKED" if reply else "not accepted") in output.err
+
+
+def test_secret_refusal_redacted(fake, monkeypatch, capsys):
+    fake.tails[("a", None)] = [entry("secret-request")]
+    fake.reply = {"refusal": {"failureCode": "BLOCKED", "message": "PRIVATE_MESSAGE"}}
+    monkeypatch.setattr(getpass, "getpass", lambda prompt: "PRIVATE_VALUE")
+    assert cli.main(["secret", "abcdef01", "--yes"]) == 1
+    output = capsys.readouterr()
+    assert "BLOCKED" in output.err
+    assert "PRIVATE_MESSAGE" not in output.out + output.err
+    assert "PRIVATE_VALUE" not in output.out + output.err
+
+
+@pytest.mark.parametrize("kind", ["email-draft", "slack-draft"])
+def test_draft_optional_fields(fake, kind):
+    row = entry(kind)
+    draft = record(record(row["message"])["draft"])
+    for key in ("cc", "workspace", "thread"):
+        draft.pop(key, None)
+    fake.tails[("a", None)] = [row]
+    assert cli.main(["approve", "abcdef01", "--yes"]) == 0
+    payload = mutations(fake)[0][1]
+    assert payload is not None
+    sent = record(payload[kind.removesuffix("-draft")])
+    if kind == "email-draft":
+        assert sent["cc"] == []
+    else:
+        assert "workspace" not in sent and "thread" not in sent

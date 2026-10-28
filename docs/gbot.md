@@ -352,3 +352,5 @@ BOT may be an ID or name. With no argument, validate and retain the current defa
 
 `--json`: Object with default_bot (id and name), or null when cleared.
 
+
+Answers to pending cards go to the Cursor backend's GrokBotService, using the same path as the desktop app.

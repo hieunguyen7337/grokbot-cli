@@ -8,7 +8,7 @@ import httpx
 from gbot import config
 from gbot.bots import record
 from gbot.context import Context
-from gbot.protocol import USED_COMMANDS
+from gbot.protocol import USED_COMMANDS, USED_RPCS
 from groken import app_archive, auth, client, winplat
 from groken.errors import explain_error
 from groken.inspect_contracts import extract_command_contracts
@@ -57,12 +57,22 @@ def protocol_check(app: Path) -> tuple[str, str]:
         for name, expected in USED_COMMANDS.items()
         if found.get(name) != expected
     ]
+    try:
+        proto = app_archive.read_asar_entry(
+            archive, header, "dist/electron-main/proto.cjs"
+        ).decode("utf-8", "replace")
+    except (app_archive.AsarError, OSError, ValueError):
+        drift.append("could not read the RPC table")
+    else:
+        drift.extend(
+            f"{name}: missing" for name in USED_RPCS if f'name:"{name}"' not in proto
+        )
     return (
         ("warn", "; ".join(drift))
         if drift
         else (
             "pass",
-            f"{len(found)} commands; all {len(USED_COMMANDS)} used commands present",
+            f"{len(found)} commands; all {len(USED_COMMANDS)} used commands and {len(USED_RPCS)} RPCs present",
         )
     )
 
