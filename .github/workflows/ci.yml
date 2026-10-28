@@ -1,9 +1,9 @@
+# Automatic CI is disabled to save resources. Run python scripts/ci.py locally.
+# Restore the push and pull_request triggers to re-enable automatic runs.
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
