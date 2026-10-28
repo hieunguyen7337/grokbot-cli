@@ -38,6 +38,10 @@ class Manager(Protocol):
 
 
 class Backend(Protocol):
+    def unary(
+        self, service: str, method: str, payload: dict[str, object]
+    ) -> dict[str, object]: ...
+
     def list_sand_mcp_tools(
         self, server_identifiers: list[str] | None = None
     ) -> dict[str, object]: ...

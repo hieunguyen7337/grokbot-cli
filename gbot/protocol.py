@@ -11,13 +11,16 @@ USED_COMMANDS: dict[str, str] = {
     "listBoxMcpServers": "object",
     "getEffectiveMcpPlugins": "none",
     "listMcpServerTools": "object",
-    "resolveAutoReviewApproval": "object",
-    "resolveLocalToolPermission": "object",
-    "respondToWidget": "object",
-    "dismissWidget": "object",
-    "submitSecret": "object",
-    "submitUserForm": "object",
-    "dismissUserForm": "object",
-    "sendDraft": "object",
-    "discardDraft": "object",
 }
+
+USED_RPCS: tuple[str, ...] = (
+    "ResolveGrokBotAutoReviewApproval",
+    "ResolveGrokBotLocalToolPermission",
+    "RespondGrokBotWidget",
+    "DismissGrokBotWidget",
+    "SubmitGrokBotSecret",
+    "SubmitGrokBotUserForm",
+    "DismissGrokBotUserForm",
+    "SendGrokBotDraft",
+    "DiscardGrokBotDraft",
+)

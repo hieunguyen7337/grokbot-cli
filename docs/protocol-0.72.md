@@ -143,3 +143,19 @@ command names and argument kinds with USED_COMMANDS. It warns on missing names
 or kind changes; it does not verify every field, reply shape or pending subtype.
 The offline doctor option skips gateway calls but still checks local sign-in
 state and app evidence. App updates may change fields without failing this check.
+
+## Answering cards
+
+Answers use the backend `aiserver.v1.GrokBotService`; include `agentId` and a nonempty `sessionId` when available. Fields use lower camel case and enum values are integers.
+
+| Card and action | RPC and remaining fields |
+|---|---|
+| Auto-review approve, deny, always | `ResolveGrokBotAutoReviewApproval`: `requestId`, `resolution` 1, 2, or 3, `approvalPlatform` desktop |
+| Local tool approve, deny, always, never | `ResolveGrokBotLocalToolPermission`: `entryId`, `requestId`, `resolution` 1, 2, 3, or 4 |
+| Widget respond / dismiss | `RespondGrokBotWidget`: `entryId`, `value` / `DismissGrokBotWidget`: `entryId` |
+| Secret | `SubmitGrokBotSecret`: `entryId`, `value` |
+| Form respond / dismiss | `SubmitGrokBotUserForm`: `entryId`, `values`, `saveToVault: false`, `platform: 1` / `DismissGrokBotUserForm`: `entryId`, `mode: 1`, `platform: 1` |
+| Email or Slack draft approve | `SendGrokBotDraft`: `entryId`, `email` (from, to, cc, subject, body) or `slack` (target, body, optional workspace and thread) |
+| Draft deny | `DiscardGrokBotDraft`: `entryId` |
+
+Resolve replies require `dispatched: true`; other answers require `accepted: true`. A missing flag means false. Refusals include a failure code and may include a message.

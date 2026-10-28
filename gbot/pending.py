@@ -123,11 +123,8 @@ def classify(
         actions = ("approve", "deny")
     elif kind == "meeting-chat-draft":
         actions = ("deny",)
-    elif kind in {
-        "auto-review-approval",
-        "meeting-join-consent",
-        "local-tool-permission",
-    }:
+    elif kind in {"auto-review-approval", "local-tool-permission"}:
+        # meeting-join-consent stays app-only: the app has no verified backend RPC for it.
         actions = ("approve", "deny")
     elif kind == "widget":
         if body.get("copyKind") not in {
