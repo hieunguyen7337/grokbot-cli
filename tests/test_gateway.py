@@ -178,6 +178,7 @@ def test_manager_closes_replaced_and_current_http_clients(
             "podId": "pod-2",
         },
     )
+
     def replacement_factory(
         *,
         gateway_url: str,
@@ -203,6 +204,12 @@ def test_manager_closes_replaced_and_current_http_clients(
     # Then
     assert replacement.http.is_closed
     assert manager.http.is_closed
+
+
+@pytest.mark.parametrize(("status", "remint"), [(417, True), (400, False)])
+def test_hibernated_pod_417_triggers_remint(status: int, remint: bool) -> None:
+    # The 0.72 gateway answers 417 when the computer is hibernated; re-ensuring wakes it.
+    assert GatewayManager._should_remint(ConnectError(status, "")) is remint  # pyright: ignore[reportPrivateUsage]
 
 
 def test_manager_remints_session_on_failure(
@@ -311,12 +318,15 @@ def test_ensure_sandbox_refreshes_only_once(monkeypatch: pytest.MonkeyPatch) -> 
 
 @pytest.mark.parametrize("names", [["a", "b"], []])
 def test_unknown_bot_has_requested_and_available_names(
-    monkeypatch: pytest.MonkeyPatch, names: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    names: list[str],
 ) -> None:
     manager = GatewayManager.__new__(GatewayManager)
-    monkeypatch.setattr(manager, "command", lambda _method: [
-        {"id": f"id-{name}", "name": name} for name in names
-    ])
+    monkeypatch.setattr(
+        manager,
+        "command",
+        lambda _method: [{"id": f"id-{name}", "name": name} for name in names],
+    )
     with pytest.raises(UnknownBotError) as raised:
         manager.resolve_agent("missing")
     assert isinstance(raised.value, ValueError)

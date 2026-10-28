@@ -774,7 +774,8 @@ class GatewayManager:
     @staticmethod
     def _should_remint(error: BaseException) -> bool:
         if isinstance(error, ConnectError):
-            return error.status in {0, 401, 403, 404, 408, 429, 502, 503, 504}
+            # 417 is the gateway's "pod hibernated": EnsureSandBox wakes the computer.
+            return error.status in {0, 401, 403, 404, 408, 417, 429, 502, 503, 504}
         return isinstance(error, (httpx.TransportError, httpx.TimeoutException))
 
     def command(self, method: str, args: dict[str, object] | None = None) -> object:

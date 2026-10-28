@@ -16,6 +16,8 @@ def explain_error(exc: Exception, *, cli: str = "groken") -> str:
             if "refresh" in body or "unauthorized after" in body:
                 return f"Authentication refresh failed repeatedly. Run: {cli} login"
             return f"Authentication expired. Run: {cli} login"
+        if exc.status == 417:
+            return f"The bot's cloud computer was asleep and is waking up. Retry in a moment; if it persists, run: {cli} doctor"
         if exc.status == 429 or "quota" in body or "rate limit" in body:
             return "Grok quota or rate limit reached. Wait and retry with backoff; check your account quota."
         if exc.status == 0:
