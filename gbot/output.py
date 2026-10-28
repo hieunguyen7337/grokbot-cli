@@ -1,4 +1,6 @@
+import errno
 import json
+import os
 import re
 import sys
 from collections.abc import Iterator
@@ -26,7 +28,37 @@ class SafeStream:
         self._stream = stream
 
     def write(self, text: str) -> int:
-        return self._stream.write(terminal_safe(text))
+        try:
+            return self._stream.write(terminal_safe(text))
+        except OSError as exc:
+            if not isinstance(exc, BrokenPipeError) and not (
+                sys.platform == "win32" and exc.errno == errno.EINVAL
+            ):
+                raise
+            self._silence()
+            raise BrokenPipeError from exc
+
+    def flush(self) -> None:
+        try:
+            self._stream.flush()
+        except OSError as exc:
+            if not isinstance(exc, BrokenPipeError) and not (
+                sys.platform == "win32" and exc.errno == errno.EINVAL
+            ):
+                raise
+            self._silence()
+            raise BrokenPipeError from exc
+
+    def _silence(self) -> None:
+        try:
+            fd = self._stream.fileno()
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            try:
+                os.dup2(devnull, fd)
+            finally:
+                os.close(devnull)
+        except (OSError, ValueError, AttributeError):
+            pass
 
     def __getattr__(self, name: str) -> object:
         return getattr(self._stream, name)
@@ -57,5 +89,23 @@ class Output:
     def chunk(self, text: str) -> None:
         print(text, end="", flush=True)
 
-    def error(self, exc: Exception) -> None:
-        print(" ".join(explain_error(exc, cli="gbot").splitlines()), file=sys.stderr)
+    def error(
+        self, exc: Exception, error_type: str = "error", exit_code: int = 1
+    ) -> None:
+        message = " ".join(explain_error(exc, cli="gbot").splitlines())
+        if self.json_mode:
+            print(
+                json.dumps(
+                    {
+                        "error": {
+                            "type": error_type,
+                            "message": message,
+                            "exit_code": exit_code,
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                file=sys.stderr,
+            )
+        else:
+            print(message, file=sys.stderr)

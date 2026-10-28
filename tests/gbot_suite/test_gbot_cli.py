@@ -235,7 +235,11 @@ def test_command_outputs(fake, capsys, command, json_mode):
         elif command == "ask":
             assert value == {"bot": {"id": "a", "name": "Alpha"}, "reply": "reply ?"}
         elif command == "send":
-            assert value == {"ok": True}
+            assert value == {
+                "accepted": False,
+                "bot": {"id": "a", "name": "Alpha"},
+                "last_seq": None,
+            }
         elif command == "tail":
             assert [row["id"] for row in value] == ["1", "2"]
         else:
@@ -369,7 +373,7 @@ def test_ask_stdin_stream(fake, monkeypatch, capsys, stream, json_mode):
     "failure,code,hint",
     [
         (ConnectError(401, "expired"), 3, "gbot login"),
-        (ReplyIncompleteError("a", 600), 1, "longer --timeout"),
+        (ReplyIncompleteError("a", 600), 4, "longer --timeout"),
         (RuntimeError("one\ntwo"), 1, "one two"),
     ],
 )
