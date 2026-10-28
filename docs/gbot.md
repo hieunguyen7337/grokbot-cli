@@ -20,14 +20,20 @@ Quote multiword names and prompts. Prompt words are joined with spaces.
 REF is a full pending transcript entry ID or an unambiguous prefix of at least
 six characters. Obtain it from approvals. Answer commands re-fetch pending items,
 show the target and planned answer, and require confirmation; noninteractive use
-requires explicit confirmation skipping. No answer command supports JSON output.
+requires `--yes`. With `--json`, the preview goes to stderr and stdout has
+`answered`, `bot_id`, `bot_name`, `entry_id`, `type`, `rpc`, and `effect`.
 Payment, publishing, account linking, authentication/checkout forms, card forms,
-and spend-guard widgets must be handled in the app. Read allowed_actions in pending
+spend-guard widgets, and meeting-join requests must be handled in the app. Read allowed_actions in pending
 JSON to determine which CLI answers are supported.
 
 For commands offering `--json`, that option replaces normal output with JSON.
-Errors remain human-readable on stderr. Login and following tail have the distinct
+Errors are one JSON line on stderr with `error.type`, `error.message`, and
+`error.exit_code`. Types are `auth`, `still_working`, `timeout`, `network`,
+`gateway`, `invalid`, and `error`. Login and following tail have the distinct
 multi-record formats described below. Exit codes still apply in JSON mode.
+
+Exit codes: 0 OK; 1 error; 2 needs attention; 3 not signed in or auth failed;
+4 still working after ask; 130 interrupted. A broken pipe exits 0 quietly.
 
 ## approvals
 
@@ -47,7 +53,7 @@ Example: `gbot approvals --all`.
 
 `--bot BOT` selects one bot; `--all` scans waiting bots across the roster. These are mutually exclusive. Without either, use the selected bot, or waiting bots if no default exists.
 
-`--json`: Array of pending items: bot_id, bot_name, entry_id, session_id, type, summary, created_at, allowed_actions, request_id, tool_text and draft. Returns 2 when nonempty.
+`--json`: Array of pending items: bot_id, bot_name, entry_id, session_id, type, summary, created_at, allowed_actions, request_id, tool_text, draft, options and fields. Returns 2 when nonempty.
 
 Email and Slack draft cards can be approved to send the unchanged draft, or denied to discard it.
 Meeting-chat drafts are deny-only. The signature shown in the app is not added by gbot.
@@ -57,7 +63,7 @@ Meeting-chat drafts are deny-only. The signature shown in the app is not added b
 Approve a review, meeting consent or local tool request.
 
 ```text
-usage: gbot approve [-h] [--yes] [--always] REF
+usage: gbot approve [-h] [--yes] [--json] [--always] REF
 
 positional arguments:
   REF
@@ -65,6 +71,7 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
   --yes
+  --json
   --always
 ```
 
@@ -77,7 +84,7 @@ Example: `gbot approve REF`.
 Deny a review, meeting consent or local tool request.
 
 ```text
-usage: gbot deny [-h] [--yes] [--never] REF
+usage: gbot deny [-h] [--yes] [--json] [--never] REF
 
 positional arguments:
   REF
@@ -85,6 +92,7 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
   --yes
+  --json
   --never
 ```
 
@@ -97,7 +105,7 @@ Example: `gbot deny REF`.
 Answer a widget or ordinary user form.
 
 ```text
-usage: gbot respond [-h] [--yes] [--field NAME=VALUE] REF [VALUE]
+usage: gbot respond [-h] [--yes] [--json] [--field NAME=VALUE] REF [VALUE]
 
 positional arguments:
   REF
@@ -106,19 +114,20 @@ positional arguments:
 options:
   -h, --help          show this help message and exit
   --yes
+  --json
   --field NAME=VALUE
 ```
 
 Example: `gbot respond REF --field city=Brisbane`.
 
-Supply VALUE for a widget, or repeat `--field NAME=VALUE` for a form; do not mix them. Field names must be unique. Forms are submitted with vault saving disabled. `--yes` skips confirmation. Avoid sensitive values in shell history.
+Supply VALUE for a widget, or repeat `--field NAME=VALUE` for a form; do not mix them. Widget values must match `options` unless custom or multi-select is allowed. Use IDs from `fields` for forms. Field names must be unique. Forms are submitted with vault saving disabled. `--yes` skips confirmation. Avoid sensitive values in shell history.
 
 ## dismiss
 
 Dismiss a widget or ordinary user form.
 
 ```text
-usage: gbot dismiss [-h] [--yes] REF
+usage: gbot dismiss [-h] [--yes] [--json] REF
 
 positional arguments:
   REF
@@ -126,6 +135,7 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
   --yes
+  --json
 ```
 
 Example: `gbot dismiss REF`.
@@ -137,7 +147,7 @@ Example: `gbot dismiss REF`.
 Supply an eligible requested secret through hidden input.
 
 ```text
-usage: gbot secret [-h] [--yes] REF
+usage: gbot secret [-h] [--yes] [--json] REF
 
 positional arguments:
   REF
@@ -145,6 +155,7 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
   --yes
+  --json
 ```
 
 Example: `gbot secret REF`.
@@ -172,9 +183,11 @@ options:
   --json
 ```
 
-Example: `gbot ask --bot "My Bot" "Summarize tomorrow"`.
+Example: `gbot ask --bot "Research" "Summarize tomorrow"`.
 
 `--bot BOT` overrides the default. `--timeout TIMEOUT` is the overall timeout in seconds (600 default); `--idle IDLE` is the idle timeout in seconds (45 default). `--stream` prints reply chunks as they arrive.
+
+Use `gbot ask -` to read the prompt from stdin.
 
 `--json`: Object with bot (id, name) and reply; when input is needed, also pending and exit 2. Streaming JSON produces a final object rather than chunks.
 
@@ -211,7 +224,7 @@ Example: `gbot connectors --tools`.
 
 `--tools` also fetches tool names per server. A tool-list error is reported per server; listing does not perform sign-in.
 
-`--json`: Array of name, id, status, auth, tool_count and enabled, with tools and possibly error when requested. Unknown values may be null.
+`--json`: Object with `connectors`, `plugins_without_connector`, and `warnings`. Connector rows include `name`, `server_identifier`, `account`, `status`, `auth`, `tool_count`, `plugin`, `served_by`, `sources`, `kind`, and `usable`. Kind is plugin, cursor, team, or custom. Requested tools and per-server errors may also appear.
 
 ## doctor
 
@@ -284,15 +297,15 @@ options:
   --json
 ```
 
-Example: `gbot send --bot "My Bot" "Prepare a summary"`.
+Example: `gbot send --bot "Research" "Prepare a summary"`.
 
 `--bot BOT` overrides the selected bot. Use tail or ask to inspect subsequent activity.
 
-`--json`: The gateway send result object, with optional accepted; a null gateway reply is normalized to an empty object. It is not the eventual bot reply.
+`--json`: Object with `accepted`, `bot` (id, name), and `last_seq`, the highest sequence before sending, or null if none. It is not the eventual reply.
 
 ## status
 
-Show sign-in, selected bot and computer status.
+Show sign-in, selected bot and desktop computer status.
 
 ```text
 usage: gbot status [-h] [--json]
@@ -311,7 +324,7 @@ Example: `gbot status --json`.
 Read recent transcript entries, optionally following new events.
 
 ```text
-usage: gbot tail [-h] [--bot BOT] [-n N] [--since SINCE] [--full] [--json]
+usage: gbot tail [-h] [--bot BOT] [-n N] [--since SINCE] [--after AFTER] [--full] [--json]
                  [--follow]
 
 options:
@@ -319,6 +332,7 @@ options:
   --bot BOT
   -n N
   --since SINCE
+  --after AFTER
   --full
   --json
   --follow
@@ -326,9 +340,9 @@ options:
 
 Example: `gbot tail -n 10 --follow`.
 
-`--bot BOT` selects a bot. `-n N` limits initial entries (20 default; 0 prints none). `--since SINCE` starts after an entry ID in the fetched tail, not a date; missing IDs error. `--full` avoids the 160-character text truncation. `--follow` uses SSE and reconnects after transient failures; Ctrl+C exits 0.
+`--bot BOT` selects a bot. `-n N` limits initial entries (20 default; 0 prints none). `--since SINCE` starts after an entry ID in the fetched tail, not a date; missing IDs error. `--after SEQ` keeps entries with sequence greater than SEQ, including with `-n` and `--follow`. `--full` avoids the 160-character text truncation. `--follow` uses SSE and reconnects after transient failures; Ctrl+C exits 0.
 
-`--json`: Array of raw entries normally; with follow, one compact entry per line (JSON Lines), including the initial selected entries. Full affects text rendering only.
+`--json`: Array of raw entries normally; with follow, one compact entry per line (JSON Lines), including the initial selected entries. Entries include `seq`, `id`, `kind`, `timestampMs`, and `message`; `message` kind is user and `send-message` is bot. Full affects text rendering only.
 
 ## use
 
@@ -346,11 +360,11 @@ options:
   --json
 ```
 
-Example: `gbot use "My Bot"`.
+Example: `gbot use "Research"`.
 
 BOT may be an ID or name. With no argument, validate and retain the current default. `--clear` removes the selection and cannot be combined with a bot.
 
 `--json`: Object with default_bot (id and name), or null when cleared.
 
 
-Answers to pending cards go to the Cursor backend's GrokBotService, using the same path as the desktop app.
+Answers to pending cards go to the Cursor backend's `aiserver.v1.GrokBotService`, using the same path as the desktop app.

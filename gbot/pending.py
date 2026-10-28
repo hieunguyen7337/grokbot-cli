@@ -359,9 +359,14 @@ def discover(
     return list(found.values())
 
 
-def resolve_ref(ctx: Context, ref: str) -> PendingItem:
+def resolve_ref(ctx: Context, ref: str, bot: str | None = None) -> PendingItem:
     # A REF can come from an explicit --bot listing before its roster flag updates.
-    items = discover(ctx, all_bots=True, awaiting_only=False)
+    # Entry ids are per-bot transcript ids, so two bots can share one: --bot narrows it.
+    items = (
+        discover(ctx, bot, awaiting_only=False)
+        if bot is not None
+        else discover(ctx, all_bots=True, awaiting_only=False)
+    )
     exact = [item for item in items if item.entry_id == ref]
     if not exact and len(ref) < 6:
         raise ValueError("REF prefixes must contain at least 6 characters.")
@@ -369,7 +374,11 @@ def resolve_ref(ctx: Context, ref: str) -> PendingItem:
     if not matches:
         raise ValueError(f"Unknown pending REF: {ref}. Run: gbot approvals --all")
     if len(matches) != 1:
-        raise ValueError(f"Ambiguous pending REF: {ref}. Use the full entry id.")
+        bots = sorted({item.bot_name for item in matches})
+        hint = "Add --bot NAME" if len(bots) > 1 else "Use the full entry id"
+        raise ValueError(
+            f"Ambiguous pending REF: {ref} (on {', '.join(bots)}). {hint}."
+        )
     return matches[0]
 
 
