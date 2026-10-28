@@ -33,6 +33,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         parser.add_argument("ref", metavar="REF")
         parser.add_argument("--yes", action="store_true")
         parser.add_argument("--json", action="store_true")
+        parser.add_argument("--bot", help="Bot that owns REF, when REF is ambiguous")
         if name == "approve":
             parser.add_argument("--always", action="store_true")
         elif name == "deny":
@@ -240,7 +241,7 @@ def _resolution_word(args: argparse.Namespace, item: PendingItem) -> str:
 def answer(args: argparse.Namespace, ctx: Context) -> int:
     if args.command == "secret" and args.unexpected_values:
         raise ValueError("Secret values must be entered at the hidden prompt.")
-    item = resolve_ref(ctx, args.ref)
+    item = resolve_ref(ctx, args.ref, args.bot)
     method, payload = _plan(args, item)
     preview = sys.stderr if ctx.out.json_mode else sys.stdout
     print(

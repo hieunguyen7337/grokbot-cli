@@ -83,6 +83,7 @@ DPAPI protection is tied to the Windows user; moving files is not a portable log
 | 1 | Error, including invalid arguments |
 | 2 | Needs attention: pending approval, drift or warnings |
 | 3 | Not signed in / authentication failure |
+| 4 | Bot still working after ask timeout |
 | 130 | Interrupted |
 
 Stopping `tail` while following with Ctrl+C is a clean stop (0).
@@ -91,6 +92,8 @@ but still inspects local sign-in state and the installed app.
 
 ## Reference
 
+- [Agent guide](docs/agents.md): shell workflows and safety rules.
+- [Development](docs/development.md): local CI and development.
 - [Full command reference](docs/gbot.md): every command, option and JSON output.
 - [Protocol 0.72.1 note](docs/protocol-0.72.md): transport, used commands and pending items.
 - [NOTICE](NOTICE): fork attribution and independence; [LICENSE](LICENSE): MIT terms.

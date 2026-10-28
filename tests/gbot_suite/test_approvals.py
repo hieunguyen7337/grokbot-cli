@@ -447,6 +447,18 @@ def test_ref_fresh_unique_ambiguous_unknown_short_exact(fake):
     assert resolve_ref(ctx(), "short").entry_id == "short"
 
 
+def test_shared_ref_across_bots_needs_bot(fake, capsys):
+    # Entry ids are per-bot transcript ids, so two bots can both have "t0s1".
+    fake.tails[("a", None)] = [entry("email-draft", "t0s1")]
+    fake.tails[("b", None)] = [entry("email-draft", "t0s1")]
+    assert cli.main(["deny", "t0s1", "--yes"]) == 1
+    assert "Add --bot NAME" in capsys.readouterr().err
+    assert mutations(fake) == []
+    assert cli.main(["deny", "t0s1", "--bot", "Beta", "--yes"]) == 0
+    payload = mutations(fake)[0][1]
+    assert payload is not None and payload["agentId"] == "b"
+
+
 def test_ref_from_explicit_bot_listing_without_roster_flag(fake, capsys):
     fake.tails[("c", None)] = [entry("widget")]
     assert cli.main(["approvals", "--bot", "Gamma"]) == 2
