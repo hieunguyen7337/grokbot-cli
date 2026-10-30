@@ -51,3 +51,12 @@ on their existing paths for later units; their replies still teach the registry.
 Every other command remains on the gateway because this unit only verifies the
 explicit routes above. Gateway parity statuses are unchanged, including planned M3
 toggles; routing support alone does not supply their CLI or TUI controls.
+
+## Live check (2026-10-31)
+
+A read-only run over the 14 non-group bots confirmed the task and subagent reads.
+`ListGrokBotAgentTasks` and `ListGrokBotSubagents` take the gateway agent id in
+`agentId`; `ListGrokBotSubagents` rejects the backend id with `invalid_argument`.
+An empty list arrives as `{}`, because protobuf JSON omits empty repeated fields,
+and the router returns `[]` for it. No bot had open tasks or running subagents at
+the time, so row parsing is covered only by the offline tests.
