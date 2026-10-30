@@ -41,6 +41,8 @@ class FakeEventSource:
         self._sink: Sink | None = None
         self._lock = threading.Lock()
         self.closed = False
+        self.followed: set[tuple[str, str | None]] = set()
+        self.nudges = 0
 
     def start(self, sink: Sink) -> None:
         with self._lock:
@@ -57,6 +59,15 @@ class FakeEventSource:
         with self._lock:
             self.closed = True
             self._sink = None
+
+    def follow(self, bot_id: str, session_id: str | None = None) -> None:
+        self.followed.add((bot_id, session_id))
+
+    def unfollow(self, bot_id: str, session_id: str | None = None) -> None:
+        self.followed.discard((bot_id, session_id))
+
+    def nudge(self) -> None:
+        self.nudges += 1
 
 
 class FakeService:

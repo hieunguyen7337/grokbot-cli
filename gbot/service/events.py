@@ -121,3 +121,13 @@ class EventSource(Protocol):
     def close(self, timeout_s: float = 1.0) -> None:
         """Stop delivering events; must return within `timeout_s` even if the network read is blocked."""
         ...
+
+    def follow(self, bot_id: str, session_id: str | None = None) -> None:
+        """Also deliver this chat's transcript entries (backfilled on every connect)."""
+        ...
+
+    def unfollow(self, bot_id: str, session_id: str | None = None) -> None: ...
+
+    def nudge(self) -> None:
+        """Retry now instead of waiting out a sleep or sign-out pause (after a user action wakes the pod)."""
+        ...
