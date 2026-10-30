@@ -238,10 +238,11 @@ def _classify(
                 for option in raw_options
                 if isinstance(label := record(option).get("label"), str)
             ]
-    if kind == "user-form" and isinstance(body.get("fields"), list):
+    raw_fields = body.get("fields")
+    if kind == "user-form" and isinstance(raw_fields, list):
         fields = [
             {key: record(field).get(key) for key in ("id", "label", "type", "required")}
-            for field in body["fields"]
+            for field in raw_fields
             if isinstance(field, dict)
         ]
     return PendingItem(
