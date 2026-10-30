@@ -4,10 +4,12 @@ from pathlib import Path
 from textual.app import App
 from textual.pilot import Pilot
 
+# Textual draws the first app in a process in monochrome when NO_COLOR is set (worker sandboxes set it), so
+# drop it before any app starts: snapshots are always drawn in colour.
+os.environ.pop("NO_COLOR", None)
+
 
 async def assert_snapshot(app: App, pilot: Pilot, name: str) -> None:
-    # Some terminals and sandboxes report a blur, which dims focus styles; draw snapshots as focused.
-    app.app_focus = True
     await pilot.pause()
     path = Path(__file__).parent / "snapshots" / f"{name}.svg"
     actual = app.export_screenshot()
