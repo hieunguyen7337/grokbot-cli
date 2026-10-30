@@ -11,6 +11,7 @@ from .broker import BrokerTransport, CredentialBroker, GatewayConsumer, default_
 from .errors import AsleepError
 from .hub import EventHub
 from .models import Action, AnswerResult, Bot, Card, SendResult, TranscriptPage
+from .routing import Harness, Router
 from .transport import Transport
 
 
@@ -27,6 +28,18 @@ class _OwnedTransport(BrokerTransport):
         return super().command(name, args)
 
 
+class _RoutedTransport(Router, BrokerTransport):
+    def __init__(
+        self,
+        inner: _OwnedTransport,
+        harness: Harness,
+        *,
+        mirror: Transport | None = None,
+    ) -> None:
+        BrokerTransport.__init__(self, inner.broker, background=inner.background)
+        Router.__init__(self, inner, harness, mirror=mirror)
+
+
 class GbotService:
     def __init__(self, broker: CredentialBroker) -> None:
         self.broker = broker
@@ -34,8 +47,12 @@ class GbotService:
         self._closed = False
         self._consumers: list[GatewayConsumer] = []
         self._hubs: list[EventHub] = []
-        self.transport: Transport = _OwnedTransport(self)
-        self._background_transport = _OwnedTransport(self, background=True)
+        self.harness = Harness()
+        background = _OwnedTransport(self, background=True)
+        self.transport: Transport = _RoutedTransport(
+            _OwnedTransport(self), self.harness, mirror=background
+        )
+        self._background_transport = _RoutedTransport(background, self.harness)
 
     def _consumer(self, name: str, *, background: bool) -> GatewayConsumer:
         with self._lock:
@@ -125,6 +142,7 @@ class GbotService:
             return hub
 
     def close(self) -> None:
+        self.harness.drain()
         with self._lock:
             if self._closed:
                 return

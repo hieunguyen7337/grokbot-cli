@@ -11,11 +11,11 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | Area | Planned | Done | Handoff | Declined | Milestone |
 |---|---:|---:|---:|---:|---|
 | roster | 5 | 1 | 0 | 2 | M1, M3 |
-| conversation | 7 | 15 | 0 | 20 | M1, M2 |
-| cards | 0 | 13 | 3 | 11 | M1, M2 |
+| conversation | 7 | 22 | 0 | 13 | M1, M2 |
+| cards | 0 | 14 | 3 | 10 | M1, M2 |
 | rooms | 1 | 4 | 2 | 5 | M2 |
-| tasks | 0 | 7 | 0 | 12 | M2 |
-| bots | 16 | 0 | 0 | 3 | M3 |
+| tasks | 0 | 13 | 0 | 6 | M2 |
+| bots | 14 | 2 | 0 | 3 | M3 |
 | avatar-voice | 5 | 0 | 1 | 1 | M3 |
 | templates | 7 | 0 | 0 | 4 | M3 |
 | connectors | 16 | 4 | 4 | 6 | M1, M4 |

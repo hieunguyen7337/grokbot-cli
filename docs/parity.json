@@ -3674,8 +3674,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of createThreadFromMessage; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "CreateGrokBotVaultCard",
@@ -3696,8 +3696,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "DeleteGrokBotAgentAutomation",
@@ -3916,8 +3916,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of dismissAgentSuggestions; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "DismissGrokBotTask",
@@ -4729,8 +4729,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of interruptAgentRun; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "InvalidateGrokBotUserSkillsCache",
@@ -4950,8 +4950,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of getAgentTasks; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "ListGrokBotAgentTodos",
@@ -5150,8 +5150,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of getSubagents; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "ListGrokBotTasks",
@@ -5383,8 +5383,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of markAgentTaskDone; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "MarkGrokBotAgentTaskRead",
@@ -5396,8 +5396,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of markAgentTaskRead; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "MarkGrokBotTasksSeen",
@@ -5718,8 +5718,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of reactToMessage; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "ReadGrokBotAgentAttachmentChunk",
@@ -6096,8 +6096,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of resolveConnectorGrant; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "ResolveGrokBotCredentialRequest",
@@ -6215,8 +6215,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of rollBackConversation; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "SaveTeamGroupSandSetupManifest",
@@ -6413,8 +6413,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of setAgentUnread; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "SetGrokBotAgentDraftingDisabled",
@@ -6425,8 +6425,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "SetGrokBotAgentPluginVariables",
@@ -6478,8 +6478,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of setAgentTaskPinned; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "SetGrokBotAgentVisibility",
@@ -6677,8 +6677,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of startFreshConversation; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "StartGrokBotImagePrecaption",
@@ -7222,8 +7222,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "declined",
-      "note": "Backend twin of voteFeedback; gbot reaches bots through the gateway command."
+      "status": "done",
+      "note": "Used for temporal bots, as the app does."
     },
     {
       "name": "WatchGrokBotTranscripts",
