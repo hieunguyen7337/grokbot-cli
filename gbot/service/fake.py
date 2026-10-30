@@ -1,6 +1,8 @@
 """An in-memory Service for tests and `gbot tui --demo`. Deterministic unless `auto_reply` is on."""
 
 import copy
+import importlib
+import pkgutil
 import threading
 import time
 import uuid
@@ -354,4 +356,14 @@ def load_fake(overrides: Mapping[str, object] | None = None) -> FakeService:
     service = FakeService(now_ms=lambda: 1_800_000_000_000)
     for name, value in (overrides or {}).items():
         setattr(service, name, value)
+    from gbot import service as service_package
+
+    for info in pkgutil.iter_modules(service_package.__path__):
+        module = importlib.import_module(f"gbot.service.{info.name}")
+        for attr, table in (
+            ("DEMO_COMMANDS", service.transport.commands),
+            ("DEMO_RPCS", service.transport.rpcs),
+        ):
+            for name, reply in getattr(module, attr, {}).items():
+                table.setdefault(name, copy.deepcopy(reply))
     return service

@@ -246,6 +246,10 @@ Example: `gbot doctor --offline`.
 
 `--json`: Array of check, status and detail. Authentication failure returns 3; other failed checks 1; warnings 2; otherwise 0.
 
+## interrupt
+
+`gbot interrupt [--bot NAME] [--session ID] [--yes] [--json]` stops an active run. Confirmation is required; use `--yes` for non-interactive use. The result indicates whether a run was active.
+
 ## login
 
 Sign in and save the session locally.

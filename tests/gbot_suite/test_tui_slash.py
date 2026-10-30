@@ -14,7 +14,9 @@ from gbot.tui.widgets.slashmenu import SlashMenu
 
 
 def test_registry():
-    assert [c.name for c in commands()] == ["help", "keys"]
+    names = [c.name for c in commands()]
+    # Area modules add their own commands; the built-ins are always there.
+    assert {"help", "keys"} <= set(names) and names == sorted(set(names))
     assert parse("/rooms  add x") == ("rooms", "add x")
 
 
@@ -60,6 +62,11 @@ def test_discovery_rejects_invalid_and_duplicate(monkeypatch, names):
 
 def test_home_menu(tmp_path, monkeypatch):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    # Pin the menu to the built-ins so the snapshots do not change with every new area.
+    from gbot.tui import slash
+
+    core = tuple(c for c in commands() if c.name in {"help", "keys"})
+    monkeypatch.setattr(slash, "commands", lambda: core)
 
     async def exercise():
         app = GbotApp(load_fake(), animate=False)

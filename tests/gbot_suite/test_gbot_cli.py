@@ -703,3 +703,25 @@ def test_bots_awaiting_priority(fake, capsys):
     fake.bots[0]["awaitingUserResponse"] = {"reason": "approval"}
     assert cli.main(["bots", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)[0]["state"] == "awaiting"
+
+
+def test_interrupt_cli(fake, monkeypatch, capsys):
+    original = fake.command
+
+    def command(method, args=None):
+        if method == "interruptAgentRun":
+            fake.calls.append((method, args))
+            return {"hadActiveRun": True}
+        return original(method, args)
+
+    monkeypatch.setattr(fake, "command", command)
+    assert cli.main(["interrupt", "--bot", "Alpha", "--yes", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "interrupted": True,
+        "bot": {"id": "a", "name": "Alpha"},
+        "session_id": None,
+    }
+    assert ("interruptAgentRun", {"id": "a"}) in fake.calls
+    monkeypatch.setattr("sys.stdin", io.StringIO())
+    assert cli.main(["interrupt", "--bot", "Alpha"]) == 1
+    assert "Re-run with --yes to confirm" in capsys.readouterr().err
