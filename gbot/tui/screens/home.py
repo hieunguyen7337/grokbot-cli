@@ -17,9 +17,11 @@ from gbot.output import terminal_safe
 from gbot.service.models import Bot, ConnectionStatus
 from gbot.tui import model, prefs
 from gbot.tui.answering import answer_card
+from gbot.tui.slash import SlashContext, run
 from gbot.tui.widgets.botlist import BotList
 from gbot.tui.widgets.peek import Peek
 from gbot.tui.widgets.prompt import CardPrompt
+from gbot.tui.widgets.slashmenu import SlashMenu
 
 if TYPE_CHECKING:
     from gbot.tui.app import GbotApp
@@ -90,6 +92,7 @@ class HomeScreen(Screen):
             ascii_only=self.gbot.ascii_only, animate=self.gbot.animations_enabled
         )
         separator = self.gbot.symbols.separator
+        yield SlashMenu("home")
         yield Input(
             placeholder=f"> message {separator} @bot {separator} /command {separator} s: n: t: filters",
             id="dispatch",
@@ -224,6 +227,15 @@ class HomeScreen(Screen):
             self.notify("Press space to peek", timeout=2)
 
     def action_peek_reply(self) -> None:
+        menu = self.query_one(SlashMenu)
+        if menu.display and self.query_one("#dispatch", Input).has_focus:
+            if menu.selected:
+                field = self.query_one("#dispatch", Input)
+                field.value = f"/{menu.selected.name}" + (
+                    " " if menu.selected.args else ""
+                )
+                field.cursor_position = len(field.value)
+            return
         if self.peek.display:
             self.peek.reply.focus()
         else:
@@ -257,10 +269,18 @@ class HomeScreen(Screen):
         self.bot_list.focus()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if isinstance(self.focused, (Input, TextArea)) and action not in {
-            "find",
-            "escape",
-        }:
+        if (
+            isinstance(self.focused, (Input, TextArea))
+            and action
+            not in {
+                "find",
+                "escape",
+            }
+            and not (
+                action in {"navigate", "peek_reply"}
+                and self.query_one(SlashMenu).display
+            )
+        ):
             return False
         if (
             action in {"later", "printable_section", "help"}
@@ -273,6 +293,9 @@ class HomeScreen(Screen):
         self.gbot.action_help()
 
     def action_navigate(self, delta: int) -> None:
+        if self.query_one(SlashMenu).display:
+            self.query_one(SlashMenu).move(delta)
+            return
         self.bot_list.navigate(delta)
         self.sync_peek()
 
@@ -371,6 +394,10 @@ class HomeScreen(Screen):
         field.cursor_position = len(field.value)
 
     def action_escape(self) -> None:
+        field = self.query_one("#dispatch", Input)
+        if field.value.startswith("/"):
+            field.value = ""
+            return
         if self.peek.display:
             if self.peek.reply.has_focus:
                 self.peek.reply.value = ""
@@ -393,6 +420,7 @@ class HomeScreen(Screen):
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id != "dispatch":
             return
+        self.query_one(SlashMenu).update_input(event.value)
         tokens = event.value.split()
         self._filter = (
             event.value
@@ -419,8 +447,20 @@ class HomeScreen(Screen):
         text = event.value.strip()
         if not text or self._filter:
             return
-        if text.startswith("/"):
-            self.action_later("Slash commands")
+        if text.startswith("//"):
+            text = text[1:]
+        elif text.startswith("/"):
+            menu = self.query_one(SlashMenu)
+            selected = menu.selected
+            if menu.display and selected and text[1:].casefold() != selected.name:
+                text = f"/{selected.name}"
+            error = run(
+                SlashContext(self.gbot, self, self.bot_list.selected_id, None), text
+            )
+            if error:
+                self.gbot.notify(error, severity="warning", markup=False)
+            else:
+                event.input.value = ""
             return
         selected = self.bot_list.selected_id
         if text.startswith("@"):
