@@ -1,0 +1,43 @@
+{
+  "connectors": [
+    {
+      "name": "Calendar",
+      "server_identifier": "user-calendar",
+      "account": "ada@example.com",
+      "status": "connected",
+      "auth": "connected",
+      "tool_count": 2,
+      "plugin": "on",
+      "served_by": "-",
+      "sources": [
+        "backend",
+        "getMcpState",
+        "listBoxMcpServers",
+        "getEffectiveMcpPlugins"
+      ],
+      "kind": "plugin",
+      "usable": true
+    },
+    {
+      "name": "Notes",
+      "server_identifier": "user-notes",
+      "account": "ada@example.com",
+      "status": "needsAuth",
+      "auth": "needs sign-in",
+      "tool_count": 0,
+      "plugin": "-",
+      "served_by": "-",
+      "sources": [
+        "backend",
+        "getMcpState",
+        "listBoxMcpServers"
+      ],
+      "kind": "custom",
+      "usable": false
+    }
+  ],
+  "plugins_without_connector": [],
+  "warnings": []
+}
+--- stderr ---
+--- exit 0 ---

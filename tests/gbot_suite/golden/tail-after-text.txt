@@ -1,0 +1,6 @@
+[00:00:05] message: Report update 5
+[00:00:06] widget: Which colour? (pending)
+[00:00:07] user-form: Report details (pending)
+[00:00:08] message: Report update 8
+--- stderr ---
+--- exit 0 ---

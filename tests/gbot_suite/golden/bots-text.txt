@@ -1,0 +1,7 @@
+   NAME      STATE    ID
+*  Inbox     idle     bot-inbox
+   Research  running  bot-research
+   Ledger    idle     bot-ledger
+   Reports   idle     group-reports
+--- stderr ---
+--- exit 0 ---

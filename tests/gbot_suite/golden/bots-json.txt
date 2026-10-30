@@ -1,0 +1,28 @@
+[
+  {
+    "id": "bot-inbox",
+    "name": "Inbox",
+    "state": "idle",
+    "default": true
+  },
+  {
+    "id": "bot-research",
+    "name": "Research",
+    "state": "running",
+    "default": false
+  },
+  {
+    "id": "bot-ledger",
+    "name": "Ledger",
+    "state": "idle",
+    "default": false
+  },
+  {
+    "id": "group-reports",
+    "name": "Reports",
+    "state": "idle",
+    "default": false
+  }
+]
+--- stderr ---
+--- exit 0 ---

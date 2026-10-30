@@ -1,0 +1,38 @@
+{
+  "signed_in": true,
+  "client_version": "0.77.0",
+  "default_bot": {
+    "id": "bot-inbox",
+    "name": "Inbox"
+  },
+  "bot": {
+    "id": "bot-inbox",
+    "name": "Inbox",
+    "state": "running"
+  },
+  "host": {
+    "version": "0.77.0",
+    "latest_version": "0.78.0",
+    "update_available": true,
+    "busy": false
+  },
+  "secrets": {
+    "is_applied": true
+  },
+  "mcp": {
+    "servers": [
+      {
+        "id": "user-calendar",
+        "status": "connected",
+        "tool_count": 2
+      },
+      {
+        "id": "user-notes",
+        "status": "needsAuth",
+        "tool_count": 0
+      }
+    ]
+  }
+}
+--- stderr ---
+--- exit 0 ---

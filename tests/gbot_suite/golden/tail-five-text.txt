@@ -1,0 +1,7 @@
+[00:00:04] email-draft: From: ada@example.com; To: bob@example.com; Subject: Report (pending)
+[00:00:05] message: Report update 5
+[00:00:06] widget: Which colour? (pending)
+[00:00:07] user-form: Report details (pending)
+[00:00:08] message: Report update 8
+--- stderr ---
+--- exit 0 ---

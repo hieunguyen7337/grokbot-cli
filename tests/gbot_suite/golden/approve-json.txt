@@ -1,0 +1,27 @@
+{
+  "answered": true,
+  "bot_id": "bot-inbox",
+  "bot_name": "Inbox",
+  "entry_id": "card0002-entry",
+  "type": "auto-review-approval",
+  "rpc": "ResolveGrokBotAutoReviewApproval",
+  "effect": "approved"
+}
+--- stderr ---
+Bot: Inbox (bot-inbox)  Type: auto-review-approval  REF: card0002-entry
+Summary: Run report
+Tool/command: python report.py
+Answer: ResolveGrokBotAutoReviewApproval (approved)
+--- exit 0 ---
+--- rpc ---
+[
+  {
+    "method": "ResolveGrokBotAutoReviewApproval",
+    "payload": {
+      "agentId": "bot-inbox",
+      "requestId": "review-request",
+      "resolution": 1,
+      "approvalPlatform": "desktop"
+    }
+  }
+]

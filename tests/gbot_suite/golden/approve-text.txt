@@ -1,0 +1,19 @@
+Bot: Inbox (bot-inbox)  Type: auto-review-approval  REF: card0002-entry
+Summary: Run report
+Tool/command: python report.py
+Answer: ResolveGrokBotAutoReviewApproval (approved)
+Answered.
+--- stderr ---
+--- exit 0 ---
+--- rpc ---
+[
+  {
+    "method": "ResolveGrokBotAutoReviewApproval",
+    "payload": {
+      "agentId": "bot-inbox",
+      "requestId": "review-request",
+      "resolution": 1,
+      "approvalPlatform": "desktop"
+    }
+  }
+]

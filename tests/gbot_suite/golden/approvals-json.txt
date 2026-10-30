@@ -1,0 +1,96 @@
+[
+  {
+    "bot_id": "bot-inbox",
+    "bot_name": "Inbox",
+    "entry_id": "card0002-entry",
+    "session_id": null,
+    "type": "auto-review-approval",
+    "summary": "Run report",
+    "created_at": 2000,
+    "allowed_actions": [
+      "approve",
+      "deny"
+    ],
+    "request_id": "review-request",
+    "tool_text": "python report.py",
+    "draft": null,
+    "options": null,
+    "fields": null
+  },
+  {
+    "bot_id": "bot-inbox",
+    "bot_name": "Inbox",
+    "entry_id": "card0004-entry",
+    "session_id": null,
+    "type": "email-draft",
+    "summary": "From: ada@example.com; To: bob@example.com; Subject: Report",
+    "created_at": 4000,
+    "allowed_actions": [
+      "approve",
+      "deny"
+    ],
+    "request_id": null,
+    "tool_text": "From: ada@example.com\nTo: bob@example.com\nCc: dee@example.com\nSubject: Report\n\nFirst line\nSecond line",
+    "draft": {
+      "from": "ada@example.com",
+      "to": [
+        "bob@example.com"
+      ],
+      "cc": [
+        "dee@example.com"
+      ],
+      "subject": "Report",
+      "body": "First line\nSecond line"
+    },
+    "options": null,
+    "fields": null
+  },
+  {
+    "bot_id": "bot-inbox",
+    "bot_name": "Inbox",
+    "entry_id": "card0006-entry",
+    "session_id": null,
+    "type": "widget",
+    "summary": "Which colour?",
+    "created_at": 6000,
+    "allowed_actions": [
+      "respond",
+      "dismiss"
+    ],
+    "request_id": null,
+    "tool_text": "",
+    "draft": null,
+    "options": [
+      "A",
+      "B"
+    ],
+    "fields": null
+  },
+  {
+    "bot_id": "bot-inbox",
+    "bot_name": "Inbox",
+    "entry_id": "card0007-entry",
+    "session_id": null,
+    "type": "user-form",
+    "summary": "Report details",
+    "created_at": 7000,
+    "allowed_actions": [
+      "respond",
+      "dismiss"
+    ],
+    "request_id": null,
+    "tool_text": "",
+    "draft": null,
+    "options": null,
+    "fields": [
+      {
+        "id": "color",
+        "label": "Color",
+        "type": "text",
+        "required": true
+      }
+    ]
+  }
+]
+--- stderr ---
+--- exit 2 ---
