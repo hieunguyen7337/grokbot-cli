@@ -146,14 +146,17 @@ def test_live_freeze_and_status(home_env):
         async with app.run_test() as pilot:
             await pilot.pause()
             listing = app.home.bot_list
-            listing.freeze_delay = 0.25
+            # A long freeze thawed by hand keeps the test independent of machine load.
+            listing.freeze_delay = 60
             await pilot.press("]")
             assert listing.selected_id == "demo-research"
             service.reply("demo-research", "Finished searching")
-            await pilot.pause(0.05)
+            await pilot.pause()
             assert listing.sections[1].key == "working"
             assert listing.sections[1].rows[0].state == RowState.NEW_REPLY
-            await pilot.pause(0.3)
+            listing._frozen_until = 0.0
+            listing._thaw()
+            await pilot.pause()
             assert "working" not in [s.key for s in listing.sections]
             assert listing.selected_id == "demo-research"
             service._emit(events.ConnectionChanged(ConnectionStatus.RECONNECTING))
