@@ -172,8 +172,8 @@ Send a prompt and wait for the bot reply.
 
 ```text
 usage: gbot ask [-h] [--bot BOT] [--timeout TIMEOUT] [--idle IDLE] [--stream]
-                [--json]
-                text [text ...]
+                [--json] [--attach PATH]
+                [text ...]
 
 positional arguments:
   text
@@ -185,6 +185,7 @@ options:
   --idle IDLE
   --stream
   --json
+  --attach PATH
 ```
 
 Example: `gbot ask --bot "Research" "Summarize tomorrow"`.
@@ -194,6 +195,10 @@ Example: `gbot ask --bot "Research" "Summarize tomorrow"`.
 Use `gbot ask -` to read the prompt from stdin.
 
 `--json`: Object with bot (id, name) and reply; when input is needed, also pending and exit 2. Streaming JSON produces a final object rather than chunks.
+
+Repeat `--attach PATH` to upload local files before asking; text may be omitted when
+files are attached. JSON adds `attachments` with each file's `name` and committed `path`.
+Upload errors exit 1 without sending a prompt. Upload progress appears only on terminal stderr.
 
 ## bots
 
@@ -290,12 +295,23 @@ Example: `gbot logout`.
 
 `--json`: Object with removed (boolean). This does not promise remote token revocation.
 
+## save
+
+```text
+gbot save --bot NAME [--session ID] [--out DIR] [--json] REF
+```
+
+Save every file on an entry by its id or a unique prefix of at least six characters.
+The output folder defaults to ~/Downloads and is created as needed. Existing names
+get a numbered suffix. Remote HTTP(S) files print as `link: <url>` and are never fetched.
+An entry without files exits 1. JSON returns `saved` paths and `links` URLs.
+
 ## send
 
 Submit a prompt without waiting for a reply.
 
 ```text
-usage: gbot send [-h] [--bot BOT] [--session ID] [--json] text [text ...]
+usage: gbot send [-h] [--bot BOT] [--session ID] [--json] [--attach PATH] [text ...]
 
 positional arguments:
   text
@@ -305,6 +321,7 @@ options:
   --bot BOT
   --session ID
   --json
+  --attach PATH
 ```
 
 Example: `gbot send --bot "Research" "Prepare a summary"`.
@@ -312,6 +329,11 @@ Example: `gbot send --bot "Research" "Prepare a summary"`.
 `--bot BOT` overrides the selected bot. `--session ID` routes the prompt to that session. Use tail or ask to inspect subsequent activity.
 
 `--json`: Object with `accepted`, `bot` (id, name), and `last_seq`, the highest sequence before sending, or null if none. It is not the eventual reply.
+
+Repeat `--attach PATH` to upload local files before sending; text may be omitted when
+files are attached. JSON adds `attachments` with each file's `name` and committed `path`.
+Upload errors exit 1 without sending a prompt. Upload progress appears only on terminal stderr.
+Files must be nonempty and at most 25 MiB (200 MiB for mp4, mov, m4v, webm, mkv and avi).
 
 ## status
 

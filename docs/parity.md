@@ -11,7 +11,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | Area | Planned | Done | Handoff | Declined | Milestone |
 |---|---:|---:|---:|---:|---|
 | roster | 5 | 1 | 0 | 2 | M1, M3 |
-| conversation | 15 | 11 | 0 | 16 | M1, M2 |
+| conversation | 7 | 15 | 0 | 20 | M1, M2 |
 | cards | 0 | 13 | 3 | 11 | M1, M2 |
 | rooms | 1 | 4 | 2 | 5 | M2 |
 | tasks | 0 | 7 | 0 | 12 | M2 |

@@ -1,8 +1,9 @@
 """Shared conversation commands for the CLI and service."""
 
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
+from .attachments import Attachment
 from .models import Bot, Entry, SendResult, TranscriptPage
 from .transport import Transport
 
@@ -76,8 +77,9 @@ def send(
     *,
     session_id: str | None = None,
     nonce: str | None = None,
+    attachments: Sequence[Attachment] = (),
 ) -> SendResult:
-    if not text.strip():
+    if not text.strip() and not attachments:
         raise ValueError("Prompt must not be empty.")
     nonce = nonce if nonce is not None else str(uuid.uuid4())
     page = transcript(transport, bot_id, limit=1, session_id=session_id)
@@ -88,6 +90,9 @@ def send(
     }
     if session_id is not None:
         args["sessionId"] = session_id
+    if attachments:
+        args["attachmentPaths"] = [item.path for item in attachments]
+        args["attachmentNames"] = [item.name for item in attachments]
     reply = transport.command("sendPrompt", args)
     accepted = (
         bool(reply.get("accepted", False)) if isinstance(reply, Mapping) else False

@@ -1194,7 +1194,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1208,8 +1208,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Terminals do not draw images; gbot saves the original with readAttachmentChunk."
     },
     {
       "name": "readAttachmentText",
@@ -1220,7 +1220,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -2138,7 +2138,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -2155,7 +2155,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -2182,8 +2182,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Store uploads; gbot uploads through the gateway's box path (25 MiB, 200 MiB for video)."
     },
     {
       "name": "AbortSandBoxStoreMultipartWrites",
@@ -3245,8 +3245,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Store uploads; gbot uploads through the gateway's box path (25 MiB, 200 MiB for video)."
     },
     {
       "name": "BeginGrokBotSpendApproval",
@@ -3430,8 +3430,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Store uploads; gbot uploads through the gateway's box path (25 MiB, 200 MiB for video)."
     },
     {
       "name": "CompleteOnePasswordConnection",
