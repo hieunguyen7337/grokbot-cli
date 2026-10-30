@@ -190,7 +190,9 @@ class BotList(ScrollView, can_focus=True):
             style = base + Style(bgcolor="#493229") if selected else base
             layout = layout_row(
                 line,
-                width - (len(line.badge) + 1 if line.badge else 0),
+                width
+                - (2 if line.is_main else 0)
+                - (len(line.badge) + 1 if line.badge else 0),
                 frame=self.frame,
                 ascii_only=self.ascii_only,
             )
@@ -199,7 +201,14 @@ class BotList(ScrollView, can_focus=True):
                 layout.glyph,
                 style="#d2b45f" if line.state == RowState.NEEDS_INPUT else None,
             )
-            text.append(f" {layout.name} ")
+            if line.is_main:
+                name = layout.name.rstrip()
+                text.append(f" {name}")
+                text.append(f" {glyphs(self.ascii_only).main}", style="dim")
+                text.append(" " * (len(layout.name) - len(name)))
+            else:
+                text.append(f" {layout.name}")
+            text.append(" ")
             # Reserve room for the badge so failures remain visible at narrow widths.
             if line.badge:
                 text.append(

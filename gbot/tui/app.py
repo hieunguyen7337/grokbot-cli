@@ -9,6 +9,7 @@ from textual.command import Provider
 from textual.message import Message
 
 from gbot.output import terminal_safe
+from gbot.service import bots as bot_service
 from gbot.service import events, trays
 from gbot.service.api import Service
 from gbot.service.models import Bot, Card, ConnectionStatus
@@ -67,6 +68,7 @@ class GbotApp(App[None]):
         self.state = AppState()
         self.bots: list[Bot] = []
         self.trays: list[trays.Tray] = []
+        self.main_bot_id: str | None = None
         self.notifier = Notifier()
         self.home = HomeScreen()
         self._source: events.EventSource | None = None
@@ -192,6 +194,7 @@ class GbotApp(App[None]):
         self.home.initialize_preferences(bots)
         self.notify_roster()
         self._loaded = True
+        self.refresh_main()
         self.refresh_trays()
         for event in self._queued:
             self.on_service_event(ServiceEvent(event))
@@ -291,6 +294,19 @@ class GbotApp(App[None]):
 
     def on_resize(self) -> None:
         self.call_after_refresh(self.home.refresh_state)
+
+    @work(thread=True, exit_on_error=False, group="main", exclusive=True)
+    def refresh_main(self) -> None:
+        try:
+            main_id = bot_service.main_agent(self.service.transport)
+        except Exception:  # noqa: BLE001 - optional user settings
+            return
+        if not self._service_closing:
+            self.call_from_thread(self._install_main, main_id)
+
+    def _install_main(self, main_id: str | None) -> None:
+        self.main_bot_id = main_id
+        self.refresh_home()
 
     @work(thread=True, exit_on_error=False, group="trays", exclusive=True)
     def refresh_trays(self) -> None:
