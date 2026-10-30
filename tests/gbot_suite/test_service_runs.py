@@ -25,10 +25,9 @@ def test_interrupt_rejects_malformed(reply):
 def test_commands_and_demo_merge():
     transport = FakeTransport({"interruptAgentRun": {"hadActiveRun": False}})
     service = load_fake({"transport": transport})
-    assert transport.commands == {
-        **runs.DEMO_COMMANDS,
-        "interruptAgentRun": {"hadActiveRun": False},
-    }
+    # Every area merges its demo replies; a reply the caller gives wins.
+    expected = {**runs.DEMO_COMMANDS, "interruptAgentRun": {"hadActiveRun": False}}
+    assert {name: transport.commands[name] for name in expected} == expected
     assert set(runs.COMMANDS) <= set(USED_COMMANDS)
     assert not runs.interrupt(service.transport, "bot", "s")
     runs.start_fresh(service.transport, "bot", "s")

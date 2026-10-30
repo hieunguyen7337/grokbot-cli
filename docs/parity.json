@@ -362,7 +362,7 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -514,7 +514,7 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -614,7 +614,7 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": "Inspect background work started by a bot."
     },
     {
@@ -725,7 +725,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -845,7 +845,7 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1049,7 +1049,7 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1062,7 +1062,7 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1691,7 +1691,7 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1705,7 +1705,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -3916,8 +3916,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of dismissAgentSuggestions; gbot reaches bots through the gateway command."
     },
     {
       "name": "DismissGrokBotTask",
@@ -4950,8 +4950,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of getAgentTasks; gbot reaches bots through the gateway command."
     },
     {
       "name": "ListGrokBotAgentTodos",
@@ -5150,8 +5150,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of getSubagents; gbot reaches bots through the gateway command."
     },
     {
       "name": "ListGrokBotTasks",
@@ -5383,8 +5383,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of markAgentTaskDone; gbot reaches bots through the gateway command."
     },
     {
       "name": "MarkGrokBotAgentTaskRead",
@@ -5396,8 +5396,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of markAgentTaskRead; gbot reaches bots through the gateway command."
     },
     {
       "name": "MarkGrokBotTasksSeen",
@@ -6413,8 +6413,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of setAgentUnread; gbot reaches bots through the gateway command."
     },
     {
       "name": "SetGrokBotAgentDraftingDisabled",
@@ -6478,8 +6478,8 @@
       ],
       "area": "tasks",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of setAgentTaskPinned; gbot reaches bots through the gateway command."
     },
     {
       "name": "SetGrokBotAgentVisibility",
