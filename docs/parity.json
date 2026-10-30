@@ -267,7 +267,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1179,7 +1179,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1529,7 +1529,7 @@
       ],
       "area": "search",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1543,8 +1543,8 @@
       ],
       "area": "search",
       "milestone": "M2",
-      "status": "declined",
-      "note": "No desktop invocation found beyond command declarations."
+      "status": "done",
+      "note": "Declared by the gateway; the app has no call site for it. gbot uses it for /find."
     },
     {
       "name": "searchMedia",
@@ -1555,7 +1555,7 @@
       ],
       "area": "search",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -2171,7 +2171,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -3674,8 +3674,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of createThreadFromMessage; gbot reaches bots through the gateway command."
     },
     {
       "name": "CreateGrokBotVaultCard",
@@ -5718,8 +5718,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of reactToMessage; gbot reaches bots through the gateway command."
     },
     {
       "name": "ReadGrokBotAgentAttachmentChunk",
@@ -7222,8 +7222,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of voteFeedback; gbot reaches bots through the gateway command."
     },
     {
       "name": "WatchGrokBotTranscripts",
