@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 
@@ -44,6 +44,7 @@ def build_rows(
     *,
     now_ms: int,
     pins: Iterable[str] = (),
+    errors: Mapping[str, str] = {},
 ) -> list[Row]:
     card_list, pin_list = list(cards), list(pins)
     pin_set = set(pin_list)
@@ -91,6 +92,8 @@ def build_rows(
             if bot.last_outcome == "failed"
             else "retrying"
             if bot.retrying
+            else "error"
+            if bot.id in errors
             else None
         )
         result.append(
@@ -246,7 +249,11 @@ def counts(rows: Iterable[Row]) -> dict[RowState, int]:
 
 
 def header_text(
-    counts: dict[RowState, int], status: ConnectionStatus, *, ascii_only: bool = False
+    counts: dict[RowState, int],
+    status: ConnectionStatus,
+    *,
+    ascii_only: bool = False,
+    attempt: int = 0,
 ) -> tuple[str, str]:
     g = glyphs(ascii_only)
     labels = (
@@ -263,7 +270,14 @@ def header_text(
             if counts.get(state, 0)
         ),
     ]
-    return f" {g.separator} ".join(parts), f"{g.dot} {status.value}"
+    label = {
+        ConnectionStatus.ASLEEP: f"computer asleep {g.separator} wakes when you act",
+        ConnectionStatus.SIGNED_OUT: f"signed out {g.separator} run gbot login",
+        ConnectionStatus.OFFLINE: f"offline {g.separator} retrying",
+    }.get(status, status.value)
+    if status == ConnectionStatus.RECONNECTING and attempt > 0:
+        label += f" ({attempt})"
+    return f" {g.separator} ".join(parts), f"{g.dot} {label}"
 
 
 @dataclass(frozen=True)

@@ -59,3 +59,13 @@ def test_ignored_events(event):
     before = dict(state.bots)
     assert state.apply(event) == set()
     assert state.bots == before
+
+
+def test_full_connection_and_error_pruning():
+    state = AppState(errors={"a": "failed", "removed": "failed"})
+    event = events.ConnectionChanged(ConnectionStatus.RECONNECTING, 3, "retry detail")
+    state.apply(event)
+    assert state.connection == event
+    assert state.status == event.status
+    state.apply(events.RosterReplaced((Bot("a", "A"),)))
+    assert state.errors == {"a": "failed"}
