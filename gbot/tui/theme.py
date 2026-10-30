@@ -21,6 +21,11 @@ Screen { background: $background; color: $foreground; padding: 1 2; }
 #heading { width: 1fr; }
 #connection { width: auto; color: $success; }
 #body { height: 1fr; padding-top: 1; }
+BotList { height: 1fr; margin-top: 1; border: none; overflow-x: hidden; }
+BotList:focus { border: none; }
+#dispatch { height: 2; border: none; border-top: solid $secondary; padding: 0; background: $background; }
+#dispatch:focus { border: none; border-top: solid $accent; }
+#home-hints { height: 1; color: $text-muted; }
 #footer { height: 3; color: $text-muted; border-top: solid $secondary; }
 *:focus { border: solid $accent; }
 HelpScreen { align: center middle; background: $background 80%; }
