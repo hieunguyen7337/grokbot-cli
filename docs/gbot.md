@@ -451,3 +451,54 @@ Example: `gbot watch --bot Research --json`.
 
 
 Answers to pending cards go to the Cursor backend's `aiserver.v1.GrokBotService`, using the same path as the desktop app.
+
+## avatar
+
+```text
+gbot avatar BOT [--file FILE.png | --generate TEXT | --clear] [--save-to FILE] [--yes] [--json]
+```
+
+BOT is a name or ID. With no mutation option, show shape, color and whether an
+image is set. `--save-to` exports the current or generated image and refuses to
+overwrite a file. `--file` accepts PNG up to 2 MiB and 1024 pixels on either side;
+resize larger images before importing. Generation is separate from saving to the
+bot: the command reports the generated image's MIME type and byte count, then
+asks for confirmation before applying it. Generated images must be valid PNG to
+apply. `--clear` removes the image. Mutations require confirmation on a terminal
+or `--yes` when running without one.
+
+`--json`: Object with id, shape, color, has_image, mime_type and saved_to.
+
+## voice
+
+```text
+gbot voice BOT [--voice ID] [--speed N] [--language L] [--yes] [--json]
+gbot voice --list [--json]
+```
+
+With no options, show the current voice. `--list` lists available voice IDs,
+speeds and languages in JSON (voice IDs and labels in text). Speeds snap to
+0.5, 0.75, 1, 1.25, 1.5 or 2; invalid speeds become 1. Unknown languages become
+auto. Changes require terminal confirmation or `--yes`. Audio preview uses the
+Grok Bot app.
+
+`--json`: Object with id, voice_id, speed and language; `--list` returns voices,
+speeds and languages.
+
+## templates
+
+```text
+gbot templates [--category C] [--json]
+gbot templates show SHARE_ID [--json]
+gbot templates use SHARE_ID [--yes] [--json]
+```
+
+Browse featured and public listings, inspect a template's summary and active
+version, or create a bot from that version. Import requires terminal confirmation
+or `--yes`. When the server has not handled setup, finish the recipe in the Grok
+Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetched.
+
+`--json`: Browsing returns featured_listings, listings and category_order; show
+returns template, expected_active_version and creator_display_name; use returns
+bot, setup_handled_by_server and note. Template version inspection and publishing
+remain planned for a later milestone.

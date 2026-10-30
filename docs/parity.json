@@ -212,10 +212,10 @@
         "importEntry",
         "isAutoOpen"
       ],
-      "area": "bots",
+      "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "createAgentWorkflow",
@@ -459,8 +459,8 @@
       ],
       "area": "avatar-voice",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.avatar_voice"
     },
     {
       "name": "getAgentAutomations",
@@ -481,8 +481,8 @@
       ],
       "area": "avatar-voice",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.avatar_voice"
     },
     {
       "name": "getAgentChannels",
@@ -635,8 +635,8 @@
       "args": [],
       "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "getBotTemplateForSourceAgent",
@@ -646,8 +646,8 @@
       ],
       "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "getBotTemplateVersion",
@@ -1642,8 +1642,8 @@
       ],
       "area": "avatar-voice",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.avatar_voice"
     },
     {
       "name": "setAgentDraftingDisabled",
@@ -1719,8 +1719,8 @@
       ],
       "area": "avatar-voice",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.avatar_voice"
     },
     {
       "name": "setBotTemplateVisibility",
@@ -3526,10 +3526,10 @@
         "language",
         "importEntry"
       ],
-      "area": "bots",
+      "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "CreateGrokBotChangelogInternal",
@@ -4486,8 +4486,8 @@
       "args": [],
       "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "GetGrokBotTemplateForOperatorInternal",
@@ -4508,8 +4508,8 @@
       ],
       "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "GetGrokBotTemplateImportDetails",
@@ -4519,8 +4519,8 @@
       ],
       "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "GetGrokBotTemplateVersion",
@@ -5304,10 +5304,10 @@
         "pageSize",
         "pageToken"
       ],
-      "area": "publishing",
-      "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "area": "templates",
+      "milestone": "M3",
+      "status": "done",
+      "note": "Implemented in gbot.service.templates"
     },
     {
       "name": "ListSandBoxStoreObjects",
@@ -6505,8 +6505,8 @@
       ],
       "area": "avatar-voice",
       "milestone": "M3",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.avatar_voice"
     },
     {
       "name": "SetGrokBotChangelogStatusInternal",
