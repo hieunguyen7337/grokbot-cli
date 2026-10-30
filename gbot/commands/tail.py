@@ -1,14 +1,15 @@
 import argparse
 import json
 from datetime import UTC, datetime
-from threading import Event
-
-import httpx
+from queue import Empty, SimpleQueue
 
 from gbot.bots import record, resolve_bot
 from gbot.context import Context
 from gbot.pending import describe
 from gbot.service import conversation
+from gbot.service.errors import SignedOutError
+from gbot.service.events import ConnectionChanged, EntryAdded, Event
+from gbot.service.models import ConnectionStatus
 from gbot.service.transport import ContextTransport
 from groken.client import ConnectError
 
@@ -46,13 +47,34 @@ def render(entry: dict[str, object], full: bool) -> str:
     return f"[{time}] {prefix}{content}"
 
 
+def next_event(queue: SimpleQueue[Event]) -> Event:
+    # An unbounded get ignores Ctrl+C on Windows; a bounded one lets KeyboardInterrupt through.
+    while True:
+        try:
+            return queue.get(timeout=0.5)
+        except Empty:
+            continue
+
+
 def run(args: argparse.Namespace, ctx: Context) -> int:
+    try:
+        return _run(args, ctx)
+    except SignedOutError as exc:
+        raise ConnectError(401, "not signed in") from exc
+    finally:
+        if args.follow:
+            ctx.close()
+
+
+def _run(args: argparse.Namespace, ctx: Context) -> int:
     if args.n < 0:
         raise ValueError("-n must be non-negative")
     bot_id, _ = resolve_bot(ctx, args.bot)
-    manager = ctx.manager()
     entries = (
-        manager.transcript_tail(bot_id)
+        [
+            dict(entry.raw)
+            for entry in ctx.service().transcript(bot_id, limit=100).entries
+        ]
         if args.follow
         else [
             dict(entry.raw)
@@ -102,34 +124,23 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
     seen.difference_update(str(entry["id"]) for entry in entries if "id" in entry)
     for entry in entries:
         emit(entry)
-    delay = 0.25
-    reconnecting = False
     try:
+        hub = ctx.service().event_source()
+        queue: SimpleQueue[Event] = SimpleQueue()
+        hub.follow(bot_id)
+        hub.start(queue.put)
+        last_connection: tuple[ConnectionStatus, str] | None = None
         while True:
-            try:
-                if reconnecting:
-                    # Entries appended while the stream was down.
-                    for entry in manager.transcript_tail(bot_id):
-                        emit(entry)
-                reconnecting = True
-                for event in manager.events(["transcript"]):
-                    # Gateway frames are {"event", "data": {"channel", "payload"}}.
-                    envelope = record(event.get("data"))
-                    payload = record(envelope.get("payload"))
-                    if (
-                        envelope.get("channel") != "transcript"
-                        or payload.get("type") != "appended"
-                        or payload.get("agentId") != bot_id
-                    ):
-                        continue
-                    emit(record(payload.get("entry")))
-                    delay = 0.25
-            except (ConnectError, httpx.HTTPError) as exc:
-                if isinstance(exc, ConnectError) and exc.status == 401:
-                    raise
-                ctx.out.error(exc)
-            # Reconnection is the only timed wait; transcript updates use SSE.
-            Event().wait(delay)
-            delay = min(delay * 2, 5.0)
+            event = next_event(queue)
+            if isinstance(event, EntryAdded):
+                if event.entry.bot_id == bot_id and event.entry.session_id is None:
+                    emit(dict(event.entry.raw))
+            elif isinstance(event, ConnectionChanged):
+                if event.status == ConnectionStatus.SIGNED_OUT:
+                    raise ConnectError(401, "not signed in")
+                current = (event.status, event.detail)
+                if current != last_connection and event.detail:
+                    ctx.out.error(RuntimeError(event.detail))
+                last_connection = current
     except KeyboardInterrupt:
         return 0

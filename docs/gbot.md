@@ -342,7 +342,7 @@ options:
 
 Example: `gbot tail -n 10 --follow`.
 
-`--bot BOT` selects a bot. `-n N` limits initial entries (20 default; 0 prints none). `--since SINCE` starts after an entry ID in the fetched tail, not a date; missing IDs error. `--after SEQ` keeps entries with sequence greater than SEQ, including with `-n` and `--follow`. `--full` avoids the 160-character text truncation. `--follow` uses SSE and reconnects after transient failures; Ctrl+C exits 0.
+`--bot BOT` selects a bot. `-n N` limits initial entries (20 default; 0 prints none). `--since SINCE` starts after an entry ID in the fetched tail, not a date; missing IDs error. `--after SEQ` keeps entries with sequence greater than SEQ, including with `-n` and `--follow`. `--full` avoids the 160-character text truncation. `--follow` subscribes to SSE, backfills missed entries and reconnects after transient failures; duplicate entries are suppressed. Ctrl+C exits 0.
 
 `--json`: Array of raw entries normally; with follow, one compact entry per line (JSON Lines), including the initial selected entries. Entries include `seq`, `id`, `kind`, `timestampMs`, and `message`; `message` kind is user and `send-message` is bot. Full affects text rendering only.
 
@@ -399,6 +399,20 @@ Example: `gbot use "Research"`.
 BOT may be an ID or name. With no argument, validate and retain the current default. `--clear` removes the selection and cannot be combined with a bot.
 
 `--json`: Object with default_bot (id and name), or null when cleared.
+
+## watch
+
+Watch bot states and summaries as they change.
+
+```text
+usage: gbot watch [-h] [--bot BOT] [--once] [--json]
+```
+
+Example: `gbot watch --bot Research --json`.
+
+`--once` prints a roster snapshot and exits 2 if a bot is awaiting a response, otherwise 0. States are awaiting, working, new and idle, in that priority order. `--bot` limits the view to one bot and includes its transcript entries while streaming. Ctrl+C exits 0.
+
+`--json` produces an array for `--once`; streaming emits JSON Lines with state, connection and selected bot entry records.
 
 
 Answers to pending cards go to the Cursor backend's `aiserver.v1.GrokBotService`, using the same path as the desktop app.
