@@ -9,7 +9,7 @@ from tui_snapshots import assert_snapshot
 from gbot.cli import main
 from gbot.service.api import Service
 from gbot.service.fake import load_fake
-from gbot.tui.app import SHELL_BINDINGS, GbotApp
+from gbot.tui.app import GbotApp
 from gbot.tui.glyphs import UNICODE
 from gbot.tui.screens.help import HelpScreen
 from gbot.tui.screens.home import HomeScreen
@@ -17,7 +17,8 @@ from gbot.tui.screens.session import SessionScreen
 
 
 @pytest.mark.parametrize("ascii_only", [False, True])
-def test_screenshot(tmp_path, ascii_only):
+def test_screenshot(tmp_path, monkeypatch, ascii_only):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
     path = tmp_path / "home.svg"
     args = ["tui", "--demo", "--screenshot", str(path)]
     if ascii_only:
@@ -48,7 +49,10 @@ def test_missing_textual(monkeypatch, capsys):
     assert 'uv tool install --editable ".[tui]" --force' in output.err
 
 
-def test_pilot_shell():
+def test_pilot_shell(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    monkeypatch.setattr("gbot.tui.screens.home.time", lambda: 1_800_000_000)
+
     async def exercise():
         app = GbotApp(cast(Service, load_fake()), animate=False)
         async with app.run_test(size=(100, 30)) as pilot:
@@ -59,9 +63,6 @@ def test_pilot_shell():
             assert isinstance(app.screen, HelpScreen)
             await pilot.press("escape")
             assert isinstance(app.screen, HomeScreen)
-            for binding in SHELL_BINDINGS:
-                if binding.action.startswith(("stub(", "printable_stub(")):
-                    await pilot.press(binding.key)
             await pilot.press("enter")
             assert isinstance(app.screen, SessionScreen)
             await pilot.press("escape", "right")
@@ -71,7 +72,7 @@ def test_pilot_shell():
                 await pilot.press(f"alt+{n}")
                 if n <= len(app.bots):
                     assert isinstance(app.screen, SessionScreen)
-                    assert app.screen.bot_id == app.bots[n - 1].id
+                    assert app.screen.bot_id == app.home.bot_list.visible_ids[n - 1]
                     await pilot.press("escape")
             await pilot.press("ctrl+p")
             assert app.screen.__class__.__name__ == "CommandPalette"
@@ -84,7 +85,10 @@ def test_pilot_shell():
     asyncio.run(exercise())
 
 
-def test_printable_keys_in_input():
+def test_printable_keys_in_input(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    monkeypatch.setattr("gbot.tui.screens.home.time", lambda: 1_800_000_000)
+
     async def exercise():
         app = GbotApp(cast(Service, load_fake()), animate=False)
         async with app.run_test() as pilot:
@@ -98,7 +102,10 @@ def test_printable_keys_in_input():
     asyncio.run(exercise())
 
 
-def test_initial_bot():
+def test_initial_bot(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    monkeypatch.setattr("gbot.tui.screens.home.time", lambda: 1_800_000_000)
+
     async def exercise():
         app = GbotApp(cast(Service, load_fake()), bot="Inbox", animate=False)
         async with app.run_test() as pilot:
@@ -109,7 +116,10 @@ def test_initial_bot():
     asyncio.run(exercise())
 
 
-def test_home_snapshot():
+def test_home_snapshot(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    monkeypatch.setattr("gbot.tui.screens.home.time", lambda: 1_800_000_000)
+
     async def exercise():
         app = GbotApp(cast(Service, load_fake()), animate=False)
         async with app.run_test(size=(100, 30)) as pilot:

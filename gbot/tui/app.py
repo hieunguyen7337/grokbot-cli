@@ -1,52 +1,24 @@
-import asyncio
 from time import monotonic
 from typing import ClassVar
 
+from textual import work
 from textual.app import App
 from textual.binding import Binding, BindingType
-from textual.widgets import Input, TextArea
+from textual.message import Message
 
+from gbot.output import terminal_safe
+from gbot.service import events
 from gbot.service.api import Service
-from gbot.service.models import Bot
+from gbot.service.models import Bot, Card
 from gbot.tui.glyphs import glyphs
 from gbot.tui.screens.help import HelpScreen
-from gbot.tui.screens.home import HomeScreen
+from gbot.tui.screens.home import HOME_BINDINGS, HomeScreen
 from gbot.tui.screens.session import SessionScreen
+from gbot.tui.state import AppState
 from gbot.tui.theme import GBOT_THEME, STYLES
 
-# Printable shortcuts only act when no text input has focus. The guarded actions
-# are distinct so check_action can let Input/TextArea receive the original key.
 SHELL_BINDINGS = [
-    Binding(key, f"stub('{action}')", description)
-    for key, action, description in (
-        ("up", "up", "Previous row"),
-        ("down", "down", "Next row"),
-        ("pageup", "page_up", "Previous page"),
-        ("pagedown", "page_down", "Next page"),
-        ("home", "first", "First row"),
-        ("end", "last", "Last row"),
-        ("alt+up", "previous_group", "Previous group"),
-        ("alt+down", "next_group", "Next group"),
-        ("ctrl+t", "pin", "Pin bot"),
-        ("shift+up", "reorder_up", "Move bot up"),
-        ("shift+down", "reorder_down", "Move bot down"),
-        ("ctrl+s", "group_by", "Group by"),
-        ("ctrl+f", "find", "Find"),
-        ("ctrl+x", "interrupt", "Interrupt bot"),
-    )
-] + [
-    Binding("[", "printable_stub('previous_group')", "Previous group"),
-    Binding("]", "printable_stub('next_group')", "Next group"),
-    Binding("space", "printable_stub('peek')", "Peek"),
-    Binding("enter,right", "open", "Open bot"),
-    *[
-        Binding(str(n), f"printable_stub('answer_{n}')", f"Answer {n} in peek")
-        for n in range(1, 10)
-    ],
-    *[Binding(f"alt+{n}", f"open_number({n})", f"Open bot {n}") for n in range(1, 10)],
     Binding("ctrl+p", "command_palette", "Command palette", priority=True),
-    Binding("?", "help", "Keyboard help"),
-    # Not a priority binding: dialogs and inputs handle escape first (a modal dismisses with its own result).
     Binding("escape", "escape", "Close or clear"),
     Binding(
         "ctrl+c", "request_exit", "Press twice within 2 seconds to exit", priority=True
@@ -54,8 +26,14 @@ SHELL_BINDINGS = [
 ]
 
 
+class ServiceEvent(Message):
+    def __init__(self, event: events.Event) -> None:
+        super().__init__()
+        self.event = event
+
+
 class GbotApp(App[None]):
-    TITLE = "Grok Bot"
+    TITLE = "gbot"
     CSS = STYLES
     BINDINGS: ClassVar[list[BindingType]] = [*SHELL_BINDINGS]
     COMMAND_PALETTE_BINDING = "ctrl+p"
@@ -75,7 +53,13 @@ class GbotApp(App[None]):
         self.symbols = glyphs(ascii_only)
         self.initial_bot = bot
         self.animations_enabled = animate
+        self.state = AppState()
         self.bots: list[Bot] = []
+        self.home = HomeScreen()
+        self._source: events.EventSource | None = None
+        self._service_closing = False
+        self._loaded = False
+        self._queued: list[events.Event] = []
         self._exit_requested_at: float | None = None
         self.register_theme(GBOT_THEME)
         self.theme = "gbot"
@@ -83,9 +67,53 @@ class GbotApp(App[None]):
             self.animation_level = "none"
 
     async def on_mount(self) -> None:
-        # Even the placeholder keeps service I/O off the UI thread.
-        self.bots = await asyncio.to_thread(self.service.roster)
-        await self.push_screen(HomeScreen(self.bots, self.symbols))
+        await self.push_screen(self.home)
+        self.load_service()
+
+    def service_error(self, error: Exception) -> None:
+        self.notify(terminal_safe(str(error)), severity="error", markup=False)
+
+    def _receive_event(self, event: events.Event) -> None:
+        self.post_message(ServiceEvent(event))
+
+    @work(thread=True, exit_on_error=False)
+    def load_service(self) -> None:
+        try:
+            source = self.service.event_source()
+            self._source = source
+            if self._service_closing:
+                source.close()
+                return
+            source.start(self._receive_event)
+        except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
+            self.call_from_thread(self.service_error, error)
+        bots: list[Bot] = []
+        cards: list[Card] = []
+        warnings: list[str] = []
+        try:
+            bots = self.service.roster()
+        except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
+            self.call_from_thread(self.service_error, error)
+        try:
+            cards, warnings = self.service.pending()
+        except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
+            self.call_from_thread(self.service_error, error)
+        if not self._service_closing:
+            self.call_from_thread(self._install, bots, cards, warnings)
+
+    def _install(self, bots: list[Bot], cards: list[Card], warnings: list[str]) -> None:
+        self.state.apply(events.RosterReplaced(tuple(bots)))
+        self.state.cards = {
+            bot.id: [c for c in cards if c.bot_id == bot.id] for bot in bots
+        }
+        self.home.initialize_preferences(bots)
+        self._loaded = True
+        for event in self._queued:
+            self.on_service_event(ServiceEvent(event))
+        self._queued.clear()
+        self.refresh_home()
+        for warning in warnings:
+            self.notify(terminal_safe(warning), markup=False)
         if self.initial_bot:
             matches = [
                 bot
@@ -96,36 +124,72 @@ class GbotApp(App[None]):
             if len(matches) == 1:
                 self.open_bot(matches[0])
             else:
-                self.notify(f"Bot selector is unknown or ambiguous: {self.initial_bot}")
+                self.notify(
+                    f"Bot selector is unknown or ambiguous: {terminal_safe(self.initial_bot)}",
+                    markup=False,
+                )
 
-    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        if action in {"printable_stub", "help"} and isinstance(
-            self.focused, (Input, TextArea)
-        ):
-            return False
-        return super().check_action(action, parameters)
+    def on_service_event(self, message: ServiceEvent) -> None:
+        if not self._loaded:
+            self._queued.append(message.event)
+            return
+        changes = self.state.apply(message.event)
+        for change in changes:
+            if change.startswith("cards:"):
+                self.refresh_cards(change[6:])
+        if isinstance(message.event, (events.RosterResync, events.Resynced)):
+            self.refresh_roster()
+        if changes:
+            self.refresh_home()
 
-    def action_stub(self, action: str) -> None:
-        self.notify(f"{action}: not built yet")
+    def refresh_home(self) -> None:
+        self.bots = list(self.state.bots.values())
+        self.home.refresh_state()
 
-    def action_printable_stub(self, action: str) -> None:
-        self.action_stub(action)
+    @work(thread=True, exit_on_error=False)
+    def refresh_roster(self) -> None:
+        try:
+            bots = self.service.roster()
+            self.post_message(ServiceEvent(events.RosterReplaced(tuple(bots))))
+        except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
+            self.call_from_thread(self.service_error, error)
+
+    @work(thread=True, exit_on_error=False)
+    def refresh_cards(self, bot_id: str) -> None:
+        try:
+            cards, warnings = self.service.pending([bot_id])
+            self.call_from_thread(self._install_cards, bot_id, cards, warnings)
+        except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
+            self.call_from_thread(self.service_error, error)
+
+    def _install_cards(
+        self, bot_id: str, cards: list[Card], warnings: list[str]
+    ) -> None:
+        if bot_id in self.state.bots:
+            self.state.cards[bot_id] = cards
+            self.refresh_home()
+        for warning in warnings:
+            self.notify(terminal_safe(warning), markup=False)
+
+    def _close_source(self) -> None:
+        self._service_closing = True
+        if self._source is not None:
+            source, self._source = self._source, None
+            try:
+                source.close()
+            except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
+                self.service_error(error)
+
+    def on_unmount(self) -> None:
+        self._close_source()
 
     def open_bot(self, bot: Bot) -> None:
         if isinstance(self.screen, HomeScreen):
             self.push_screen(SessionScreen(bot.id, bot_name=bot.name))
 
-    def action_open(self) -> None:
-        if self.bots:
-            self.open_bot(self.bots[0])
-
-    def action_open_number(self, number: int) -> None:
-        if number <= len(self.bots):
-            self.open_bot(self.bots[number - 1])
-
     def action_help(self) -> None:
         if not isinstance(self.screen, HelpScreen):
-            self.push_screen(HelpScreen(SHELL_BINDINGS))
+            self.push_screen(HelpScreen([*HOME_BINDINGS, *SHELL_BINDINGS]))
 
     def action_escape(self) -> None:
         if not isinstance(self.screen, HomeScreen):
@@ -134,6 +198,7 @@ class GbotApp(App[None]):
     def action_request_exit(self) -> None:
         now = monotonic()
         if self._exit_requested_at is not None and now - self._exit_requested_at <= 2:
+            self._close_source()
             self.exit()
         else:
             self._exit_requested_at = now
