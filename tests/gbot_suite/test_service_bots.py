@@ -192,8 +192,9 @@ def test_update_shape_and_color():
     shape, color = bots.SHAPES[1], bots.COLORS[1]
     bot = Bot("a", "Alpha", avatar_color=color, raw={"avatarShape": bots.SHAPES[0]})
     bots.update(transport, bot, shape=shape, color=color)
-    assert transport.calls[-1][2]["profile"]["avatarShape"] == shape
-    assert transport.calls[-1][2]["editedFields"] == ["avatarShape"]
+    args = transport.calls[-1][2]
+    assert args["profile"] == {"name": "Alpha", "description": "", "avatarShape": shape}
+    assert args["editedFields"] == ["avatarShape"]
     count = len(transport.calls)
     with pytest.raises(ValueError, match="Unknown bot shape or color"):
         bots.update(transport, bot, color="no-such-color")
