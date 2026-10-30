@@ -15,7 +15,9 @@ from gbot.output import terminal_safe
 from gbot.service import events
 from gbot.service.models import Card, TranscriptPage
 from gbot.tui.answering import answer_card
+from gbot.tui.slash import SlashContext, run
 from gbot.tui.widgets.prompt import CardPrompt
+from gbot.tui.widgets.slashmenu import SlashMenu
 from gbot.tui.widgets.transcript import Transcript, entry_widget
 
 if TYPE_CHECKING:
@@ -69,7 +71,9 @@ class SessionScreen(Screen):
     SessionScreen #session-footer { height: 1; color: $text-muted; }
     """
     BINDINGS: ClassVar[list[BindingType]] = [
-        Binding("escape", "app.pop_screen", "Home", priority=True),
+        Binding("escape", "escape", "Home", priority=True),
+        Binding("up", "menu_up", "Previous command", priority=True),
+        Binding("down", "menu_down", "Next command", priority=True),
         Binding("pageup", "earlier", "Earlier", priority=True),
         Binding("home", "history_top", "Top", priority=True),
         Binding("end", "latest", "Latest", priority=True),
@@ -114,6 +118,7 @@ class SessionScreen(Screen):
         yield Transcript(id="session-history", ascii_only=self.gbot.ascii_only)
         yield Vertical(id="session-card")
         yield Static("", id="session-notice", markup=False)
+        yield SlashMenu("session")
         yield _SessionInput(placeholder="message", id="session-input")
         yield Static("esc home · pgup earlier", id="session-footer", markup=False)
 
@@ -341,6 +346,15 @@ class SessionScreen(Screen):
         self.query_one(Transcript).latest()
 
     def action_prompt_focus(self) -> None:
+        menu = self.query_one(SlashMenu)
+        if menu.display:
+            if menu.selected:
+                composer = self.query_one("#session-input", Input)
+                composer.value = f"/{menu.selected.name}" + (
+                    " " if menu.selected.args else ""
+                )
+                composer.cursor_position = len(composer.value)
+            return
         prompt = next(iter(self.query(CardPrompt)), None)
         composer = self.query_one("#session-input", Input)
         if prompt is not None and composer.has_focus:
@@ -381,8 +395,27 @@ class SessionScreen(Screen):
         if action in {"back_if_empty", "history_top", "latest"}:
             return empty
         if action == "prompt_focus":
-            return self.card is not None
+            return self.query_one(SlashMenu).display or self.card is not None
+        if action in {"menu_up", "menu_down"}:
+            return self.query_one(SlashMenu).display
         return super().check_action(action, parameters)
+
+    def action_menu_up(self) -> None:
+        self.query_one(SlashMenu).move(-1)
+
+    def action_menu_down(self) -> None:
+        self.query_one(SlashMenu).move(1)
+
+    def action_escape(self) -> None:
+        field = self.query_one("#session-input", Input)
+        if field.value.startswith("/"):
+            field.value = ""
+        else:
+            self.app.pop_screen()
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input.id == "session-input":
+            self.query_one(SlashMenu).update_input(event.value)
 
     def action_back_if_empty(self) -> None:
         self.app.pop_screen()
@@ -393,6 +426,21 @@ class SessionScreen(Screen):
         event.stop()
         text = event.value.strip()
         if not text or self._sending:
+            return
+        if text.startswith("//"):
+            text = text[1:]
+        elif text.startswith("/"):
+            menu = self.query_one(SlashMenu)
+            selected = menu.selected
+            if menu.display and selected and text[1:].casefold() != selected.name:
+                text = f"/{selected.name}"
+            error = run(
+                SlashContext(self.gbot, self, self.bot_id, self.session_id), text
+            )
+            if error:
+                self.gbot.notify(error, severity="warning", markup=False)
+            else:
+                event.input.value = ""
             return
         if text != self._send_text or self._send_nonce is None:
             self._send_text, self._send_nonce = text, str(uuid4())
