@@ -92,6 +92,11 @@ def build(run: Run) -> bool:
             return False
         if run([str(gbot), "--help"], cwd=base).returncode:
             return False
+        tui_help = run(
+            [str(gbot), "tui", "--help"], cwd=base, capture_output=True, text=True
+        )
+        if tui_help.returncode or "--demo" not in (tui_help.stdout or ""):
+            return False
         if WINDOWS:
             # The upstream groken CLI is POSIX-only (fcntl); gbot is the Windows entry point.
             return True
