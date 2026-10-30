@@ -54,6 +54,13 @@ def test_after_backfill_and_follow(monkeypatch, capsys, follow):
     ] + [{"id": "missing", "kind": "message"}]
 
     class Manager:
+        def command(self, method, args=None):
+            assert (method, args) == (
+                "getAgentTranscriptTail",
+                {"id": "a", "limit": 100},
+            )
+            return {"entries": entries}
+
         def transcript_tail(self, bot_id):
             return entries
 

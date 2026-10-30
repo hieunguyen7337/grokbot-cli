@@ -205,7 +205,8 @@ options:
 
 Example: `gbot bots --json`.
 
-`--json`: Array of id, name, state and default; state is composing, running or idle.
+`--json`: Array of id, name, state and default; state is awaiting, composing, running or idle (in that priority order).
+`awaiting` means the bot needs a user response.
 
 ## connectors
 
@@ -286,7 +287,7 @@ Example: `gbot logout`.
 Submit a prompt without waiting for a reply.
 
 ```text
-usage: gbot send [-h] [--bot BOT] [--json] text [text ...]
+usage: gbot send [-h] [--bot BOT] [--session ID] [--json] text [text ...]
 
 positional arguments:
   text
@@ -294,12 +295,13 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
   --bot BOT
+  --session ID
   --json
 ```
 
 Example: `gbot send --bot "Research" "Prepare a summary"`.
 
-`--bot BOT` overrides the selected bot. Use tail or ask to inspect subsequent activity.
+`--bot BOT` overrides the selected bot. `--session ID` routes the prompt to that session. Use tail or ask to inspect subsequent activity.
 
 `--json`: Object with `accepted`, `bot` (id, name), and `last_seq`, the highest sequence before sending, or null if none. It is not the eventual reply.
 

@@ -8,6 +8,8 @@ import httpx
 from gbot.bots import record, resolve_bot
 from gbot.context import Context
 from gbot.pending import describe
+from gbot.service import conversation
+from gbot.service.transport import ContextTransport
 from groken.client import ConnectError
 
 
@@ -49,7 +51,16 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         raise ValueError("-n must be non-negative")
     bot_id, _ = resolve_bot(ctx, args.bot)
     manager = ctx.manager()
-    entries = manager.transcript_tail(bot_id)
+    entries = (
+        manager.transcript_tail(bot_id)
+        if args.follow
+        else [
+            dict(entry.raw)
+            for entry in conversation.transcript(
+                ContextTransport(ctx), bot_id, limit=100
+            ).entries
+        ]
+    )
     seen = {str(entry["id"]) for entry in entries if "id" in entry}
     if args.since is not None:
         index = next(

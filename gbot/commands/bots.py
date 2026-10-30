@@ -17,7 +17,9 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         {
             "id": bot["id"],
             "name": bot["name"],
-            "state": "composing"
+            "state": "awaiting"
+            if bot.get("awaitingUserResponse")
+            else "composing"
             if bot.get("isComposingMessage")
             else "running"
             if bot.get("isRunning")
