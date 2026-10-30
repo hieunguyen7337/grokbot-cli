@@ -22,9 +22,9 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | plugins-skills | 12 | 0 | 0 | 2 | M4 |
 | automations | 22 | 0 | 0 | 0 | M4 |
 | channels | 23 | 0 | 1 | 16 | M4 |
-| email | 2 | 0 | 0 | 6 | M4 |
+| email | 0 | 2 | 0 | 6 | M4 |
 | secrets-vault | 18 | 5 | 9 | 10 | M1, M4 |
-| computer | 4 | 1 | 0 | 8 | M1, M4 |
+| computer | 0 | 5 | 0 | 8 | M1, M4 |
 | sharing | 15 | 0 | 0 | 3 | M5 |
 | publishing | 26 | 0 | 0 | 6 | M5 |
 | teams | 7 | 0 | 0 | 14 | M5 |
