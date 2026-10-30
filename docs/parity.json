@@ -69,7 +69,7 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
+      "status": "done",
       "note": "Make selected computer secrets available to a bot."
     },
     {
@@ -3755,7 +3755,7 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -5118,7 +5118,7 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -5659,7 +5659,7 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
