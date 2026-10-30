@@ -1,3 +1,4 @@
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
@@ -8,6 +9,14 @@ from gbot.output import terminal_safe
 from gbot.pending import PendingItem, one_line
 from gbot.service.models import Bot, ConnectionStatus
 from gbot.tui.glyphs import glyphs
+
+
+def _summary_labels(text: str) -> str:
+    return re.sub(
+        r"(`+)([\s\S]*?)\1|!?\[((?:[^\[\]]|\[[^\]]*\])*)\]\((?:[^()]|\([^()]*\))*\)",
+        lambda match: match[0] if match[1] else match[3],
+        text,
+    )
 
 
 def _safe(text: str) -> str:
@@ -102,7 +111,7 @@ def build_rows(
                 _safe(bot.name),
                 state,
                 variant,
-                _safe(summary),
+                _safe(_summary_labels(summary)),
                 age,
                 badge,
                 bot.is_group,

@@ -61,12 +61,12 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
             deadline = monotonic() + SCREENSHOT_TIMEOUT
             while True:
                 await pilot.pause()
-                if app.loaded or monotonic() >= deadline:
+                if app.settled or monotonic() >= deadline:
                     break
             args.screenshot.write_text(
                 app.export_screenshot(), encoding="utf-8", newline="\n"
             )
-            timed_out = not app.loaded
+            timed_out = not app.settled
             if timed_out:
                 close()
         if timed_out:

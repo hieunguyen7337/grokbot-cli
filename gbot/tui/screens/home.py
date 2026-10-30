@@ -73,6 +73,7 @@ class HomeScreen(Screen):
         super().__init__()
         self.preferences = prefs.Prefs()
         self.rows: list[model.Row] = []
+        self._expanded: set[str] = set()
         self._filter = ""
         self._save_lock = Lock()
 
@@ -169,6 +170,21 @@ class HomeScreen(Screen):
             by=self.preferences.group_by,
             order=self.preferences.order,
             collapsed=self.preferences.collapsed,
+            expanded=frozenset(self._expanded),
+        )
+        other_lines = sum(
+            1 + len(s.rows) + int(bool(s.hidden_count) and not s.collapsed)
+            for s in sections
+            if s.key != "idle"
+        )
+        height = self.bot_list.content_size.height
+        sections = model.group(
+            rows,
+            by=self.preferences.group_by,
+            order=self.preferences.order,
+            collapsed=self.preferences.collapsed,
+            expanded=frozenset(self._expanded),
+            idle_limit=max(5, height - other_lines - 2) if height else 5,
         )
         if self.preferences.group_by == "team" and self.preferences.order:
             positions = {key: i for i, key in enumerate(self.preferences.order)}
@@ -325,6 +341,25 @@ class HomeScreen(Screen):
         bot = self.gbot.state.bots.get(message.bot_id)
         if bot:
             self.gbot.open_bot(bot)
+
+    def on_bot_list_show_more(self, message: BotList.ShowMore) -> None:
+        section = next(
+            (s for s in self.bot_list.sections if s.key == message.section_key), None
+        )
+        if section is None:
+            # The list was rebuilt after the message was posted; there is nothing to expand.
+            return
+        next_index = len(section.rows)
+        self._expanded.add(message.section_key)
+        self.refresh_state(force=True)
+        expanded = next(
+            (s for s in self.bot_list.sections if s.key == message.section_key), None
+        )
+        if expanded and next_index < len(expanded.rows):
+            self.bot_list.selected_id = expanded.rows[next_index].bot_id
+            self.bot_list.header_key = None
+            self.bot_list.navigate(0)
+        self.sync_peek()
 
     def on_bot_list_toggle_section(self, message: BotList.ToggleSection) -> None:
         self.preferences = prefs.toggle_collapsed(self.preferences, message.key)

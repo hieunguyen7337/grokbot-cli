@@ -20,6 +20,7 @@ from gbot.tui.screens.home import HOME_BINDINGS, HomeScreen
 from gbot.tui.screens.session import SessionScreen
 from gbot.tui.state import AppState
 from gbot.tui.theme import GBOT_THEME, STYLES
+from groken.client import ConnectError
 
 SHELL_BINDINGS = [
     Binding("ctrl+p", "command_palette", "Command palette", priority=True),
@@ -71,6 +72,8 @@ class GbotApp(App[None]):
         self._followed: set[tuple[str, str | None]] = set()
         self._service_closing = False
         self._loaded = False
+        self._sweep_finished = False
+        self._cards_refreshed: set[str] = set()
         self._queued: list[events.Event] = []
         self._exit_requested_at: float | None = None
         self.register_theme(GBOT_THEME)
@@ -82,6 +85,10 @@ class GbotApp(App[None]):
     def loaded(self) -> bool:
         return self._loaded
 
+    @property
+    def settled(self) -> bool:
+        return self.loaded and self._sweep_finished
+
     async def on_mount(self) -> None:
         await self.push_screen(self.home)
         self.load_service()
@@ -89,14 +96,17 @@ class GbotApp(App[None]):
     def service_error(self, error: Exception) -> None:
         self.notify(terminal_safe(str(error)), severity="error", markup=False)
 
-    def bot_error(self, bot_id: str, error: Exception | None = None) -> None:
+    def bot_error(
+        self, bot_id: str, error: Exception | None = None, *, notify: bool = True
+    ) -> None:
         if error is None:
             self.state.errors.pop(bot_id, None)
         else:
             self.state.errors[bot_id] = terminal_safe(str(error)).partition("\n")[0][
                 :160
             ]
-            self.service_error(error)
+            if notify:
+                self.service_error(error)
         self.refresh_home()
 
     def user_acted(self) -> None:
@@ -173,6 +183,7 @@ class GbotApp(App[None]):
             self.follow(bot_id, session_id)
 
     def _install(self, bots: list[Bot], cards: list[Card], warnings: list[str]) -> None:
+        self._cards_refreshed.clear()
         self.state.apply(events.RosterReplaced(tuple(bots)))
         self.state.cards = {
             bot.id: [c for c in cards if c.bot_id == bot.id] for bot in bots
@@ -183,6 +194,7 @@ class GbotApp(App[None]):
         for event in self._queued:
             self.on_service_event(ServiceEvent(event))
         self._queued.clear()
+        self.sweep_cards([bot.id for bot in bots if bot.awaiting is None])
         self.refresh_home()
         for warning in warnings:
             self.notify(terminal_safe(warning), markup=False)
@@ -201,6 +213,36 @@ class GbotApp(App[None]):
                     markup=False,
                 )
 
+    @work(thread=True, exit_on_error=False, group="card-sweep")
+    def sweep_cards(self, bot_ids: list[str]) -> None:
+        try:
+            for bot_id in bot_ids:
+                if self._service_closing:
+                    break
+                if bot_id in self._cards_refreshed:
+                    continue
+                try:
+                    cards, warnings = self.service.pending([bot_id])
+                    if not self._service_closing:
+                        self.call_from_thread(
+                            self._install_sweep_cards, bot_id, cards, warnings
+                        )
+                except Exception as error:  # noqa: BLE001 - service/worker boundary
+                    if self._service_closing:
+                        break
+                    if isinstance(error, ConnectError) and error.status == 401:
+                        self.call_from_thread(self.service_error, error)
+                        break
+                    self.call_from_thread(self.bot_error, bot_id, error, notify=False)
+        finally:
+            self._sweep_finished = True
+
+    def _install_sweep_cards(
+        self, bot_id: str, cards: list[Card], warnings: list[str]
+    ) -> None:
+        if bot_id not in self._cards_refreshed:
+            self._install_cards(bot_id, cards, warnings)
+
     def on_service_event(self, message: ServiceEvent) -> None:
         if not self._loaded:
             self._queued.append(message.event)
@@ -216,6 +258,7 @@ class GbotApp(App[None]):
             self.notify_roster()
         for change in changes:
             if change.startswith("cards:"):
+                self._cards_refreshed.add(change[6:])
                 self.refresh_cards(change[6:])
         if isinstance(message.event, (events.RosterResync, events.Resynced)):
             self.refresh_roster()

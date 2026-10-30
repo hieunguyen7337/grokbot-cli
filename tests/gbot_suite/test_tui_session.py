@@ -1,5 +1,6 @@
 import asyncio
 import threading
+from time import monotonic
 from typing import cast
 
 import pytest
@@ -303,6 +304,15 @@ def test_load_error_retry():
             assert "[bold]offline — press r to retry" in str(
                 screen.query_one(Transcript).marker.render()
             )
+            # Inbox's card can arrive from the background card sweep and take focus, as a new
+            # prompt should; let loading finish, then type into the composer.
+            deadline = monotonic() + 2
+            while not app.settled:
+                assert monotonic() < deadline
+                await pilot.pause()
+            await app.workers.wait_for_complete()
+            screen.query_one("#session-input", Input).focus()
+            await pilot.pause()
             await pilot.press("o", "r")
             assert screen.query_one(Input).value == "or"
             assert calls == [200]
