@@ -4,6 +4,7 @@ from typing import cast
 
 import pytest
 from textual.widgets import Input
+from tui_snapshots import assert_snapshot
 
 from gbot.cli import main
 from gbot.service.api import Service
@@ -13,7 +14,6 @@ from gbot.tui.glyphs import UNICODE
 from gbot.tui.screens.help import HelpScreen
 from gbot.tui.screens.home import HomeScreen
 from gbot.tui.screens.session import SessionScreen
-from tests.gbot_suite.tui_snapshots import assert_snapshot
 
 
 @pytest.mark.parametrize("ascii_only", [False, True])

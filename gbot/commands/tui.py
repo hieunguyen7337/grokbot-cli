@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 from pathlib import Path
-from typing import cast
 
 from gbot.context import Context
 
@@ -41,14 +40,11 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
             "The terminal UI needs the tui extra. Reinstall from the repository "
             'folder with: uv tool install --editable ".[tui]" --force'
         ) from exc
-    from gbot.service.api import Service
     from gbot.service.fake import FakeService
 
     service = FakeService(auto_reply=True)
     app = GbotApp(
-        # Service's mutable transport attribute is invariant; the fake implements
-        # its operations but exposes the narrower FakeTransport type.
-        cast(Service, service),
+        service,
         ascii_only=args.ascii,
         bot=args.bot,
         animate=not args.screenshot,

@@ -35,7 +35,10 @@ class StreamOpener(Protocol):
 
 
 class Service(Protocol):
-    transport: Transport
+    @property
+    def transport(self) -> Transport:
+        """The user-action transport; area modules build on it."""
+        ...
 
     def roster(self) -> list[Bot]:
         """Every bot and group row, in gateway order."""
