@@ -13,7 +13,12 @@ from gbot.tui.widgets.transcript import Transcript
 
 
 def _age(timestamp: int) -> str:
-    return age_text(int(time.time() * 1000) - timestamp)
+    # Rows without a time (the demo data) show no age.
+    return age_text(int(time.time() * 1000) - timestamp) if timestamp > 0 else ""
+
+
+def _detail(*parts: str) -> str:
+    return " · ".join(part for part in parts if part)
 
 
 def _name(ctx: SlashContext, bot_id: str) -> str:
@@ -43,7 +48,7 @@ def messages(ctx: SlashContext, args: str) -> None:
                 PanelRow(
                     m.agent_id,
                     f"{_name(ctx, m.agent_id)}  {terminal_safe(m.snippet)}",
-                    f"{m.role} · {_age(m.timestamp_ms)}",
+                    _detail(terminal_safe(m.role), _age(m.timestamp_ms)),
                 )
                 for m in search.messages(ctx.service.transport, args)
             ]
@@ -68,7 +73,11 @@ def media(ctx: SlashContext, args: str) -> None:
                 PanelRow(
                     m.agent_id,
                     terminal_safe(m.file_name),
-                    f"{terminal_safe(m.kind)} · {_name(ctx, m.agent_id)} · {_age(m.timestamp_ms)}",
+                    _detail(
+                        terminal_safe(m.kind),
+                        _name(ctx, m.agent_id),
+                        _age(m.timestamp_ms),
+                    ),
                 )
                 for m in search.media(ctx.service.transport, args)
             ]
@@ -115,7 +124,7 @@ def find(ctx: SlashContext, args: str) -> None:
                 PanelRow(
                     m.entry_id,
                     terminal_safe(m.snippet),
-                    f"{terminal_safe(m.role)} · {_age(m.timestamp_ms)}",
+                    _detail(terminal_safe(m.role), _age(m.timestamp_ms)),
                 )
                 for m in result.matches
             ]

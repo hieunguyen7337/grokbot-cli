@@ -66,7 +66,8 @@ def _pick(ctx: SlashContext, callback: Callable[[Entry], None]) -> None:
 
     def selected(row: PanelRow) -> None:
         ctx.app.pop_screen()
-        callback(by_id[row.key])
+        # Register follow-up screen callbacks on the app, not the dismissed picker.
+        ctx.app.call_later(callback, by_id[row.key])
 
     ctx.app.push_screen(ListPanel("Choose a message", lambda: rows, on_select=selected))
 
