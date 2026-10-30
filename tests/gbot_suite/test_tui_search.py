@@ -3,6 +3,7 @@ from dataclasses import replace
 from unittest.mock import Mock
 
 import pytest
+from fake_calls import actions
 from textual.widgets import Static
 from tui_snapshots import assert_snapshot
 
@@ -43,7 +44,7 @@ def test_search_panel_snapshot_and_open():
             text = str(panel.query_one("#panel-rows", Static).render())
             assert "A helpful answer" in text
             assert app.state.bots["demo-helper"].name in text
-            assert service.transport.calls == [
+            assert actions(service.transport) == [
                 ("command", "searchAgents", {"query": "hello", "limit": 50})
             ]
             await assert_snapshot(app, pilot, "panel-search")
@@ -67,7 +68,7 @@ def test_search_blank_and_failure(monkeypatch):
             assert run(ctx, "/search   ") is None
             await settle(app, pilot)
             assert app.screen is app.home
-            assert service.transport.calls == []
+            assert actions(service.transport) == []
             notice.assert_any_call("Type something to search", markup=False)
             service.transport.commands["searchAgents"] = OSError("Search offline")
             assert run(ctx, "/search hello") is None
@@ -93,7 +94,7 @@ def test_media_demo():
             assert isinstance(app.screen, ListPanel)
             text = str(app.screen.query_one("#panel-rows", Static).render())
             assert "report.pdf" in text and "pdf · Helper" in text
-            assert service.transport.calls == [
+            assert actions(service.transport) == [
                 ("command", "searchMedia", {"query": "", "limit": 50})
             ]
 
@@ -140,7 +141,7 @@ def test_find_selection_and_incomplete(shown, monkeypatch):
             assert "More matches exist" in str(
                 app.screen.query_one(".panel-footer", Static).render()
             )
-            assert service.transport.calls == [
+            assert actions(service.transport) == [
                 (
                     "command",
                     "searchConversation",

@@ -66,6 +66,7 @@ class SessionScreen(Screen):
     SessionScreen #session-history { height: 1fr; margin-top: 1; }
     SessionScreen #session-input { height: 3; border: round $secondary; }
     SessionScreen #session-notice { height: auto; color: $text-muted; }
+    SessionScreen #session-alert { height: auto; color: $warning; }
     SessionScreen #session-card { height: auto; max-height: 50%; }
     SessionScreen CardPrompt { max-height: 100%; }
     SessionScreen #session-footer { height: 1; color: $text-muted; }
@@ -120,6 +121,7 @@ class SessionScreen(Screen):
         yield Vertical(id="session-card")
         yield Static("", id="session-notice", markup=False)
         yield SlashMenu("session")
+        yield Static("", id="session-alert", markup=False)
         yield _SessionInput(placeholder="message", id="session-input")
         yield Static("esc home · pgup earlier", id="session-footer", markup=False)
 
@@ -137,6 +139,13 @@ class SessionScreen(Screen):
         if not self.is_mounted:
             return
         bot = self.gbot.state.bots.get(self.bot_id)
+        alerts = [tray for tray in self.gbot.trays if tray.agent_id == self.bot_id]
+        indicator = self.query_one("#session-alert", Static)
+        indicator.display = bool(alerts)
+        if alerts:
+            newest = max(alerts, key=lambda tray: tray.created_at)
+            more = f" +{len(alerts) - 1} more" if len(alerts) > 1 else ""
+            indicator.update(terminal_safe(f"! {newest.title}{more} · /trays"))
         parts = [terminal_safe(self.bot_name)]
         if bot is not None:
             parts.append(

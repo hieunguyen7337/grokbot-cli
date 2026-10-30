@@ -89,7 +89,7 @@
       "args": [],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -386,7 +386,7 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -863,7 +863,7 @@
       "args": [],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": "List pending activity trays."
     },
     {

@@ -1,6 +1,7 @@
 import asyncio
 from uuid import UUID
 
+from fake_calls import actions
 from textual.widgets import Input, Static, Switch
 from tui_snapshots import assert_snapshot
 
@@ -51,18 +52,18 @@ def test_newgroup(tmp_path, monkeypatch):
             switches[1].value = False
             form.action_submit()
             assert "two bots" in str(form.query_one("#form-notice", Static).render())
-            assert not service.transport.calls
+            assert not actions(service.transport)
             switches[1].value = True
             form.action_submit()
             await pilot.pause()
             assert isinstance(app.screen, ConfirmScreen)
             await pilot.press("escape")
-            assert not service.transport.calls
+            assert not actions(service.transport)
             form.action_submit()
             await pilot.pause()
             await pilot.click("#confirm")
             await settle(app, pilot)
-            call = next(c for c in service.transport.calls if c[1] == "createGroup")
+            call = next(c for c in actions(service.transport) if c[1] == "createGroup")
             chosen = call[2]["memberAgentIds"]
             nonce = call[2]["clientNonce"]
             assert isinstance(chosen, list) and len(chosen) == 2
@@ -99,7 +100,7 @@ def test_form_errors_fallback_and_read_only(tmp_path, monkeypatch):
             app.read_only = True
             await pilot.click("#confirm")
             await settle(app, pilot)
-            assert not service.transport.calls
+            assert not actions(service.transport)
             assert "Read-only mode" in notices
             app.read_only = False
             service.transport.commands["createGroup"] = OSError("Offline")
@@ -177,7 +178,7 @@ def test_members(tmp_path, monkeypatch):
             form.action_submit()
             await pilot.pause()
             await pilot.press("escape")
-            assert not service.transport.calls
+            assert not actions(service.transport)
             form.action_submit()
             await pilot.pause()
             await pilot.click("#confirm")
@@ -191,10 +192,10 @@ def test_members(tmp_path, monkeypatch):
                 assert isinstance(app.screen, ConfirmScreen)
                 await pilot.click("#confirm")
                 await settle(app, pilot)
-            count = len(service.transport.calls)
+            count = len(actions(service.transport))
             panel.index = 0
             await pilot.press("x")
-            assert len(service.transport.calls) == count
+            assert len(actions(service.transport)) == count
             assert app.screen is panel
             panel.index = 1
             await pilot.press("x")
@@ -207,14 +208,14 @@ def test_members(tmp_path, monkeypatch):
             await pilot.pause()
             await pilot.click("#confirm")
             await settle(app, pilot)
-            assert service.transport.calls[-1] == (
+            assert actions(service.transport)[-1] == (
                 "rpc",
                 "RemoveGrokBotRoomPeople",
                 {"agentId": "room", "userIds": [42]},
             )
             assert "Other" not in [r.label for r in panel.rows]
             app.read_only = True
-            count = len(service.transport.calls)
+            count = len(actions(service.transport))
             await pilot.press("a", "x")
             panel.index = 0
             await pilot.press("x")
@@ -224,6 +225,6 @@ def test_members(tmp_path, monkeypatch):
             assert app.screen is app.home
             run(SlashContext(app, app.home, ids[0], None), "/members")
             assert app.screen is app.home
-            assert len(service.transport.calls) == count
+            assert len(actions(service.transport)) == count
 
     asyncio.run(exercise())

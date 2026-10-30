@@ -151,7 +151,14 @@ class HomeScreen(Screen):
             if Text(left + " " + right).cell_len > self.content_size.width:
                 # The counts matter more than the product name.
                 left = left.removeprefix(f"Grok Bot {self.gbot.symbols.separator} ")
-        self.query_one("#heading", Static).update(Text(left))
+        heading = Text(left)
+        if self.gbot.trays:
+            count = len(self.gbot.trays)
+            heading.append(
+                f" {self.gbot.symbols.separator} {count} alert{'s' if count != 1 else ''}",
+                style="#d2b45f",
+            )
+        self.query_one("#heading", Static).update(heading)
         color = (
             "#78b878"
             if state.status == ConnectionStatus.LIVE
