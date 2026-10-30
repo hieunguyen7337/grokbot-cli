@@ -82,7 +82,7 @@ def test_send_cursor(monkeypatch, capsys):
             self.calls.append((method, args))
             if method == "getAgentTranscriptTail":
                 # The gateway returns the newest `limit` entries.
-                return {"entries": self.entries[-args["limit"] :]}
+                return {"entries": self.entries[-(args or {})["limit"] :]}
             return {"accepted": True}
 
     manager = Manager()
