@@ -1,6 +1,6 @@
 """A full-width, line-rendered roster with stable identity and ordering."""
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from time import monotonic
 from typing import ClassVar
 
@@ -18,10 +18,21 @@ from gbot.tui.glyphs import glyphs
 from gbot.tui.model import Row, RowState, Section, jump_section, layout_row, move
 
 
+@dataclass(frozen=True)
+class MoreLine:
+    section_key: str
+    count: int
+
+
 class BotList(ScrollView, can_focus=True):
     # Disable ScrollView's navigation bindings: HomeScreen owns the home keys.
     BINDINGS: ClassVar[list[BindingType]] = []
     freeze_delay = 1.0
+
+    class ShowMore(Message):
+        def __init__(self, section_key: str) -> None:
+            super().__init__()
+            self.section_key = section_key
 
     class OpenBot(Message):
         def __init__(self, bot_id: str) -> None:
@@ -40,7 +51,7 @@ class BotList(ScrollView, can_focus=True):
         self.sections: list[Section] = []
         self.selected_id: str | None = None
         self.header_key: str | None = None
-        self.lines: list[Section | Row | str] = []
+        self.lines: list[Section | Row | MoreLine] = []
         self.frame = 0
         self._frozen_until = 0.0
         self._pending: list[Section] | None = None
@@ -77,9 +88,7 @@ class BotList(ScrollView, can_focus=True):
             self.lines.append(section)
             self.lines.extend(section.rows)
             if section.hidden_count and not section.collapsed:
-                self.lines.append(
-                    f"  {glyphs(self.ascii_only).ellipsis} {section.hidden_count} more"
-                )
+                self.lines.append(MoreLine(section.key, section.hidden_count))
         self.virtual_size = Size(self.size.width, len(self.lines))
         self.refresh()
 
@@ -116,6 +125,15 @@ class BotList(ScrollView, can_focus=True):
     def navigate(
         self, delta: int, *, edge: bool = False, section: bool = False
     ) -> None:
+        if not edge and not section and delta == 1 and self.lines:
+            index = self._index()
+            if (
+                isinstance(self.lines[index], Row)
+                and index + 1 < len(self.lines)
+                and isinstance(more := self.lines[index + 1], MoreLine)
+            ):
+                self.post_message(self.ShowMore(more.section_key))
+                return
         self.freeze()
         if section:
             self.selected_id = jump_section(self.sections, self.selected_id, delta)
@@ -127,10 +145,12 @@ class BotList(ScrollView, can_focus=True):
                 else max(0, min(len(self.lines) - 1, self._index() + delta))
             )
             step = 1 if delta > 0 else -1
-            while isinstance(self.lines[index], str) and 0 <= index + step < len(
+            while isinstance(self.lines[index], MoreLine) and 0 <= index + step < len(
                 self.lines
             ):
                 index += step
+            if isinstance(self.lines[index], MoreLine):
+                index -= 1
             self._select_line(index)
         self._reveal()
         self.refresh()
@@ -150,6 +170,9 @@ class BotList(ScrollView, can_focus=True):
         index = int(self.scroll_y) + event.y
         if 0 <= index < len(self.lines):
             self.focus()
+            if isinstance(more := self.lines[index], MoreLine):
+                self.post_message(self.ShowMore(more.section_key))
+                return
             self.freeze()
             self._select_line(index)
             if event.chain == 2:
@@ -195,7 +218,10 @@ class BotList(ScrollView, can_focus=True):
             )
         else:
             style = base
-            text = Text(line, style=base + Style(dim=True))
+            text = Text(
+                f"  {glyphs(self.ascii_only).ellipsis} {line.count} more",
+                style=base + Style(dim=True),
+            )
         segments = [
             Segment(
                 segment.text, style + (segment.style or Style.null()), segment.control
