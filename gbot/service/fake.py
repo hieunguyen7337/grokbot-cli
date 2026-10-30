@@ -270,6 +270,9 @@ class FakeService:
         self._emit(BoxChanged(bot_id, state))
 
     def answer(self, card: Card, action: Action) -> AnswerResult:
+        from . import cards
+
+        rpc, _ = cards.plan(card, action)
         with self._lock:
             entry = self._entry(card)
             if not is_pending(entry):
@@ -281,7 +284,7 @@ class FakeService:
                 sent = action.kind == "approve"
                 entry["draftSendState"] = "sent" if sent else "discarded"
                 result = AnswerResult(
-                    "SendGrokBotDraft" if sent else "DiscardGrokBotDraft",
+                    rpc,
                     "sent" if sent else "discarded",
                 )
             elif kind in _STATUS:
@@ -289,34 +292,27 @@ class FakeService:
                 body = message[_STATUS[kind]]
                 assert isinstance(body, dict)
                 body["status"] = "approved" if approved else "denied"
-                rpc = (
-                    "ResolveGrokBotAutoReviewApproval"
-                    if kind == "auto-review-approval"
-                    else "ResolveGrokBotLocalToolPermission"
-                )
                 result = AnswerResult(rpc, "approved" if approved else "denied")
             elif kind == "widget":
                 if action.kind == "dismiss":
                     entry["widgetDismissed"] = True
-                    result = AnswerResult("DismissGrokBotWidget", "dismissed")
+                    result = AnswerResult(rpc, "dismissed")
                 else:
                     entry["respondedValue"] = action.value
-                    result = AnswerResult(
-                        "RespondGrokBotWidget", f"answered {action.value}"
-                    )
+                    result = AnswerResult(rpc, f"answered {action.value}")
             elif kind == "user-form":
                 if action.kind == "dismiss":
                     entry["formResolution"] = {"kind": "dismissed"}
-                    result = AnswerResult("DismissGrokBotUserForm", "dismissed")
+                    result = AnswerResult(rpc, "dismissed")
                 else:
                     entry["formResolution"] = {
                         "kind": "submitted",
                         "values": dict(action.fields),
                     }
-                    result = AnswerResult("SubmitGrokBotUserForm", "submitted")
+                    result = AnswerResult(rpc, "submitted")
             elif kind == "secret-request":
                 entry["secretProvided"] = True
-                result = AnswerResult("SubmitGrokBotSecret", "secret stored")
+                result = AnswerResult(rpc, "secret stored")
             else:
                 raise ValueError(f"{kind} cards are answered in the Grok Bot app.")
             self.answered.append((card.bot_id, card.entry_id, action))
