@@ -5,6 +5,8 @@ from typing import Protocol
 
 from groken.client import GROK_BOT, ConnectError
 
+from .routing import Harness, Router
+
 
 class Transport(Protocol):
     def command(self, name: str, args: Mapping[str, object] | None = None) -> object:
@@ -16,7 +18,7 @@ class Transport(Protocol):
         ...
 
 
-class ContextTransport:
+class _ContextTransport:
     """Adapter over the CLI's lazily built gateway manager and backend client (not thread-safe)."""
 
     def __init__(self, ctx: object) -> None:
@@ -30,6 +32,17 @@ class ContextTransport:
     def rpc(self, method: str, payload: Mapping[str, object]) -> dict[str, object]:
         backend = self._ctx.backend()  # pyright: ignore[reportAttributeAccessIssue]
         return backend.unary(GROK_BOT, method, dict(payload))
+
+
+class ContextTransport(Router):
+    """CLI transport using the context's shared harness registry."""
+
+    def __init__(self, ctx: object) -> None:
+        harness = getattr(ctx, "harness", None)
+        if harness is None:
+            harness = Harness()
+            ctx.harness = harness  # pyright: ignore[reportAttributeAccessIssue]
+        super().__init__(_ContextTransport(ctx), harness)
 
 
 Reply = object | Callable[[dict[str, object]], object]

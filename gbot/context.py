@@ -10,6 +10,7 @@ from groken.gateway import GatewayManager
 
 from .output import Output
 from .service.errors import SignedOutError
+from .service.routing import Harness
 
 if TYPE_CHECKING:
     from .service.client import GbotService
@@ -77,6 +78,7 @@ class Context:
         self._manager: Manager | None = None
         self._backend: Backend | None = None
         self._service: GbotService | None = None
+        self.harness = Harness()
 
     def service(self) -> GbotService:
         if self._service is None:
@@ -87,6 +89,7 @@ class Context:
         return self._service
 
     def close(self) -> None:
+        self.harness.drain()
         if self._service is not None:
             self._service.close()
 
