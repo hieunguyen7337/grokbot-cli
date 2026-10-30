@@ -1,12 +1,37 @@
 """The core service the terminal UI (and, over time, the CLI) talks to. Area features live in their own modules
 built on `Transport` (for example `gbot.service.automations.Automations(service.transport)`)."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Protocol
 
 from .events import EventSource
 from .models import Action, AnswerResult, Bot, Card, SendResult, TranscriptPage
 from .transport import Transport
+
+
+class FrameFeed(Protocol):
+    """One open `GET /events` stream (all channels)."""
+
+    def next_frame(self, timeout_s: float) -> Mapping[str, object] | None:
+        """The next `data:` frame decoded from JSON (bare /events sends `{channel, payload}`), or None for a comment
+        line (`:ping` every 15 s, `:echo`). Raises TimeoutError when nothing arrives within `timeout_s`, EOFError when
+        the server ends the stream, and ConnectError or httpx errors when the read fails."""
+        ...
+
+    def close(self) -> None:
+        """Close the stream; must make a `next_frame` blocked in another thread return or raise promptly."""
+        ...
+
+
+class StreamOpener(Protocol):
+    def open_stream(self) -> FrameFeed:
+        """Open the event stream with the current gateway credentials.
+
+        Re-mints and retries once on 401/403. Raises `errors.AsleepError` on 417 without waking the pod,
+        `errors.SignedOutError` when there is no usable login, and ConnectError or httpx errors otherwise. A read
+        timeout or the end of a stream is never a reason to re-mint: the caller simply opens a new stream.
+        """
+        ...
 
 
 class Service(Protocol):
