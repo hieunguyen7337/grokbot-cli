@@ -57,3 +57,12 @@ row or null; deletion returns `refused_ids` and `failed_ids`. Main reads return
 `main_agent_id`; info returns the displayed fields, including `voice` with
 `id`, `speed`, `language`. Confirmation previews go to stderr in JSON mode.
 
+
+## In the TUI
+
+Use `/new [name]` to create a bot, `/edit` to edit the current bot, and
+`/delete` to remove it. `/bot` opens sidebar, notification, drafting and main-bot
+settings. `/main [bot]` shows or sets the main bot; its home row has a dim star.
+`/hidden` lists hidden bots: Enter opens one and `u` shows it in the sidebar.
+Forms use Tab to move, Ctrl+S to save, and Escape to go back. Every change asks
+for confirmation with Cancel focused. Read-only mode permits viewing panels.

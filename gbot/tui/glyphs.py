@@ -15,6 +15,7 @@ class Glyphs:
     arrow: str
     separator: str
     pin: str
+    main: str
     attachment: str
 
 
@@ -29,6 +30,7 @@ UNICODE = Glyphs(
     arrow="→",
     separator="·",
     pin="▸",
+    main="\u2605",
     attachment="\U0001f4ce",
 )
 
@@ -43,6 +45,7 @@ ASCII = Glyphs(
     arrow="->",
     separator="-",
     pin=">",
+    main="*",
     attachment="+",
 )
 

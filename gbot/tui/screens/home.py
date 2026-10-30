@@ -135,6 +135,7 @@ class HomeScreen(Screen):
             [c for cards in state.cards.values() for c in cards],
             now_ms=now,
             pins=self.preferences.pins,
+            main_id=self.gbot.main_bot_id,
             errors=state.errors,
         )
         totals = model.counts(self.rows)

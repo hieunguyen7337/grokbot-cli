@@ -45,6 +45,7 @@ class Row:
     card_count: int
     member_ids: tuple[str, ...] = ()
     pin_index: int = 0
+    is_main: bool = False
 
 
 def build_rows(
@@ -53,6 +54,7 @@ def build_rows(
     *,
     now_ms: int,
     pins: Iterable[str] = (),
+    main_id: str | None = None,
     errors: Mapping[str, str] = {},
 ) -> list[Row]:
     card_list, pin_list = list(cards), list(pins)
@@ -120,6 +122,7 @@ def build_rows(
                 len(found),
                 bot.member_ids,
                 pin_list.index(bot.id) if bot.id in pin_set else 0,
+                is_main=bot.id == main_id,
             )
         )
     return result

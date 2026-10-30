@@ -2,8 +2,9 @@
 
 from gbot.service.transport import FakeTransport
 
-# The app reads trays when the roster loads and on every tray event.
-BACKGROUND = {"getTrays"}
+# The app reads trays when the roster loads and on every tray event, and the
+# main bot when the roster loads.
+BACKGROUND = {"getTrays", "GetGrokBotUserRuntimeSettings"}
 
 
 def actions(transport: FakeTransport) -> list[tuple[str, str, dict[str, object]]]:
