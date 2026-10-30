@@ -181,7 +181,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -302,7 +302,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -979,7 +979,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": "Start a newly configured bot."
     },
     {
@@ -1231,7 +1231,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": "Inspect the main bot context."
     },
     {
@@ -1654,7 +1654,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1666,7 +1666,7 @@
       ],
       "area": "roster",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1678,7 +1678,7 @@
       ],
       "area": "roster",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -2047,7 +2047,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -3616,9 +3616,9 @@
         "humanMemberUserIds"
       ],
       "area": "rooms",
-      "milestone": "M2",
-      "status": "declined",
-      "note": "Temporal room creation; gbot creates groups through the gateway createGroup."
+      "milestone": "M3",
+      "status": "done",
+      "note": "Temporal creation uses this RPC; box creation uses gateway createGroup."
     },
     {
       "name": "CreateGrokBotTemplate",
@@ -3662,7 +3662,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -4003,7 +4003,7 @@
       "args": [],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -4415,9 +4415,9 @@
       "name": "GetGrokBotRuntimeCapabilities",
       "kind": "rpc",
       "args": [],
-      "area": "settings",
-      "milestone": "M5",
-      "status": "planned",
+      "area": "bots",
+      "milestone": "M3",
+      "status": "done",
       "note": "Inspect supported bot runtime features."
     },
     {
@@ -4558,9 +4558,9 @@
       "name": "GetGrokBotUserRuntimeSettings",
       "kind": "rpc",
       "args": [],
-      "area": "settings",
-      "milestone": "M5",
-      "status": "planned",
+      "area": "bots",
+      "milestone": "M3",
+      "status": "done",
       "note": ""
     },
     {
@@ -4972,9 +4972,9 @@
         "includeTeamAgents",
         "addedTeamAgentsOnly"
       ],
-      "area": "roster",
-      "milestone": "M1",
-      "status": "planned",
+      "area": "bots",
+      "milestone": "M3",
+      "status": "done",
       "note": ""
     },
     {
@@ -6552,7 +6552,7 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {

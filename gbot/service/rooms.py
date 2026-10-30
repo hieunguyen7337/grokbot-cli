@@ -3,11 +3,19 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from groken.client import ConnectError
+
+from .bots import creation_route, server_bot
 from .models import Bot
 from .transport import Transport
 
 COMMANDS = {"createGroup": "object", "setGroupMembers": "object"}
-RPCS = ("SetGrokBotRoomMembers", "RemoveGrokBotRoomPeople")
+RPCS = (
+    "SetGrokBotRoomMembers",
+    "RemoveGrokBotRoomPeople",
+    "GetGrokBotRuntimeCapabilities",
+    "CreateGrokBotRoom",
+)
 DEMO_COMMANDS = {
     "createGroup": {
         "agent": {
@@ -20,7 +28,15 @@ DEMO_COMMANDS = {
     },
     "setGroupMembers": None,
 }
-DEMO_RPCS = {name: {} for name in RPCS}
+DEMO_RPCS: dict[str, object] = {name: {} for name in RPCS}
+DEMO_RPCS["CreateGrokBotRoom"] = lambda args: {
+    "agent": {
+        **args,
+        "id": "demo-server-room",
+        "kind": "ROOM",
+        "harness": "temporal",
+    }
+}
 
 
 @dataclass(frozen=True)
@@ -38,6 +54,35 @@ def create_group(
     description: str = "",
     nonce: str,
 ) -> Bot | None:
+    try:
+        route = creation_route(transport)
+    except ConnectError as exc:
+        # Older box-only backends do not expose runtime capabilities.
+        if exc.status != 404:
+            raise
+        route = "box"
+    if route == "temporal":
+        reply = transport.rpc(
+            "CreateGrokBotRoom",
+            {
+                "agentId": nonce,
+                "name": name,
+                "description": description,
+                "memberAgentIds": list(member_ids),
+                "humanMemberUserIds": [],
+            },
+        )
+        bot = server_bot(reply.get("agent"))
+        if (
+            bot is None
+            or bot.id != nonce
+            or not bot.is_group
+            or bot.raw.get("harness") != "temporal"
+        ):
+            raise ValueError(
+                "Room creation returned a different identity, kind or harness."
+            )
+        return bot
     args: dict[str, object] = {
         "name": name,
         "memberAgentIds": list(member_ids),
@@ -48,6 +93,9 @@ def create_group(
         args["description"] = description
     reply = transport.command("createGroup", args)
     return Bot.from_row(reply.get("agent")) if isinstance(reply, Mapping) else None
+
+
+create = create_group
 
 
 def set_members(transport: Transport, group: Bot, member_ids: Sequence[str]) -> None:
