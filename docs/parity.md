@@ -6,16 +6,16 @@ Inventory: 173 gateway commands and 401 unique backend RPCs (574 entries). GrokB
 
 Sources: the read-only 0.77.0 coordinator command validators, electron-main protocol request descriptors, and invocation evidence in electron-main and renderer assets; repository `gbot/protocol.py` and `docs/protocol-0.72.md`. No live services were queried. Generated declarations alone do not count as desktop invocations. Static absence is not proof against dynamically computed calls; exclusions should be revisited when the app changes.
 
-`done` is exactly the current USED_COMMANDS / USED_RPCS sets, assigned to M1 as the existing baseline. Other milestones follow feature scope even for excluded entries. A milestone is a planning bucket, not a promise to implement declined operations. Counts describe protocol entries, so gateway and backend variants of a feature are both counted.
+`done` is exactly the current USED_COMMANDS / USED_RPCS sets, with implemented feature entries assigned to their milestone (M1 is the existing baseline). Other milestones follow feature scope even for excluded entries. A milestone is a planning bucket, not a promise to implement declined operations. Counts describe protocol entries, so gateway and backend variants of a feature are both counted.
 
 | Area | Planned | Done | Handoff | Declined | Milestone |
 |---|---:|---:|---:|---:|---|
-| roster | 5 | 1 | 0 | 2 | M1, M3 |
+| roster | 2 | 3 | 0 | 2 | M1, M3 |
 | conversation | 7 | 15 | 0 | 20 | M1, M2 |
 | cards | 0 | 13 | 3 | 11 | M1, M2 |
-| rooms | 1 | 4 | 2 | 5 | M2 |
+| rooms | 1 | 5 | 2 | 4 | M2, M3 |
 | tasks | 0 | 7 | 0 | 12 | M2 |
-| bots | 16 | 0 | 0 | 3 | M3 |
+| bots | 7 | 12 | 0 | 3 | M3 |
 | avatar-voice | 5 | 0 | 1 | 1 | M3 |
 | templates | 7 | 0 | 0 | 4 | M3 |
 | connectors | 16 | 4 | 4 | 6 | M1, M4 |
@@ -29,7 +29,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | publishing | 27 | 0 | 0 | 6 | M5 |
 | teams | 7 | 0 | 0 | 14 | M5 |
 | memory-files | 11 | 0 | 0 | 0 | M5 |
-| settings | 17 | 1 | 2 | 1 | M1, M5 |
+| settings | 15 | 1 | 2 | 1 | M1, M5 |
 | account-billing | 4 | 0 | 2 | 2 | M5 |
 | voice-meetings | 0 | 0 | 0 | 19 | M5 |
 | search | 1 | 3 | 0 | 1 | M2 |

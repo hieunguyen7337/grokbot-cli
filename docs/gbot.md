@@ -35,6 +35,28 @@ multi-record formats described below. Exit codes still apply in JSON mode.
 Exit codes: 0 OK; 1 error; 2 needs attention; 3 not signed in or auth failed;
 4 still working after ask; 130 interrupted. A broken pipe exits 0 quietly.
 
+## bot
+
+Create, edit, delete and configure bots. BOT accepts a name or ID.
+
+```text
+gbot bot new NAME
+gbot bot edit BOT
+gbot bot delete BOT [BOT...]
+gbot bot hide BOT
+gbot bot show BOT
+gbot bot notify BOT on|off
+gbot bot drafting BOT on|off
+gbot bot main [BOT]
+gbot bot info BOT
+```
+
+See [bot management](tui/bots.md#cli-options-and-results) for action options,
+confirmation, JSON results, avatar input and instruction files. Mutations need
+confirmation; deletion removes conversation history and protects the current main
+bot. Drafting off disables drafting. Main without BOT reads the server pointer;
+info displays identity, ownership, sidebar settings, drafting, voice and main state.
+
 ## approvals
 
 List pending requests.
