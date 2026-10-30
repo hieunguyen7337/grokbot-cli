@@ -11,6 +11,7 @@ from gbot.service.models import Bot, ConnectionStatus
 from gbot.tui import prefs
 from gbot.tui.app import GbotApp
 from gbot.tui.model import RowState
+from gbot.tui.screens.confirm import ConfirmScreen
 from gbot.tui.screens.home import HomeScreen
 from gbot.tui.screens.session import SessionScreen
 
@@ -167,7 +168,8 @@ def test_live_freeze_and_status(home_env):
 
 def test_mouse_open_and_shortcuts(home_env):
     async def exercise():
-        app = GbotApp(load_fake(), animate=False)
+        service = load_fake()
+        app = GbotApp(service, animate=False)
         async with app.run_test(size=(100, 30)) as pilot:
             await pilot.pause()
             await pilot.click("#bot-list", offset=(8, 2))
@@ -177,8 +179,16 @@ def test_mouse_open_and_shortcuts(home_env):
             await pilot.press("escape", "alt+2")
             assert isinstance(app.screen, SessionScreen)
             assert app.screen.bot_id == "demo-travel"
-            await pilot.press("escape", "space", "1", "ctrl+x")
+            await pilot.press("escape", "space", "1")
+            await pilot.pause()
+            # Travel's card asks for confirmation; cancelling answers nothing.
+            assert isinstance(app.screen, ConfirmScreen)
+            await pilot.press("escape")
+            await app.workers.wait_for_complete()
+            assert service.answered == []
+            await pilot.press("escape", "ctrl+x")
             assert isinstance(app.screen, HomeScreen)
+            assert not app.home.peek.display
             assert app.home.query_one(Input).value == ""
 
     asyncio.run(exercise())
