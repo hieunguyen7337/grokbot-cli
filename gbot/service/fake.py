@@ -10,6 +10,7 @@ from collections.abc import Callable, Mapping, Sequence
 
 from gbot.pending import classify, is_pending
 
+from .attachments import Attachment
 from .demo import DemoState, demo_state
 from .events import (
     BotChanged,
@@ -205,8 +206,9 @@ class FakeService:
         *,
         session_id: str | None = None,
         nonce: str | None = None,
+        attachments: Sequence[Attachment] = (),
     ) -> SendResult:
-        if not text.strip():
+        if not text.strip() and not attachments:
             raise ValueError("Prompt must not be empty.")
         nonce = nonce or str(uuid.uuid4())
         with self._lock:
@@ -225,6 +227,10 @@ class FakeService:
                 "clientNonce": nonce,
                 "timestampMs": self._now(),
             }
+            if attachments:
+                raw["attachments"] = [
+                    {"url": item.path, "file_name": item.name} for item in attachments
+                ]
             self.state.transcripts[bot_id].append(raw)
             self.sent.append((bot_id, text, session_id))
             entry = Entry.from_raw(bot_id, copy.deepcopy(raw))

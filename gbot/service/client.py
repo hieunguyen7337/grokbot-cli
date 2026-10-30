@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping, Sequence
 import httpx
 
 from . import cards, conversation
+from .attachments import Attachment
 from .broker import BrokerTransport, CredentialBroker, GatewayConsumer, default_mint
 from .errors import AsleepError
 from .hub import EventHub
@@ -77,9 +78,19 @@ class GbotService:
         *,
         session_id: str | None = None,
         nonce: str | None = None,
+        attachments: Sequence[Attachment] = (),
     ) -> SendResult:
+        if not attachments:
+            return conversation.send(
+                self.transport, bot_id, text, session_id=session_id, nonce=nonce
+            )
         return conversation.send(
-            self.transport, bot_id, text, session_id=session_id, nonce=nonce
+            self.transport,
+            bot_id,
+            text,
+            session_id=session_id,
+            nonce=nonce,
+            attachments=attachments,
         )
 
     def pending(

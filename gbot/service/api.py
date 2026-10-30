@@ -4,6 +4,7 @@ built on `Transport` (for example `gbot.service.automations.Automations(service.
 from collections.abc import Mapping, Sequence
 from typing import Protocol
 
+from .attachments import Attachment
 from .events import EventSource
 from .models import Action, AnswerResult, Bot, Card, SendResult, TranscriptPage
 from .transport import Transport
@@ -68,8 +69,12 @@ class Service(Protocol):
         *,
         session_id: str | None = None,
         nonce: str | None = None,
+        attachments: Sequence[Attachment] = (),
     ) -> SendResult:
-        """Send a prompt. Reuse `nonce` when retrying the same submission so the gateway can de-duplicate it."""
+        """Send text and/or committed attachments in order; text may be empty when files are attached.
+
+        Reuse `nonce` when retrying the same submission so the gateway can de-duplicate it.
+        """
         ...
 
     def pending(
