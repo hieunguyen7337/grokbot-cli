@@ -2,6 +2,7 @@ import argparse
 import io
 import json
 from collections.abc import Callable, Iterator
+from queue import SimpleQueue
 
 import httpx
 import pytest
@@ -10,6 +11,9 @@ from gbot import cli, config, context
 from gbot.bots import resolve_bot
 from gbot.commands import tail
 from gbot.context import Context
+from gbot.service.errors import SignedOutError
+from gbot.service.events import ConnectionChanged, EntryAdded
+from gbot.service.models import ConnectionStatus, Entry, TranscriptPage
 from groken import auth
 from groken.client import ConnectError
 from groken.gateway import ReplyIncompleteError
@@ -447,25 +451,6 @@ def test_tail_options(fake, capsys):
     assert cli.main(["tail", "-n", "-1"]) == 1
 
 
-@pytest.mark.parametrize("json_mode", [False, True])
-def test_follow_reconnect_interrupt(fake, monkeypatch, capsys, json_mode):
-    waits = []
-    monkeypatch.setattr(tail.Event, "wait", lambda self, delay: waits.append(delay))
-    assert cli.main(["tail", "--follow"] + (["--json"] if json_mode else [])) == 0
-    output = capsys.readouterr()
-    assert output.out.count("fresh") == 1
-    assert output.out.count("gap") == 1
-    assert output.out.count("hello") == 1
-    for noise in ("wrong bot", "wrong type", "wrong channel"):
-        assert noise not in output.out
-    if json_mode:
-        lines = output.out.splitlines()
-        assert [json.loads(line)["id"] for line in lines] == ["1", "2", "6", "5"]
-    assert "dropped" in output.err
-    assert waits == [0.25, 0.25]
-    assert fake.streams == 3
-
-
 def test_debug_and_interrupt(fake, monkeypatch):
     fake.failure = RuntimeError("broken")
     with pytest.raises(RuntimeError, match="broken"):
@@ -591,27 +576,89 @@ def test_new_command_is_discovered(monkeypatch, capsys):
     assert not capsys.readouterr().out
 
 
-def test_follow_backoff_is_bounded(fake, monkeypatch):
-    waits = []
+class FollowService:
+    """A scripted service for `tail --follow`: one page, then the given events."""
 
-    def wait(self, delay):
-        waits.append(delay)
-        if len(waits) == 8:
+    def __init__(self, events):
+        self.events = events
+        self.followed = []
+        self.closed = False
+
+    def transcript(self, bot_id, limit):
+        return TranscriptPage((added(bot_id, "1", "fresh").entry,))
+
+    def event_source(self):
+        return self
+
+    def follow(self, bot_id):
+        self.followed.append(bot_id)
+
+    def start(self, sink):
+        for event in self.events:
+            sink(event)
+
+    def close(self):
+        self.closed = True
+
+
+def added(bot_id, entry_id, content, session_id=None):
+    raw = {"id": entry_id, "seq": int(entry_id), "kind": "message", "content": content}
+    entry = Entry.from_raw(bot_id, raw, session_id)
+    assert entry is not None
+    return EntryAdded(entry)
+
+
+class Interrupting(SimpleQueue):
+    """Ends the follow loop with Ctrl+C once the scripted events are used up."""
+
+    def get(self, block=True, timeout=None):
+        if self.empty():
             raise KeyboardInterrupt
+        return super().get(block, timeout)
 
-    monkeypatch.setattr(fake, "events", lambda channels: iter([]))
-    monkeypatch.setattr(tail.Event, "wait", wait)
-    assert cli.main(["tail", "--follow"]) == 0
-    assert waits == [0.25, 0.5, 1.0, 2.0, 4.0, 5.0, 5.0, 5.0]
+
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_follow_stream(fake, monkeypatch, capsys, json_mode):
+    dropped = ConnectionChanged(ConnectionStatus.RECONNECTING, 1, "dropped")
+    service = FollowService(
+        [
+            added("a", "1", "fresh"),
+            dropped,
+            dropped,
+            added("b", "2", "wrong bot"),
+            added("a", "3", "other session", "s1"),
+            added("a", "4", "hello"),
+        ]
+    )
+    monkeypatch.setattr(context, "service_factory", lambda: service)
+    monkeypatch.setattr(tail, "SimpleQueue", Interrupting)
+    assert cli.main(["tail", "--follow"] + (["--json"] if json_mode else [])) == 0
+    output = capsys.readouterr()
+    assert output.out.count("fresh") == 1
+    assert output.out.count("hello") == 1
+    for noise in ("wrong bot", "other session"):
+        assert noise not in output.out
+    if json_mode:
+        lines = output.out.splitlines()
+        assert [json.loads(line)["id"] for line in lines] == ["1", "4"]
+    assert output.err.count("dropped") == 1
+    assert service.followed == ["a"]
+    assert service.closed
 
 
 def test_follow_auth_expired(fake, monkeypatch, capsys):
-    def events(channels):
-        raise ConnectError(401, "expired")
+    def signed_out():
+        raise SignedOutError()
 
-    monkeypatch.setattr(fake, "events", events)
+    monkeypatch.setattr(context, "service_factory", signed_out)
     assert cli.main(["tail", "--follow"]) == 3
     assert "gbot login" in capsys.readouterr().err
+    service = FollowService([ConnectionChanged(ConnectionStatus.SIGNED_OUT)])
+    monkeypatch.setattr(context, "service_factory", lambda: service)
+    monkeypatch.setattr(tail, "SimpleQueue", Interrupting)
+    assert cli.main(["tail", "--follow"]) == 3
+    assert "gbot login" in capsys.readouterr().err
+    assert service.closed
 
 
 def test_untrusted_text_cannot_drive_the_terminal(fake, monkeypatch, capsys):
