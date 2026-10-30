@@ -105,6 +105,22 @@ gbot connectors --tools --json
 
 Rows include `kind` (plugin, cursor, team, or custom) and `usable`.
 
+Manage bots only when the human asks; every change needs `--yes`:
+
+```text
+gbot bot info Research --json
+gbot bot new Helper --description "Answer billing questions" --yes --json
+gbot bot edit Research --title "Inbox" --yes --json
+gbot bot main Research --yes --json
+gbot voice Research --voice ID --speed 1.25 --yes --json
+gbot templates show SHARE_ID --json
+gbot templates use SHARE_ID --yes --json
+```
+
+`gbot bot info` reports the owner, harness, drafting and voice. Only the owner
+can change a bot, and the main bot cannot be deleted. `gbot voice --list`
+prints the voice ids, and `gbot templates --json` lists public templates.
+
 ## Safety rules
 
 - Show the human the card first. Never approve, send a draft, or use `secret`

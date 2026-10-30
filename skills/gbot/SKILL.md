@@ -26,6 +26,19 @@ gbot tui --screenshot home.svg --size 120x40       # read-only SVG of the termin
 
 The human can run `gbot tui` for a full-screen view of every bot (Claude Code agent-view style).
 
+Managing bots (every change needs `--yes`; make one only when the human asks for it):
+
+```text
+gbot bot info Research --json                      # owner, harness, drafting, voice
+gbot bot new NAME --description "…" --yes --json   # create a bot
+gbot bot edit Research --title "…" --yes --json    # or --name, --description-file FILE
+gbot bot main --json                               # show the main bot; add BOT --yes to change it
+gbot voice --list --json                           # voices; gbot voice BOT --voice ID --yes
+gbot templates --json                              # public templates; show SHARE_ID; use SHARE_ID --yes
+```
+
+`gbot bot delete`, `hide`, `show`, `notify`, `drafting` and `gbot avatar` exist too; see `--help`.
+
 Answering a card (REF = `entry_id` from `approvals`; add `--bot NAME` if two bots share it):
 
 ```text
