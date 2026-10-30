@@ -255,7 +255,7 @@
       ],
       "area": "rooms",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1768,7 +1768,7 @@
       ],
       "area": "rooms",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -2266,8 +2266,8 @@
       ],
       "area": "rooms",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "handoff",
+      "note": "Needs the app's people picker."
     },
     {
       "name": "AddGrokBotTeamReviewItem",
@@ -3617,8 +3617,8 @@
       ],
       "area": "rooms",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Temporal room creation; gbot creates groups through the gateway createGroup."
     },
     {
       "name": "CreateGrokBotTemplate",
@@ -5769,8 +5769,8 @@
       ],
       "area": "rooms",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "handoff",
+      "note": "Canvas bundles render only in the app."
     },
     {
       "name": "ReadGrokBotGroupChatDocument",
@@ -5929,7 +5929,7 @@
       ],
       "area": "rooms",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -6590,7 +6590,7 @@
       ],
       "area": "rooms",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
