@@ -524,3 +524,28 @@ Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetche
 returns template, expected_active_version and creator_display_name; use returns
 bot, setup_handled_by_server and note. Template version inspection and publishing
 remain planned for a later milestone.
+
+## channels
+
+```text
+gbot channels slack BOT [--json]
+gbot channels slack BOT --connect|--reinstall|--uninstall [--no-browser] --yes [--json]
+gbot channels slack BOT --install [--workspace ID] [--no-browser] --yes [--json]
+gbot channels sms [--json]
+gbot channels sms --link --yes [--json]
+gbot channels sms --unlink HANDLE --yes [--json]
+gbot channels listeners [--json]
+gbot channels listeners --connect PLATFORM [--no-browser] --yes [--json]
+```
+
+`slack` shows whether a bot is connected to Slack and in which workspace, and
+connects, installs, reinstalls or uninstalls its Slack app. `sms` shows whether
+texting your bots is available, the line number and the linked phones; `--link`
+issues a code with the message to text from your phone, and `--unlink` removes a
+phone. `listeners` lists the event sources automations can listen to (GitHub and
+others) and connects one. Browser steps wait until the status changes;
+`--no-browser` prints the link without opening it. Changes need `--yes`.
+
+`--json`: The Slack state, the messaging link with its phones, or the listener
+integrations (platform, connected, state and the number of automations that need
+it).
