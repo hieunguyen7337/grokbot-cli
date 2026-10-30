@@ -524,3 +524,35 @@ Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetche
 returns template, expected_active_version and creator_display_name; use returns
 bot, setup_handled_by_server and note. Template version inspection and publishing
 remain planned for a later milestone.
+
+## inboxes
+
+```text
+gbot inboxes [--json]
+gbot inboxes --create USERNAME [--yes] [--json]
+```
+
+List the account's email inboxes and whether each is assigned to a bot, or create
+one. Usernames are lowercased and cannot contain `@` or spaces. Creating requires
+terminal confirmation or `--yes`. Email threads stay in the Grok Bot app.
+
+`--json`: Rows have email, domain, created_at_ms and assigned; `--create` returns
+the new inbox.
+
+## computer
+
+```text
+gbot computer BOT [--json]
+gbot computer BOT --wake|--update|--hand-back [--yes] [--json]
+gbot computer BOT --open
+```
+
+Show a bot's desktop computer: state, phase, host version, available updates,
+disk pressure and a pending hand-off's instruction. `--wake` starts it, `--update`
+updates it (it restarts), and `--hand-back` returns a pending hand-off to the bot.
+These require terminal confirmation or `--yes`. `--open` opens the live view in a
+browser. The live-view link carries an access token, so gbot never prints it.
+
+`--json`: Object with state, phase, handoff_request_id, handoff_instruction,
+pull_percent, host_version, host_update_available, image_update_available and
+disk_pressure.
