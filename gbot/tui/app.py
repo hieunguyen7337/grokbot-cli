@@ -249,8 +249,13 @@ class GbotApp(App[None]):
             self._install_cards(bot_id, cards, warnings)
 
     def on_service_event(self, message: ServiceEvent) -> None:
+        from gbot.tui.screens.handoff import HandoffScreen
+
         if not self._loaded:
             self._queued.append(message.event)
+            for screen in self.screen_stack:
+                if isinstance(screen, HandoffScreen):
+                    screen.poke()
             return
         previous_status = self.state.status
         if isinstance(message.event, events.Other) and message.event.channel == "tray":
@@ -284,6 +289,9 @@ class GbotApp(App[None]):
             for screen in self.screen_stack:
                 if isinstance(screen, SessionScreen):
                     screen.apply_event(message.event)
+        for screen in self.screen_stack:
+            if isinstance(screen, HandoffScreen):
+                screen.poke()
 
     def refresh_home(self) -> None:
         self.bots = list(self.state.bots.values())
