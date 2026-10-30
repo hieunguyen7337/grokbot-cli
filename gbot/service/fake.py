@@ -372,4 +372,16 @@ def load_fake(overrides: Mapping[str, object] | None = None) -> FakeService:
         ):
             for name, reply in getattr(module, attr, {}).items():
                 table.setdefault(name, copy.deepcopy(reply))
+    # Give demo bots backend identities for metadata-only secret management.
+    if service.transport.rpcs.get("ListGrokBotAgents") == {"agents": []}:
+        service.transport.rpcs["ListGrokBotAgents"] = {
+            "agents": [
+                {
+                    "agentId": row["id"],
+                    "id": f"server-{row['id']}",
+                    "viewerIsOwner": True,
+                }
+                for row in service.state.rows
+            ]
+        }
     return service

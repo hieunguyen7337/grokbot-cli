@@ -524,3 +524,25 @@ Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetche
 returns template, expected_active_version and creator_display_name; use returns
 bot, setup_handled_by_server and note. Template version inspection and publishing
 remain planned for a later milestone.
+
+## secrets
+
+```text
+gbot secrets BOT [--json]
+gbot secrets --computer [--json]
+gbot secrets BOT --set NAME [--description TEXT] --yes [--json]
+gbot secrets BOT --delete NAME --yes [--json]
+gbot secrets BOT --copy-from-computer NAME [NAME ...] --yes [--json]
+```
+
+List a bot's secret names, descriptions and update times, or the secret names on
+the bot's desktop computer and whether they are applied. Values are never shown.
+`--set` reads the value from a hidden prompt, or one line of stdin when stdin is
+not a terminal; no option takes a value. Names are uppercased and must start with
+a letter; reserved names such as PATH and prefixes such as CURSOR_ are refused.
+Values are at most 4,096 bytes. Changes need `--yes`, and only the bot's owner can
+change its secrets.
+
+`--json`: List rows have name, description and updated_at_ms; `--computer` returns
+keys, card_keys, is_applied and last_applied_at_ms; `--set` and `--delete` return
+the name; `--copy-from-computer` returns name and outcome per secret.
