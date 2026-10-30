@@ -84,6 +84,39 @@ def test_status_notifications_and_nudges(home_env, monkeypatch):
     asyncio.run(exercise())
 
 
+def test_peek_reply_nudges_and_badges(home_env, monkeypatch):
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await pilot.pause()
+            service._emit(events.ConnectionChanged(ConnectionStatus.ASLEEP))
+            await pilot.pause()
+            await pilot.press("space", "tab")
+            reply = app.home.peek.reply
+            bot_id = app.home.peek.bot_id
+            assert reply.has_focus and bot_id
+            reply.value = "wake up"
+            await pilot.press("enter")
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert service.sent[-1][:2] == (bot_id, "wake up")
+            assert service._sources[0].nudges == 1
+
+            def fail(*args, **kwargs):
+                raise OSError("Offline for this test")
+
+            monkeypatch.setattr(service, "send", fail)
+            reply.value = "again"
+            await pilot.press("enter")
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert app.state.errors[bot_id] == "Offline for this test"
+            assert service._sources[0].nudges == 1
+
+    asyncio.run(exercise())
+
+
 def test_bot_errors_and_recovery(home_env, monkeypatch):
     async def exercise():
         service = load_fake()
@@ -255,7 +288,7 @@ def test_status_snapshots(home_env, status, size, name, monkeypatch):
                 )
                 heading = str(app.home.query_one("#heading", Static).render())
                 assert "3 need you" in heading and "3 idle" in heading
-                assert "1 working" in heading and "1 new replies" in heading
+                assert "1 working" in heading and "1 new reply" in heading
             await assert_snapshot(app, pilot, name)
 
     asyncio.run(exercise())

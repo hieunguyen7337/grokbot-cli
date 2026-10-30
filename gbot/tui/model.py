@@ -257,17 +257,17 @@ def header_text(
 ) -> tuple[str, str]:
     g = glyphs(ascii_only)
     labels = (
-        (RowState.NEEDS_INPUT, "need you"),
-        (RowState.WORKING, "working"),
-        (RowState.NEW_REPLY, "new replies"),
-        (RowState.IDLE, "idle"),
+        (RowState.NEEDS_INPUT, "need you", "need you"),
+        (RowState.WORKING, "working", "working"),
+        (RowState.NEW_REPLY, "new reply", "new replies"),
+        (RowState.IDLE, "idle", "idle"),
     )
     parts = [
         "Grok Bot",
         *(
-            f"{counts.get(state, 0)} {label}"
-            for state, label in labels
-            if counts.get(state, 0)
+            f"{n} {one if n == 1 else many}"
+            for state, one, many in labels
+            if (n := counts.get(state, 0))
         ),
     ]
     label = {

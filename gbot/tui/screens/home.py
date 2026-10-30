@@ -144,15 +144,8 @@ class HomeScreen(Screen):
             right = right.split(f" {self.gbot.symbols.separator} ")[0]
             if state.status == ConnectionStatus.ASLEEP:
                 right = f"{self.gbot.symbols.dot} asleep"
-            if (
-                state.status
-                in {
-                    ConnectionStatus.ASLEEP,
-                    ConnectionStatus.SIGNED_OUT,
-                    ConnectionStatus.OFFLINE,
-                }
-                and Text(left + " " + right).cell_len > self.content_size.width
-            ):
+            if Text(left + " " + right).cell_len > self.content_size.width:
+                # The counts matter more than the product name.
                 left = left.removeprefix(f"Grok Bot {self.gbot.symbols.separator} ")
         self.query_one("#heading", Static).update(Text(left))
         color = (
@@ -254,6 +247,7 @@ class HomeScreen(Screen):
         )
         if result is not None:
             self.gbot.refresh_cards(message.card.bot_id)
+            self.gbot.user_acted()
             if self.peek.bot_id == message.card.bot_id:
                 self.peek.schedule_reload()
 
@@ -473,11 +467,13 @@ class HomeScreen(Screen):
                 raise ValueError("Message was not accepted")
             self.app.call_from_thread(self._peek_sent, bot_id, text)
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
-            self.app.call_from_thread(self.gbot.service_error, error)
+            self.app.call_from_thread(self.gbot.bot_error, bot_id, error)
 
     def _peek_sent(self, bot_id: str, text: str) -> None:
         if self.peek.bot_id == bot_id and self.peek.reply.value.strip() == text:
             self.peek.reply.value = ""
+        self.gbot.bot_error(bot_id)
+        self.gbot.user_acted()
         name = terminal_safe(self.gbot.state.bots[bot_id].name)
         self.notify(f"Sent to {name}", markup=False)
 
