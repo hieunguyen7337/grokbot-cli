@@ -75,6 +75,23 @@ class CardPrompt(VerticalScroll, can_focus=True):
                 if (choice.action.kind if choice.action else "approve")
                 in card.allowed_actions
             ]
+        if card.type == "connector-grant":
+            return [
+                _Choice("Allow once", Action("approve"), True, "Allowed once"),
+                _Choice(
+                    "Always allow for this bot",
+                    Action("approve", always=True),
+                    True,
+                    "Always allowed for this bot",
+                ),
+                _Choice(
+                    "Always allow for all team bots",
+                    Action("approve", always=True, all_bots=True),
+                    True,
+                    "Always allowed for all team bots",
+                ),
+                _Choice("Skip", Action("deny"), effect="Skipped"),
+            ]
         if card.type == "local-tool-permission":
             return [
                 _Choice("Allow once", Action("approve"), True, "Allowed once"),
@@ -152,9 +169,9 @@ class CardPrompt(VerticalScroll, can_focus=True):
             if body and text.endswith(body):
                 prefix, text = text[: -len(body)], body
         lines = terminal_safe(text).splitlines()
-        if len(lines) > 8 and not self.expanded:
+        if len(lines) > 8 and not self.expanded and not self.app_only:
             lines = [*lines[:8], f"{self.symbols.ellipsis} e to expand"]
-        elif len(lines) > 8:
+        elif len(lines) > 8 and not self.app_only:
             lines.append("e to collapse")
         return Text(terminal_safe(prefix) + "\n".join(lines))
 

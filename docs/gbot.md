@@ -60,10 +60,10 @@ Meeting-chat drafts are deny-only. The signature shown in the app is not added b
 
 ## approve
 
-Approve a review, meeting consent or local tool request.
+Approve a review, local tool request, connector grant or message draft.
 
 ```text
-usage: gbot approve [-h] [--yes] [--json] [--always] REF
+usage: gbot approve [-h] [--yes] [--json] [--always] [--all-bots] REF
 
 positional arguments:
   REF
@@ -73,11 +73,15 @@ options:
   --yes
   --json
   --always
+  --all-bots  connector grant: always allow for all team bots
 ```
 
 Example: `gbot approve REF`.
 
 `--always` sends a persistent approval resolution instead of a one-time approval. `--yes` skips confirmation.
+For connector grants, `--always` remembers permission for this bot; add `--all-bots`
+to remember permission for all team bots. `--all-bots` requires `--always` and a
+connector grant. Use `gbot deny REF` to skip a connector grant.
 
 ## deny
 

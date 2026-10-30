@@ -326,8 +326,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "disconnectChannel",
@@ -401,8 +401,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "dismissWidget",
@@ -414,8 +414,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "duplicateAgent",
@@ -1382,8 +1382,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "resolveConnectorGrant",
@@ -1397,7 +1397,7 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1412,8 +1412,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "resolveMessagesGrants",
@@ -1456,8 +1456,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "resyncPublishedSkill",
@@ -1582,8 +1582,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "sendPrompt",
@@ -1922,8 +1922,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "submitUserForm",
@@ -1938,8 +1938,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Gateway twin of the backend card RPC; gbot answers cards through the backend, as the app does."
     },
     {
       "name": "syncPluginSkills",
@@ -3188,8 +3188,8 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "handoff",
+      "note": "Credential requests open 1Password in the app or a browser."
     },
     {
       "name": "AttachGrokBotAgentDelegatedCredential",
@@ -3878,8 +3878,8 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "handoff",
+      "note": "Credential requests open 1Password in the app or a browser."
     },
     {
       "name": "DiscardGrokBotDraft",
@@ -6096,8 +6096,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of resolveConnectorGrant; gbot reaches bots through the gateway command."
     },
     {
       "name": "ResolveGrokBotCredentialRequest",
@@ -6110,8 +6110,8 @@
       ],
       "area": "cards",
       "milestone": "M2",
-      "status": "planned",
-      "note": "Answer a requested vault credential selection."
+      "status": "handoff",
+      "note": "Credential requests open 1Password in the app or a browser."
     },
     {
       "name": "ResolveGrokBotLocalToolPermission",

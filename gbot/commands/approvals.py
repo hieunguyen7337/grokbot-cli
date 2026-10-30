@@ -37,6 +37,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         parser.add_argument("--bot", help="Bot that owns REF, when REF is ambiguous")
         if name == "approve":
             parser.add_argument("--always", action="store_true")
+            parser.add_argument(
+                "--all-bots",
+                action="store_true",
+                help="connector grant: always allow for all team bots",
+            )
         elif name == "deny":
             parser.add_argument("--never", action="store_true")
         elif name == "respond":
@@ -104,6 +109,7 @@ def answer(args: argparse.Namespace, ctx: Context) -> int:
         never=getattr(args, "never", False),
         value=getattr(args, "value", None),
         fields=tuple(fields),
+        all_bots=getattr(args, "all_bots", False),
     )
     method, payload = cards.plan(item, action)
     preview = sys.stderr if ctx.out.json_mode else sys.stdout

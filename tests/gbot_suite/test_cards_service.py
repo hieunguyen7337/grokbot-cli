@@ -14,7 +14,7 @@ def card(kind: str, **changes: object) -> Card:
     actions = (
         ("approve", "deny")
         if kind.endswith("draft")
-        or kind in {"auto-review-approval", "local-tool-permission"}
+        or kind in {"auto-review-approval", "local-tool-permission", "connector-grant"}
         else ("secret",)
         if kind == "secret-request"
         else ("respond", "dismiss")
@@ -377,3 +377,75 @@ def test_discover_card():
     )
     assert found == [classify(entry, "bot", "Bot")]
     assert warnings == []
+
+
+@pytest.mark.parametrize("session", [None, "session"])
+@pytest.mark.parametrize(
+    "action,resolution",
+    [
+        (Action("approve"), "allowed"),
+        (Action("approve", always=True), "always_this_bot"),
+        (Action("approve", always=True, all_bots=True), "always_all_team_bots"),
+        (Action("deny"), "skipped"),
+    ],
+)
+def test_connector_grant(session, action, resolution):
+    from gbot.protocol import USED_COMMANDS
+
+    item = card("connector-grant", session_id=session)
+    expected = {
+        "agentId": "bot",
+        "entryId": "entry",
+        "requestId": "request",
+        "resolution": resolution,
+    }
+    if session:
+        expected["sessionId"] = session
+    assert cards.plan(item, action) == ("resolveConnectorGrant", expected)
+    transport = FakeTransport(commands={"resolveConnectorGrant": None})
+    result = cards.answer(transport, item, action)
+    assert (result.rpc, result.effect) == ("resolveConnectorGrant", resolution)
+    assert transport.calls == [("command", "resolveConnectorGrant", expected)]
+    assert "resolveConnectorGrant" in USED_COMMANDS
+
+
+@pytest.mark.parametrize(
+    "reply", [{"refusal": {"failureCode": "blocked"}}, {"refusal": None}, False, 1, []]
+)
+def test_connector_refused(reply):
+    with pytest.raises(ValueError, match="refused|not accepted"):
+        cards.answer(
+            FakeTransport(commands={"resolveConnectorGrant": reply}),
+            card("connector-grant"),
+            Action("approve"),
+        )
+
+
+@pytest.mark.parametrize("reply", [{}, {"accepted": False}])
+def test_connector_mapping_reply(reply):
+    assert (
+        cards.answer(
+            FakeTransport(commands={"resolveConnectorGrant": reply}),
+            card("connector-grant"),
+            Action("deny"),
+        ).effect
+        == "skipped"
+    )
+
+
+@pytest.mark.parametrize(
+    "item,action,hint",
+    [
+        (card("connector-grant"), Action("approve", all_bots=True), "--all-bots"),
+        (card("connector-grant"), Action("deny", never=True), "--never"),
+        (
+            card("widget"),
+            Action("respond", value="A", always=True, all_bots=True),
+            "--all-bots",
+        ),
+        (card("connector-grant", request_id=None), Action("approve"), "requestId"),
+    ],
+)
+def test_connector_usage(item, action, hint):
+    with pytest.raises(ValueError, match=hint):
+        cards.plan(item, action)

@@ -496,3 +496,114 @@ def test_recheck_after_confirm_and_transport_errors(monkeypatch):
             assert app.notices[-1].startswith("Could not answer:")
 
     asyncio.run(exercise())
+
+
+@pytest.mark.parametrize(
+    "pick,resolution,notice",
+    [
+        ("3", "always_all_team_bots", "Always allowed for all team bots"),
+        ("4", "skipped", "Skipped"),
+    ],
+)
+def test_connector_prompt(monkeypatch, pick, resolution, notice):
+    from gbot.service import cards
+    from gbot.service.transport import FakeTransport
+
+    async def exercise():
+        service, card = synthetic(
+            "connector-grant",
+            "ask",
+            {"requestId": "grant", "serverName": "Calendar", "status": "pending"},
+        )
+        transport = FakeTransport(commands={"resolveConnectorGrant": None})
+        monkeypatch.setattr(
+            service,
+            "answer",
+            lambda item, action: cards.answer(transport, item, action),
+        )
+        app = Host(service, card)
+        async with app.run_test(size=(100, 30)) as pilot:
+            assert [c.label for c in app.query_one(CardPrompt).choices] == [
+                "Allow once",
+                "Always allow for this bot",
+                "Always allow for all team bots",
+                "Skip",
+            ]
+            await pilot.press(pick)
+            await pilot.pause()
+            if pick == "3":
+                assert isinstance(app.screen, ConfirmScreen)
+                assert transport.calls == []
+                await pilot.click("#cancel")
+                await asyncio.wait_for(app.workers.wait_for_complete(), timeout=10)
+                assert transport.calls == []
+                await pilot.press(pick)
+                await pilot.pause()
+                assert isinstance(app.screen, ConfirmScreen)
+                await pilot.click("#confirm")
+            else:
+                assert not isinstance(app.screen, ConfirmScreen)
+            await asyncio.wait_for(app.workers.wait_for_complete(), timeout=10)
+            assert transport.calls == [
+                (
+                    "command",
+                    "resolveConnectorGrant",
+                    {
+                        "agentId": "demo-inbox",
+                        "entryId": "synthetic",
+                        "sessionId": "side-session",
+                        "requestId": "grant",
+                        "resolution": resolution,
+                    },
+                )
+            ]
+            assert app.notices == [notice]
+
+    asyncio.run(exercise())
+
+
+def test_virtual_card_prompt():
+    async def exercise():
+        service, card = synthetic(
+            "virtual-card-approval",
+            "approval",
+            {
+                "status": "pending",
+                "amountCents": 1234,
+                "currency": "USD",
+                "merchantName": "[link=x] Shop\x1b[31m",
+                "context": "Buy supplies",
+            },
+        )
+        app = Host(service, card)
+        async with app.run_test() as pilot:
+            assert [c.label for c in app.query_one(CardPrompt).choices] == ["Later"]
+            assert "Pay 12.34 USD to [link=x] Shop\\u001b[31m" in str(
+                app.query_one("#prompt-body", Static).content
+            )
+            await pilot.press("1")
+            assert app.later and not service.answered
+
+    asyncio.run(exercise())
+
+
+def test_connector_session_snapshot():
+    from gbot.tui.app import GbotApp
+
+    async def exercise():
+        service, _ = synthetic(
+            "connector-grant",
+            "ask",
+            {"requestId": "grant", "serverName": "Calendar", "status": "pending"},
+        )
+        service.state.transcripts["demo-inbox"] = service.state.transcripts[
+            "demo-inbox"
+        ][-1:]
+        app = GbotApp(cast(Service, service), bot="Inbox", animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert app.screen.query_one(CardPrompt).card.type == "connector-grant"
+            await assert_snapshot(app, pilot, "prompt-connector-grant")
+
+    asyncio.run(exercise())

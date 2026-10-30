@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 from gbot import config
 from gbot.bots import list_bots, record, resolve_bot
 from gbot.context import Context
+from gbot.output import terminal_safe
 
 APP_ONLY = "answer in the Grok Bot app"
 _BODIES = {
@@ -135,7 +136,7 @@ def _classify(
         actions = ("approve", "deny")
     elif kind == "meeting-chat-draft":
         actions = ("deny",)
-    elif kind in {"auto-review-approval", "local-tool-permission"}:
+    elif kind in {"auto-review-approval", "local-tool-permission", "connector-grant"}:
         # meeting-join-consent stays app-only: the app has no verified backend RPC for it.
         actions = ("approve", "deny")
     elif kind == "widget":
@@ -188,6 +189,72 @@ def _classify(
         tool = command_text(f"{body.get('action', '')}: {body.get('target', '')}")
     elif kind == "auto-review-approval":
         tool = command_text(str(body.get("command") or ""))
+    elif kind in {
+        "connector-grant",
+        "virtual-card-approval",
+        "credential-request",
+        "permission-request",
+    }:
+
+        def text(value: object) -> str:
+            return one_line(terminal_safe(str(value or "")))
+
+        lines: list[str] = []
+        if kind == "connector-grant":
+            lines.append(f"Connector: {text(body.get('serverName'))}")
+            if body.get("remembered"):
+                lines.append(f"Remembered: {text(body['remembered'])}")
+        elif kind == "virtual-card-approval":
+            amount = body.get("amountCents")
+            money = (
+                f"{amount / 100:.2f}"
+                if isinstance(amount, (int, float)) and not isinstance(amount, bool)
+                else "?"
+            )
+            lines = [
+                f"Pay {money} {text(body.get('currency'))} to {text(body.get('merchantName'))}",
+                text(body.get("merchantUrl")),
+            ]
+            items = body.get("lineItems")
+            for item in items if isinstance(items, list) else []:
+                row = record(item)
+                label, cents = row.get("label"), row.get("amountCents")
+                if (
+                    not isinstance(label, str)
+                    or not isinstance(cents, (int, float))
+                    or isinstance(cents, bool)
+                ):
+                    continue
+                quantity = row.get("quantity")
+                count = (
+                    f" x{quantity}"
+                    if isinstance(quantity, (int, float)) and quantity > 1
+                    else ""
+                )
+                lines.append(f"  {text(label)}{count}  {cents / 100:.2f}")
+            if body.get("context"):
+                lines.append(text(body["context"]))
+        elif kind == "credential-request":
+            if body.get("kind") == "brokered-login":
+                lines.append(f"Sign in for: {text(body.get('goal'))}")
+                entries = body.get("entries")
+                for credential in entries if isinstance(entries, list) else []:
+                    row = record(credential)
+                    lines.append(
+                        f"  {text(row.get('website'))}: {text(row.get('reason'))}"
+                    )
+            elif body.get("kind") == "browser-login":
+                lines.append(
+                    f"Sign in to {text(body.get('targetSite'))}: {text(body.get('purpose'))}"
+                )
+        else:
+            lines = [
+                f"{text(body.get('kind'))} permission: {text(body.get('title'))}",
+                text(body.get("reason")),
+            ]
+            if body.get("detail"):
+                lines.append(text(body["detail"]))
+        tool = "\n".join(lines)
     elif kind in _DRAFT_TYPES:
 
         def addresses(key: str) -> str:
@@ -360,6 +427,8 @@ def render(items: list[PendingItem]) -> str:
             f"{item.entry_id[:8]}  {one_line(item.bot_name)}  {item.type}  {age}  "
             f"{item.summary}{suffix}"
         )
+        if not item.allowed_actions and item.tool_text:
+            lines.extend("  " + line for line in item.tool_text.splitlines())
         if item.options is not None:
             lines.append(
                 "  options: " + " | ".join(one_line(option) for option in item.options)
