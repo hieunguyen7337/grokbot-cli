@@ -524,3 +524,31 @@ Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetche
 returns template, expected_active_version and creator_display_name; use returns
 bot, setup_handled_by_server and note. Template version inspection and publishing
 remain planned for a later milestone.
+
+## vault
+
+```text
+gbot vault [--json]
+gbot vault --add-login --title T --username U [--site S ...] [--notes N] --yes [--json]
+gbot vault --update-login ID [--title T] [--username U] [--site S ...] [--notes N] --yes [--json]
+gbot vault --delete ID --yes [--json]
+gbot vault --payment-methods [--json]
+gbot vault --passkeys [--json]
+gbot vault --revoke-passkey ID --yes [--json]
+gbot vault --onepassword [--json]
+gbot vault --onepassword-sync --yes [--json]
+gbot vault --onepassword-disconnect ID --yes [--json]
+```
+
+List the account's vault logins, cards and contacts (cards as brand and last four
+digits only), add or update a login, or delete an item. The password comes from a
+hidden prompt, or one line of stdin when stdin is not a terminal; no option takes a
+password, and updating a login asks for it again. Options left out of an update keep
+the login's current values. Sites must be hosts or HTTP URLs. Also lists saved
+payment methods, lists and revokes passkeys, and shows, syncs or disconnects
+1Password connections. Changes need `--yes`. Cards, payment methods, passkey
+enrollment and connecting 1Password stay in the Grok Bot app.
+
+`--json`: Items have id, kind, title, username, notes, sites, created_at_ms,
+updated_at_ms, card, contact and managed_by; the other options return their
+objects. No output contains a password.
