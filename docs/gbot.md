@@ -344,6 +344,38 @@ Example: `gbot tail -n 10 --follow`.
 
 `--json`: Array of raw entries normally; with follow, one compact entry per line (JSON Lines), including the initial selected entries. Entries include `seq`, `id`, `kind`, `timestampMs`, and `message`; `message` kind is user and `send-message` is bot. Full affects text rendering only.
 
+## tui
+
+Open the terminal UI shell over synthetic demo bots.
+
+```text
+usage: gbot tui [-h] [--bot BOT] [--demo] [--screenshot PATH] [--size WxH] [--ascii]
+
+options:
+  -h, --help         show this help message and exit
+  --bot BOT
+  --demo
+  --screenshot PATH
+  --size WxH
+  --ascii
+```
+
+Example: `gbot tui --demo`.
+
+Install the repository's `tui` extra using the editable uv tool installation
+described in the [README](../README.md). Help works without this extra.
+Live mode is not wired in yet; omitting `--demo` returns 1.
+
+`--bot BOT` opens a placeholder session by ID or name. `--screenshot PATH`
+writes a headless SVG and exits 0; `--size WxH` sets its terminal dimensions
+(120x40 default). Example: `gbot tui --demo --screenshot home.svg --size 100x30`.
+`--ascii` uses plain ASCII symbols.
+
+`?` lists every binding, Escape closes help or returns home, and Ctrl+P opens
+the command palette. Press Ctrl+C twice within two seconds to exit. Navigation,
+peek, pinning, grouping, finding, reordering and answering are placeholders.
+Printable shortcuts only act when no text input has focus.
+
 ## use
 
 Save the default bot selection locally.

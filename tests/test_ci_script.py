@@ -53,7 +53,10 @@ def test_success_and_live_commands(capsys):
 
 
 @pytest.mark.parametrize("windows", [False, True])
-def test_build_commands_and_cleanup(tmp_path, monkeypatch, windows):
+@pytest.mark.parametrize("tui_code,tui_output", [(0, "--demo"), (1, "--demo"), (0, "")])
+def test_build_commands_and_cleanup(
+    tmp_path, monkeypatch, windows, tui_code, tui_output
+):
     monkeypatch.setattr(ci.tempfile, "tempdir", str(tmp_path))
     monkeypatch.setattr(ci, "WINDOWS", windows)
     calls = []
@@ -77,9 +80,13 @@ def test_build_commands_and_cleanup(tmp_path, monkeypatch, windows):
             skill = Path(kwargs["env"]["HOME"]) / ".codex/skills/groken/SKILL.md"
             skill.parent.mkdir(parents=True)
             skill.write_text("test")
+        if command[-2:] == ["tui", "--help"]:
+            assert kwargs["capture_output"] and kwargs["text"]
+            return subprocess.CompletedProcess(command, tui_code, stdout=tui_output)
         return subprocess.CompletedProcess(command, 0)
 
-    assert ci.build(run)
+    success = tui_code == 0 and "--demo" in tui_output
+    assert ci.build(run) == success
     assert [cmd[:2] for cmd in calls[:3]] == [
         ["uv", "build"],
         ["uv", "venv"],
@@ -87,9 +94,10 @@ def test_build_commands_and_cleanup(tmp_path, monkeypatch, windows):
     ]
     assert calls[3][-1] == "--help"
     # The upstream groken CLI cannot start on Windows, so its smoke test is POSIX-only.
-    assert len(calls) == (4 if windows else 5)
-    if not windows:
-        assert calls[4][-2:] == ["install", "codex-skills"]
+    assert calls[4][-2:] == ["tui", "--help"]
+    assert len(calls) == (5 if windows or not success else 6)
+    if not windows and success:
+        assert calls[5][-2:] == ["install", "codex-skills"]
     assert temp_root is not None and not temp_root.exists()
 
 
