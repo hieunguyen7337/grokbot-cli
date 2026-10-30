@@ -66,6 +66,7 @@ class GbotApp(App[None]):
         self.notifier = Notifier()
         self.home = HomeScreen()
         self._source: events.EventSource | None = None
+        self._followed: set[tuple[str, str | None]] = set()
         self._service_closing = False
         self._loaded = False
         self._queued: list[events.Event] = []
@@ -119,6 +120,22 @@ class GbotApp(App[None]):
     def _receive_event(self, event: events.Event) -> None:
         self.post_message(ServiceEvent(event))
 
+    def follow(self, bot_id: str, session_id: str | None = None) -> None:
+        self._followed.add((bot_id, session_id))
+        if self._source is not None:
+            try:
+                self._source.follow(bot_id, session_id)
+            except Exception as error:  # noqa: BLE001 - event-source boundary
+                self.service_error(error)
+
+    def unfollow(self, bot_id: str, session_id: str | None = None) -> None:
+        self._followed.discard((bot_id, session_id))
+        if self._source is not None:
+            try:
+                self._source.unfollow(bot_id, session_id)
+            except Exception as error:  # noqa: BLE001 - event-source boundary
+                self.service_error(error)
+
     @work(thread=True, exit_on_error=False)
     def load_service(self) -> None:
         try:
@@ -128,6 +145,7 @@ class GbotApp(App[None]):
                 source.close()
                 return
             source.start(self._receive_event)
+            self.call_from_thread(self._follow_source)
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
             self.call_from_thread(self.service_error, error)
         bots: list[Bot] = []
@@ -143,6 +161,10 @@ class GbotApp(App[None]):
             self.call_from_thread(self.service_error, error)
         if not self._service_closing:
             self.call_from_thread(self._install, bots, cards, warnings)
+
+    def _follow_source(self) -> None:
+        for bot_id, session_id in self._followed.copy():
+            self.follow(bot_id, session_id)
 
     def _install(self, bots: list[Bot], cards: list[Card], warnings: list[str]) -> None:
         self.state.apply(events.RosterReplaced(tuple(bots)))
@@ -193,10 +215,26 @@ class GbotApp(App[None]):
             self.refresh_roster()
         if changes:
             self.refresh_home()
+        if isinstance(
+            message.event,
+            (
+                events.EntryAdded,
+                events.EntryChanged,
+                events.EntryRemoved,
+                events.TranscriptReset,
+                events.BoxChanged,
+            ),
+        ):
+            for screen in self.screen_stack:
+                if isinstance(screen, SessionScreen):
+                    screen.apply_event(message.event)
 
     def refresh_home(self) -> None:
         self.bots = list(self.state.bots.values())
         self.home.refresh_state()
+        for screen in self.screen_stack:
+            if isinstance(screen, SessionScreen):
+                screen.refresh_state()
 
     def on_resize(self) -> None:
         self.call_after_refresh(self.home.refresh_state)
