@@ -9,6 +9,7 @@ from textual.widgets import Markdown, Static
 
 from gbot.output import terminal_safe
 from gbot.pending import describe, one_line
+from gbot.service.attachments import entry_files
 from gbot.service.models import Entry
 from gbot.service.reactions import entry_reactions
 from gbot.tui.glyphs import Glyphs
@@ -65,11 +66,31 @@ class UnsupportedEntry(Static):
     """
 
 
+def file_size(size: int | None) -> str:
+    if size is None:
+        return "unknown size"
+    for unit, divisor in (("GB", 1024**3), ("MB", 1024**2), ("KB", 1024)):
+        if size >= divisor:
+            return f"{round(size / divisor, 1):g} {unit}"
+    return f"{size} B"
+
+
 def entry_widget(entry: Entry, symbols: Glyphs) -> Widget:
     """Render a single entry without interpreting user text as markup."""
     text = terminal_safe(entry.text)
+    files = entry_files(entry)
+    file_lines = [
+        f"{symbols.attachment} {terminal_safe(file.name)} · "
+        + ("link" if file.remote_url else file_size(file.size))
+        for file in files
+    ]
     widget: Widget
-    if entry.card_type:
+    if entry.kind == "user-attachment" and files:
+        widget = UserEntry(
+            Text("\n".join(f"{symbols.user} {line}" for line in file_lines)),
+            name=entry.id,
+        )
+    elif entry.card_type and entry.card_type != "attachment":
         summary = one_line(terminal_safe(describe(dict(entry.raw))))
         if summary == "unknown":
             summary = one_line(terminal_safe(entry.card_type))
@@ -102,6 +123,11 @@ def entry_widget(entry: Entry, symbols: Glyphs) -> Widget:
         widget = UnsupportedEntry(
             Text(one_line(terminal_safe(entry.kind)) + suffix), name=entry.id
         )
+    if files and entry.kind != "user-attachment":
+        widget = Vertical(
+            widget, Static(Text("\n".join(file_lines), style="dim")), name=entry.id
+        )
+        widget.styles.height = "auto"
     reactions = entry_reactions(entry)
     if reactions:
         line = Text(

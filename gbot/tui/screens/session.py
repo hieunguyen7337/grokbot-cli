@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, cast
 from uuid import uuid4
 
@@ -7,12 +8,13 @@ from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding, BindingType
 from textual.containers import Vertical
-from textual.events import Mount
+from textual.events import Mount, Paste
 from textual.screen import Screen
 from textual.widgets import Input, Static
 
 from gbot.output import terminal_safe
-from gbot.service import events
+from gbot.service import attachments, events
+from gbot.service.attachments import Attachment
 from gbot.service.models import Card, TranscriptPage
 from gbot.tui.answering import answer_card
 from gbot.tui.slash import SlashContext, run
@@ -25,6 +27,27 @@ if TYPE_CHECKING:
 
 
 class _SessionInput(Input):
+    def _on_paste(self, event: Paste) -> None:
+        from gbot.tui.slash.attachments import file_path
+
+        event.prevent_default()
+        screen = cast("SessionScreen", self.screen)
+        value = event.text.strip()
+        if value and "\n" not in value and "\r" not in value:
+            try:
+                path = file_path(value)
+                exists = path.is_file()
+            except (OSError, ValueError, RuntimeError):
+                pass
+            else:
+                if exists:
+                    if not screen.gbot.read_only:
+                        screen.stage_file(path)
+                        event.stop()
+                        return
+                    screen.gbot.notify("Read-only mode", markup=False)
+        super()._on_paste(event)
+
     def check_consume_key(self, key: str, character: str | None) -> bool:
         # Retry must remain reachable while the empty composer has focus.
         if key == "r" and not self.value and cast("SessionScreen", self.screen).failed:
@@ -67,6 +90,7 @@ class SessionScreen(Screen):
     SessionScreen #session-input { height: 3; border: round $secondary; }
     SessionScreen #session-notice { height: auto; color: $text-muted; }
     SessionScreen #session-alert { height: auto; color: $warning; }
+    SessionScreen #session-attachments { height: auto; color: $text-muted; }
     SessionScreen #session-card { height: auto; max-height: 50%; }
     SessionScreen CardPrompt { max-height: 100%; }
     SessionScreen #session-footer { height: 1; color: $text-muted; }
@@ -110,6 +134,12 @@ class SessionScreen(Screen):
         self._sending = False
         self._send_text: str | None = None
         self._send_nonce: str | None = None
+        self.attachments: list[Attachment] = []
+        self.uploads = 0
+        self._upload_progress: dict[int, str] = {}
+        self._upload_id = 0
+        self._send_paths: tuple[str, ...] = ()
+        self._sending_attachments: tuple[Attachment, ...] = ()
 
     @property
     def gbot(self) -> "GbotApp":
@@ -122,6 +152,9 @@ class SessionScreen(Screen):
         yield Static("", id="session-notice", markup=False)
         yield SlashMenu("session")
         yield Static("", id="session-alert", markup=False)
+        line = Static("", id="session-attachments", markup=False)
+        line.display = False
+        yield line
         yield _SessionInput(placeholder="message", id="session-input")
         yield Static("esc home · pgup earlier", id="session-footer", markup=False)
 
@@ -134,6 +167,64 @@ class SessionScreen(Screen):
 
     def on_unmount(self) -> None:
         self.gbot.unfollow(self.bot_id, self.session_id)
+
+    def refresh_attachments(self) -> None:
+        if not self.is_mounted:
+            return
+        line = self.query_one("#session-attachments", Static)
+        parts = [terminal_safe(item.name) for item in self.attachments]
+        parts.extend(self._upload_progress.values())
+        line.display = bool(parts)
+        line.update(
+            Text(
+                f"{self.gbot.symbols.attachment} "
+                + " · ".join(parts + ["/detach to remove"])
+            )
+        )
+
+    def stage_file(self, path: Path) -> None:
+        if self.gbot.read_only:
+            self.gbot.notify("Read-only mode", markup=False)
+            return
+        self._upload_id += 1
+        token = self._upload_id
+        self.uploads += 1
+        self._progress(token, path.name, 0, 1)
+        self._upload_file(path, token)
+
+    def _progress(self, token: int, name: str, done: int, total: int) -> None:
+        self._upload_progress[token] = (
+            f"Uploading {terminal_safe(name)} {done * 100 // max(total, 1)}%"
+        )
+        self.refresh_attachments()
+
+    @work(thread=True, exit_on_error=False)
+    def _upload_file(self, path: Path, token: int) -> None:
+        try:
+            item = attachments.upload(
+                self.gbot.service.transport,
+                self.bot_id,
+                path,
+                progress=lambda done, total: self.app.call_from_thread(
+                    self._progress, token, path.name, done, total
+                ),
+            )
+        except Exception as error:  # noqa: BLE001 - upload worker boundary
+            self.app.call_from_thread(self._uploaded, token, None, str(error))
+        else:
+            self.app.call_from_thread(self._uploaded, token, item, "")
+
+    def _uploaded(self, token: int, item: Attachment | None, error: str) -> None:
+        self.uploads -= 1
+        self._upload_progress.pop(token, None)
+        if item is not None:
+            self.attachments.append(item)
+            self.gbot.notify(
+                f"Attached {terminal_safe(item.name)} · /detach to remove", markup=False
+            )
+        else:
+            self.gbot.notify(terminal_safe(error), severity="warning", markup=False)
+        self.refresh_attachments()
 
     def refresh_state(self) -> None:
         if not self.is_mounted:
@@ -453,7 +544,7 @@ class SessionScreen(Screen):
             return
         event.stop()
         text = event.value.strip()
-        if not text or self._sending:
+        if self._sending:
             return
         if text.startswith("//"):
             text = text[1:]
@@ -470,17 +561,38 @@ class SessionScreen(Screen):
             else:
                 event.input.value = ""
             return
-        if text != self._send_text or self._send_nonce is None:
+        if self.uploads:
+            self.gbot.notify("Wait for the upload to finish", markup=False)
+            return
+        if not text and not self.attachments:
+            return
+        if self.gbot.read_only:
+            self.gbot.notify("Read-only mode", markup=False)
+            return
+        paths = tuple(item.path for item in self.attachments)
+        if (
+            text != self._send_text
+            or paths != self._send_paths
+            or self._send_nonce is None
+        ):
             self._send_text, self._send_nonce = text, str(uuid4())
+            self._send_paths = paths
+        self._sending_attachments = tuple(self.attachments)
         self._sending = True
         self.query_one("#session-notice", Static).update("Sending…")
-        self.send_message(text, self._send_nonce)
+        self.send_message(text, self._send_nonce, self._sending_attachments)
 
     @work(thread=True, exit_on_error=False)
-    def send_message(self, text: str, nonce: str) -> None:
+    def send_message(
+        self, text: str, nonce: str, files: tuple[Attachment, ...] = ()
+    ) -> None:
         try:
             result = self.gbot.service.send(
-                self.bot_id, text, session_id=self.session_id, nonce=nonce
+                self.bot_id,
+                text,
+                session_id=self.session_id,
+                nonce=nonce,
+                attachments=files,
             )
             if not result.accepted:
                 raise ValueError("Message was not accepted")
@@ -499,5 +611,9 @@ class SessionScreen(Screen):
                 self.query_one("#session-input", Input).value = ""
         self.gbot.bot_error(self.bot_id, error)
         if error is None:
+            for item in self._sending_attachments:
+                if item in self.attachments:
+                    self.attachments.remove(item)
+            self.refresh_attachments()
             self._send_text, self._send_nonce = None, None
             self.gbot.user_acted()

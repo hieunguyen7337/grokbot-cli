@@ -15,6 +15,7 @@ class Glyphs:
     arrow: str
     separator: str
     pin: str
+    attachment: str
 
 
 UNICODE = Glyphs(
@@ -28,6 +29,7 @@ UNICODE = Glyphs(
     arrow="→",
     separator="·",
     pin="▸",
+    attachment="\U0001f4ce",
 )
 
 ASCII = Glyphs(
@@ -41,6 +43,7 @@ ASCII = Glyphs(
     arrow="->",
     separator="-",
     pin=">",
+    attachment="+",
 )
 
 
