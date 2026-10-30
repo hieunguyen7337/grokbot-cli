@@ -1,0 +1,7281 @@
+{
+  "app_version": "0.77.0",
+  "entries": [
+    {
+      "name": "authenticateMcpServer",
+      "kind": "command",
+      "args": [
+        "serverId",
+        "accountKey",
+        "trigger",
+        "entryPoint",
+        "forceReauth",
+        "requestingAgentId",
+        "oauthRedirectUri",
+        "dataCenter",
+        "shareWithBot"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "awaitMessagesGrants",
+      "kind": "command",
+      "args": [
+        "requestId",
+        "waitMs"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "callMcpAppTool",
+      "kind": "command",
+      "args": [
+        "serverIdentifier",
+        "toolName",
+        "argumentsJson",
+        "userActivated",
+        "agentId",
+        "entryId",
+        "sessionId"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Interaction originates in an MCP app HTML UI."
+    },
+    {
+      "name": "cancelMessagesGrants",
+      "kind": "command",
+      "args": [
+        "requestId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "carryBoxSecretsToBot",
+      "kind": "command",
+      "args": [
+        "serverId",
+        "names"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": "Make selected computer secrets available to a bot."
+    },
+    {
+      "name": "clearGeneratedRoomNameStamps",
+      "kind": "command",
+      "args": [
+        "rooms"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "Desktop window or maintenance bookkeeping."
+    },
+    {
+      "name": "clearTrays",
+      "kind": "command",
+      "args": [],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "completeGithubConnect",
+      "kind": "command",
+      "args": [
+        "state",
+        "code",
+        "installationId",
+        "setupAction",
+        "error"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "completeMcpOAuth",
+      "kind": "command",
+      "args": [
+        "code",
+        "state"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "confirmCloudAgentPublishProposal",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "bcId",
+        "proposalId",
+        "slug",
+        "visibility",
+        "requireConfirmationForUpdates"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "connectChannel",
+      "kind": "command",
+      "args": [
+        "id",
+        "platform",
+        "token"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "countAgents",
+      "kind": "command",
+      "args": [],
+      "area": "roster",
+      "milestone": "M1",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "createAgent",
+      "kind": "command",
+      "args": [
+        "name",
+        "description",
+        "title",
+        "avatarShape",
+        "avatarColor",
+        "avatarPngBase64",
+        "creationRoute",
+        "origin",
+        "purpose",
+        "isIntroductionSuppressed",
+        "isKickstartRequested",
+        "isAutomatic",
+        "language",
+        "templateId",
+        "clientNonce",
+        "supportsTemporalHarness",
+        "harness"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "createAgentAutomation",
+      "kind": "command",
+      "args": [
+        "id",
+        "spec"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "createAgentFromTemplate",
+      "kind": "command",
+      "args": [
+        "shareId",
+        "agentId",
+        "name",
+        "avatarShape",
+        "avatarColor",
+        "expectedActiveVersion",
+        "creatorContext",
+        "language",
+        "isAutomatic",
+        "importEntry",
+        "isAutoOpen"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "createAgentWorkflow",
+      "kind": "command",
+      "args": [
+        "id",
+        "spec"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "createCloudAgentAppsGateTicket",
+      "kind": "command",
+      "args": [
+        "slug",
+        "apex"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": "Obtain access to a published cloud app."
+    },
+    {
+      "name": "createGroup",
+      "kind": "command",
+      "args": [
+        "name",
+        "description",
+        "memberAgentIds",
+        "humanMemberUserIds",
+        "namedBy",
+        "creationRoute",
+        "clientNonce"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "createThreadFromMessage",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "agentId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "deleteAgentAutomation",
+      "kind": "command",
+      "args": [
+        "id",
+        "automationId"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "deleteAgentWorkflow",
+      "kind": "command",
+      "args": [
+        "id",
+        "workflowId"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "deleteAgents",
+      "kind": "command",
+      "args": [
+        "ids"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "deleteBotTemplate",
+      "kind": "command",
+      "args": [
+        "shareId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "discardDraft",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "agentId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "disconnectChannel",
+      "kind": "command",
+      "args": [
+        "id",
+        "platform"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "disconnectListenerPlatform",
+      "kind": "command",
+      "args": [
+        "platform"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "dismissAgentSuggestions",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "suggestionIds",
+        "reason"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "dismissCloudAgentPublishProposal",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "bcId",
+        "proposalId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "dismissTray",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "dismissUserForm",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "mode",
+        "agentId",
+        "platform",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "dismissWidget",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "agentId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "duplicateAgent",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "ensureCloudAgentArtifacts",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "bcId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "ensureForeverBox",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "planned",
+      "note": "Start or wake the bot desktop computer"
+    },
+    {
+      "name": "generateAgentAvatarImage",
+      "kind": "command",
+      "args": [
+        "description"
+      ],
+      "area": "avatar-voice",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getAgentAutomations",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getAgentAvatar",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "avatar-voice",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getAgentChannels",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "getAgentNotificationAvatar",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "avatar-voice",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "getAgentTasks",
+      "kind": "command",
+      "args": [
+        "agentId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getAgentThread",
+      "kind": "command",
+      "args": [
+        "id",
+        "rootId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "getAgentTodos",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "getAgentTranscript",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "getAgentTranscriptPage",
+      "kind": "command",
+      "args": [
+        "id",
+        "beforeSeq",
+        "limit",
+        "sinceMs",
+        "untilMs"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "getAgentTranscriptTail",
+      "kind": "command",
+      "args": [
+        "id",
+        "beforeSeq",
+        "limit",
+        "sessionId",
+        "unreadBoundaryAt",
+        "background"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "getAgentTranscriptWindow",
+      "kind": "command",
+      "args": [
+        "id",
+        "beforeSeq",
+        "limit"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "getAgentWorkflows",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getAsyncTasks",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": "Inspect background work started by a bot."
+    },
+    {
+      "name": "getAutomationWebhookCredential",
+      "kind": "command",
+      "args": [
+        "id",
+        "automationId"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getBotTemplateExportPolicy",
+      "kind": "command",
+      "args": [],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getBotTemplateForSourceAgent",
+      "kind": "command",
+      "args": [
+        "sourceAgentId"
+      ],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getBotTemplateVersion",
+      "kind": "command",
+      "args": [
+        "shareId",
+        "version"
+      ],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getBoxSecretsStatus",
+      "kind": "command",
+      "args": [],
+      "area": "secrets-vault",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "getCloudAgentAppSecrets",
+      "kind": "command",
+      "args": [
+        "bcId",
+        "projectDir"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getCloudAgentConversation",
+      "kind": "command",
+      "args": [
+        "bcId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getCloudAgentInfo",
+      "kind": "command",
+      "args": [
+        "bcId",
+        "includeFiles",
+        "includeArtifacts"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getCloudAgentPublishProposals",
+      "kind": "command",
+      "args": [
+        "bcId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getConversationOutline",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getEffectiveMcpPlugins",
+      "kind": "command",
+      "args": [],
+      "area": "connectors",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "getForeverBoxStatus",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "computer",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "getHostSettings",
+      "kind": "command",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getHostStatus",
+      "kind": "command",
+      "args": [
+        "includeManagedCapabilities"
+      ],
+      "area": "settings",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "getListenerConnectUrl",
+      "kind": "command",
+      "args": [
+        "platform",
+        "forceOauth",
+        "oauthRedirectUri"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getListenerIntegrations",
+      "kind": "command",
+      "args": [],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getMcpCatalog",
+      "kind": "command",
+      "args": [],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getMcpPluginLogo",
+      "kind": "command",
+      "args": [
+        "url"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getMcpState",
+      "kind": "command",
+      "args": [],
+      "area": "connectors",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "getPluginSyncStatus",
+      "kind": "command",
+      "args": [],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getSkillPublishTargets",
+      "kind": "command",
+      "args": [],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getSubagents",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getTeachRecordingStatus",
+      "kind": "command",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "getTrays",
+      "kind": "command",
+      "args": [],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": "List pending activity trays."
+    },
+    {
+      "name": "getVoiceCall",
+      "kind": "command",
+      "args": [
+        "id",
+        "callId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "handBackForeverBox",
+      "kind": "command",
+      "args": [
+        "id",
+        "trigger",
+        "requestId"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "hasRestorablePluginListingCopy",
+      "kind": "command",
+      "args": [
+        "pluginId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": "Check whether a published plugin has a recoverable copy."
+    },
+    {
+      "name": "importAgentWorkflowText",
+      "kind": "command",
+      "args": [
+        "id",
+        "markdown",
+        "name"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "importAgentWorkflowUrl",
+      "kind": "command",
+      "args": [
+        "id",
+        "url",
+        "name"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "installMcpEntry",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "values",
+        "hasTeamConfiguredVariables"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "interruptAgentRun",
+      "kind": "command",
+      "args": [
+        "id",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "isEgressTunnelAvailable",
+      "kind": "command",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "isGlobalSearchEnabled",
+      "kind": "command",
+      "args": [],
+      "area": "search",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "kickstartAgent",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": "Start a newly configured bot."
+    },
+    {
+      "name": "listAgents",
+      "kind": "command",
+      "args": [],
+      "area": "roster",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "listAllAutomations",
+      "kind": "command",
+      "args": [],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "listBotTemplates",
+      "kind": "command",
+      "args": [],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "listBoxMcpServers",
+      "kind": "command",
+      "args": [
+        "serverIdentifiers"
+      ],
+      "area": "connectors",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "listCloudAgentPublishedApps",
+      "kind": "command",
+      "args": [],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "listMcpServerTools",
+      "kind": "command",
+      "args": [
+        "serverId"
+      ],
+      "area": "connectors",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "markAgentTaskDone",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "taskId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "markAgentTaskRead",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "taskId",
+        "entryId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "nudgeVoiceCall",
+      "kind": "command",
+      "args": [
+        "id",
+        "callId",
+        "request",
+        "spokenTurns"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "openAgent",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "roster",
+      "milestone": "M1",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "openAgentTail",
+      "kind": "command",
+      "args": [
+        "id",
+        "limit",
+        "sessionId",
+        "unreadBoundaryAt"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "planned",
+      "note": "Open a live transcript tail cursor."
+    },
+    {
+      "name": "openAgentWindowed",
+      "kind": "command",
+      "args": [
+        "id",
+        "limit"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "previewVoice",
+      "kind": "command",
+      "args": [
+        "voiceId",
+        "greetingId"
+      ],
+      "area": "avatar-voice",
+      "milestone": "M3",
+      "status": "handoff",
+      "note": "Audible preview requires the app."
+    },
+    {
+      "name": "promptAcceptanceStatus",
+      "kind": "command",
+      "args": [
+        "accountSlot",
+        "clientNonce",
+        "agentId",
+        "sessionId",
+        "taskId",
+        "firstSentAtMs"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "planned",
+      "note": "Check whether a submitted prompt was accepted."
+    },
+    {
+      "name": "publishBotTemplate",
+      "kind": "command",
+      "args": [
+        "shareId",
+        "version"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "publishSkill",
+      "kind": "command",
+      "args": [
+        "workflowId",
+        "teamId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "reactToMessage",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "emoji",
+        "agentId",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "readAttachmentChunk",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "path",
+        "offset",
+        "length",
+        "videoPlayback"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "readAttachmentImage",
+      "kind": "command",
+      "args": [
+        "path",
+        "rendition",
+        "tile",
+        "fit"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "readAttachmentText",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "path"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "readMainAgentContext",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": "Inspect the main bot context."
+    },
+    {
+      "name": "readMcpAppResource",
+      "kind": "command",
+      "args": [
+        "serverIdentifier",
+        "resourceUri",
+        "agentId",
+        "entryId",
+        "sessionId",
+        "documentSha256"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "MCP app HTML requires browser rendering."
+    },
+    {
+      "name": "readVoiceCallSentMessages",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "recordVoiceCall",
+      "kind": "command",
+      "args": [
+        "record"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "refreshChannel",
+      "kind": "command",
+      "args": [
+        "id",
+        "platform"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "refreshMcp",
+      "kind": "command",
+      "args": [
+        "completion"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "removeMcpAccount",
+      "kind": "command",
+      "args": [
+        "serverId",
+        "accountKey"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "removeMcpServer",
+      "kind": "command",
+      "args": [
+        "serverId"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "renameMcpAccount",
+      "kind": "command",
+      "args": [
+        "serverId",
+        "accountKey",
+        "newAccountKey"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "requestDiskSaverAudit",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "requestMessagesGrants",
+      "kind": "command",
+      "args": [
+        "requestId",
+        "grants"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "requestWebAuthnCeremony",
+      "kind": "command",
+      "args": [
+        "kind",
+        "origin",
+        "optionsJson"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "resolveAutoReviewApproval",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "requestId",
+        "resolution",
+        "agentId",
+        "approvalPlatform",
+        "approvedCommand",
+        "sessionId",
+        "mcpElicitationContent"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "resolveConnectorGrant",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "requestId",
+        "resolution",
+        "agentId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "resolveLocalToolPermission",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "requestId",
+        "resolution",
+        "agentId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "resolveMessagesGrants",
+      "kind": "command",
+      "args": [
+        "requestId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Native messaging permission flow requires the app."
+    },
+    {
+      "name": "resolveVirtualCardApproval",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "requestId",
+        "resolution",
+        "agentId",
+        "spendRequestId",
+        "failureReason",
+        "payAnotherWay",
+        "paymentMethodId",
+        "attestation"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "handoff",
+      "note": "Payment approval can require browser authentication."
+    },
+    {
+      "name": "respondToWidget",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "value",
+        "agentId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "resyncPublishedSkill",
+      "kind": "command",
+      "args": [
+        "workflowId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "rollBackConversation",
+      "kind": "command",
+      "args": [
+        "id",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "runAgentAutomationNow",
+      "kind": "command",
+      "args": [
+        "id",
+        "automationId",
+        "sessionId"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "runAgentWorkflowNow",
+      "kind": "command",
+      "args": [
+        "id",
+        "workflowId"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "runAutomationWebhook",
+      "kind": "command",
+      "args": [
+        "id",
+        "automationId",
+        "context"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "searchAgents",
+      "kind": "command",
+      "args": [
+        "query",
+        "limit"
+      ],
+      "area": "search",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "searchConversation",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "query",
+        "beforeSeq",
+        "limit"
+      ],
+      "area": "search",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "searchMedia",
+      "kind": "command",
+      "args": [
+        "query",
+        "limit"
+      ],
+      "area": "search",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "seedConversationName",
+      "kind": "command",
+      "args": [
+        "id",
+        "prompt"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": "Seed the conversation title from its first prompt."
+    },
+    {
+      "name": "sendDraft",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "draft",
+        "agentId",
+        "sessionId",
+        "shownSignatureHtml"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "sendPrompt",
+      "kind": "command",
+      "args": [
+        "prompt",
+        "agentId",
+        "directAddressedAcceptance",
+        "clientNonce",
+        "attachmentPaths",
+        "attachmentNames",
+        "richText",
+        "replyToId",
+        "replyQuote",
+        "automationWriteProvenance",
+        "isFork",
+        "traceparent",
+        "enterEpochMs",
+        "composedAtMs",
+        "source",
+        "sendSource",
+        "mcpConfigJson",
+        "sessionId",
+        "machineId",
+        "onePasswordAppInstalled",
+        "rendersMcpElicitationForms",
+        "taskId",
+        "initiator",
+        "firstSentAtMs",
+        "language"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "setAgentAutomationEnabled",
+      "kind": "command",
+      "args": [
+        "id",
+        "automationId",
+        "isEnabled"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setAgentAvatarBytes",
+      "kind": "command",
+      "args": [
+        "id",
+        "pngBase64"
+      ],
+      "area": "avatar-voice",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setAgentDraftingDisabled",
+      "kind": "command",
+      "args": [
+        "id",
+        "isDisabled"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setAgentHiddenFromSidebar",
+      "kind": "command",
+      "args": [
+        "id",
+        "isHidden"
+      ],
+      "area": "roster",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setAgentNotifyOnUpdates",
+      "kind": "command",
+      "args": [
+        "id",
+        "isEnabled"
+      ],
+      "area": "roster",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setAgentTaskPinned",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "taskId",
+        "isPinned"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setAgentUnread",
+      "kind": "command",
+      "args": [
+        "id",
+        "isUnread",
+        "atMs",
+        "markFollowedThreadsRead"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setAgentVoice",
+      "kind": "command",
+      "args": [
+        "id",
+        "voiceId",
+        "voiceSpeed",
+        "voiceLanguage"
+      ],
+      "area": "avatar-voice",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setBotTemplateVisibility",
+      "kind": "command",
+      "args": [
+        "shareId",
+        "visibility"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "setBoxSecrets",
+      "kind": "command",
+      "args": [
+        "secrets"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setCloudAgentAppSecrets",
+      "kind": "command",
+      "args": [
+        "bcId",
+        "projectDir",
+        "secrets"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setGroupMembers",
+      "kind": "command",
+      "args": [
+        "id",
+        "memberAgentIds",
+        "requesterAgentId"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setHostSettings",
+      "kind": "command",
+      "args": [
+        "notifications",
+        "selectedTeam",
+        "mcpCustomInstructions",
+        "mcpCustomInstructionsByServerId",
+        "mcpCustomInstructionsAccountScope",
+        "mcpDisabledToolsByServerId",
+        "mcpBoxServers",
+        "userTimeZone",
+        "osLocale",
+        "userTimeZoneOverride",
+        "computerUseModel",
+        "autoReviewInstructions",
+        "toolPermissions",
+        "localToolPermission",
+        "localToolPermissionMachineId",
+        "localToolPermissionByMachineId",
+        "webauthnProxyEnabled",
+        "messagesEnabled",
+        "pinnedAgentIds",
+        "sidebarSections",
+        "hasSeenOnboarding",
+        "featureFlagOverrides",
+        "experimentOverrides"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setMcpCustomInstructions",
+      "kind": "command",
+      "args": [
+        "serverId",
+        "instructions"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "setVoiceCallPresence",
+      "kind": "command",
+      "args": [
+        "id",
+        "callId",
+        "isOnTheLine",
+        "acceptsOverheard"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "setWindowFocused",
+      "kind": "command",
+      "args": [
+        "isFocused",
+        "surface"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Desktop window or maintenance bookkeeping."
+    },
+    {
+      "name": "skillsCatalog",
+      "kind": "command",
+      "args": [],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "startFreshConversation",
+      "kind": "command",
+      "args": [
+        "id",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "startTeachRecording",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "entryPoint"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "handoff",
+      "note": "Desktop demonstration capture requires the app."
+    },
+    {
+      "name": "stopCloudAgent",
+      "kind": "command",
+      "args": [
+        "bcId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "stopTeachRecording",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "save"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "handoff",
+      "note": "Desktop demonstration capture requires the app."
+    },
+    {
+      "name": "storeSecret",
+      "kind": "command",
+      "args": [
+        "target",
+        "value",
+        "agentId"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "submitSecret",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "value",
+        "agentId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "submitUserForm",
+      "kind": "command",
+      "args": [
+        "entryId",
+        "values",
+        "agentId",
+        "platform",
+        "saveToVault",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "syncPluginSkills",
+      "kind": "command",
+      "args": [],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "tellCloudAgentAppSecretsSet",
+      "kind": "command",
+      "args": [
+        "bcId",
+        "projectDir",
+        "names",
+        "refused",
+        "applyNeeded"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": "Report the outcome of supplying cloud app secrets."
+    },
+    {
+      "name": "toggleMcpToolDisabled",
+      "kind": "command",
+      "args": [
+        "serverId",
+        "toolName"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "transcribeAudio",
+      "kind": "command",
+      "args": [
+        "audioBase64",
+        "mimeType",
+        "language"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "uninstallMcpPlugin",
+      "kind": "command",
+      "args": [
+        "pluginId"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "unpublishCloudAgentPublishApp",
+      "kind": "command",
+      "args": [
+        "bcId",
+        "slug",
+        "apex"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "unpublishPluginListing",
+      "kind": "command",
+      "args": [
+        "pluginId",
+        "teamId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "unpublishSkill",
+      "kind": "command",
+      "args": [
+        "workflowId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "updateAgent",
+      "kind": "command",
+      "args": [
+        "id",
+        "profile",
+        "editedFields"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "updateAgentAutomation",
+      "kind": "command",
+      "args": [
+        "id",
+        "automationId",
+        "spec"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "updateAgentWorkflow",
+      "kind": "command",
+      "args": [
+        "id",
+        "workflowId",
+        "spec"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "updateCloudAgentPublishApp",
+      "kind": "command",
+      "args": [
+        "bcId",
+        "slug",
+        "apex",
+        "visibility",
+        "muteRedeployPrompts",
+        "requireConfirmationForUpdates"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "updateForeverBox",
+      "kind": "command",
+      "args": [
+        "id"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "updateHostNow",
+      "kind": "command",
+      "args": [
+        "force",
+        "includeErrorDetail"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "updateMcpPluginInstall",
+      "kind": "command",
+      "args": [
+        "pluginId",
+        "values"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop invocation found beyond command declarations."
+    },
+    {
+      "name": "uploadAttachment",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "filename",
+        "bytesBase64",
+        "storeSized"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "uploadAttachmentChunk",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "uploadId",
+        "filename",
+        "offset",
+        "totalSize",
+        "bytesBase64",
+        "storeSized"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "voteFeedback",
+      "kind": "command",
+      "args": [
+        "agentId",
+        "entryId",
+        "action",
+        "categories",
+        "comment",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AbortGrokBotAttachmentUpload",
+      "kind": "rpc",
+      "args": [
+        "uploadToken"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AbortSandBoxStoreMultipartWrites",
+      "kind": "rpc",
+      "args": [
+        "uploads"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "AcceptGrokBotAgentAccessInvite",
+      "kind": "rpc",
+      "args": [
+        "code"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ActivateGrokBotTemplateVersion",
+      "kind": "rpc",
+      "args": [
+        "shareId",
+        "version"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AddGrokBotAgentAccessPrincipal",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "principal"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "AddGrokBotAgentManager",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "userId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AddGrokBotAgentSkill",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "name",
+        "description",
+        "content"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AddGrokBotRoomPeople",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "userIds"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AddGrokBotTeamReviewItem",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "change"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "AddGrokBotTeamsAppToTeam",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "teamId",
+        "teamIds",
+        "installPersonal",
+        "consentNonce"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AdminAddGrokBotEmailSuppression",
+      "kind": "rpc",
+      "args": [
+        "userId",
+        "address",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminBreakGlassDeleteSandBoxPod",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "podId",
+        "cluster",
+        "actorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminDeleteGrokBotAgent",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "teamId",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminDropGrokBotEmailDeadLetter",
+      "kind": "rpc",
+      "args": [
+        "queue",
+        "environment",
+        "messageId",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminEnqueueGrokBotServiceAccountMessage",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "agentId",
+        "operatorEmail",
+        "text",
+        "startFresh"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminForceDeleteGrokBotSessionBox",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminForceRecreateSandBox",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotAgentDefinition",
+      "kind": "rpc",
+      "args": [
+        "agentRef",
+        "identityOnly"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotAgentStoreContents",
+      "kind": "rpc",
+      "args": [
+        "agentRef"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotAgentTransfers",
+      "kind": "rpc",
+      "args": [
+        "transferIds"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotEmailLimits",
+      "kind": "rpc",
+      "args": [
+        "userId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotEmailSendingState",
+      "kind": "rpc",
+      "args": [
+        "userId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotMeetingJoinConsent",
+      "kind": "rpc",
+      "args": [
+        "userId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotMeetingSummaryVersions",
+      "kind": "rpc",
+      "args": [
+        "meetingId",
+        "agentId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotMeetingTranscript",
+      "kind": "rpc",
+      "args": [
+        "meetingId",
+        "agentId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotSessionBox",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetGrokBotTeamAgentSharedState",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "agentId",
+        "identityOnly"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetSandAgentTranscriptPage",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "agentId",
+        "beforeSeq",
+        "limit",
+        "sinceMs",
+        "untilMs",
+        "sessionId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetSandBoxHostStatus",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminGetSandBoxStoreStatus",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminHibernateGrokBotSessionBox",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "force"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminHibernateSandBox",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "force"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotAgentAccessGrants",
+      "kind": "rpc",
+      "args": [
+        "agentRef"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotEmailDeadLetterQueues",
+      "kind": "rpc",
+      "args": [],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotEmailDeadLetters",
+      "kind": "rpc",
+      "args": [
+        "queue",
+        "environment",
+        "limit"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotEmailInboxes",
+      "kind": "rpc",
+      "args": [
+        "userId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotEmailMessages",
+      "kind": "rpc",
+      "args": [
+        "userId",
+        "inboxEmail",
+        "threadId",
+        "direction",
+        "limit",
+        "cursor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotEmailSuppressions",
+      "kind": "rpc",
+      "args": [
+        "userId",
+        "address",
+        "domain",
+        "reason",
+        "createdAfterMs",
+        "createdBeforeMs",
+        "limit",
+        "cursor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotMeetingRequestAgentRuns",
+      "kind": "rpc",
+      "args": [
+        "meetingId",
+        "agentId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotServiceAccountSessions",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "query"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotSessionBoxes",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "agentId",
+        "pageCursor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotTeamAgents",
+      "kind": "rpc",
+      "args": [
+        "teamId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotTranscriptRequestRows",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "userId",
+        "owner",
+        "agentId",
+        "exactSessionId",
+        "channelId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotTransferDestinations",
+      "kind": "rpc",
+      "args": [
+        "teamId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListGrokBotUserStoreFiles",
+      "kind": "rpc",
+      "args": [
+        "authId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListSandAgents",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListSandBoxStoreManifestVersions",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "cursor",
+        "maxVersions",
+        "parseLimit",
+        "beforeTimestampMs"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListSlackAppAudit",
+      "kind": "rpc",
+      "args": [
+        "teamIds",
+        "slackTeamIds"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminListTeamLiveGrokBotAgents",
+      "kind": "rpc",
+      "args": [
+        "teamId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminLookupGrokBotMeetingJoinConsentUsers",
+      "kind": "rpc",
+      "args": [
+        "email",
+        "authId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminLookupGrokBotMeetings",
+      "kind": "rpc",
+      "args": [
+        "provider",
+        "meetingId",
+        "internalMeetingId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminLookupGrokBotMeetingsByAgent",
+      "kind": "rpc",
+      "args": [
+        "agentRef"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminMintGrokBotInvite",
+      "kind": "rpc",
+      "args": [
+        "agentRef",
+        "recipientEmail",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminMintGrokBotMeetingAvatarLinks",
+      "kind": "rpc",
+      "args": [],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminMoveGrokBotEmailInboxes",
+      "kind": "rpc",
+      "args": [
+        "sourceUserId",
+        "apply",
+        "expectedTargetUserId",
+        "keepBothWhenTargetHasInbox",
+        "operatorEmail",
+        "reason"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminPreviewGrokBotAgentTransfer",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "agentIds",
+        "destinationTeamId",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminPurgeGrokBotEmailDeadLetters",
+      "kind": "rpc",
+      "args": [
+        "queue",
+        "environment",
+        "confirmQueueName",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminReadGrokBotServiceAccountConversation",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "agentId",
+        "operatorEmail",
+        "turnId",
+        "turnEnqueuedAtMs"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminReapGrokBotSessionBoxNow",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "dryRun"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminRecreateSandBox",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "preserveData",
+        "force"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminRefreshSandBoxEgress",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "trigger",
+        "teamId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminRemoveGrokBotEmailSuppressions",
+      "kind": "rpc",
+      "args": [
+        "address",
+        "userId",
+        "allUsers",
+        "expectedCount",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminRequeueAllGrokBotEmailDeadLetters",
+      "kind": "rpc",
+      "args": [
+        "queue",
+        "environment",
+        "confirmQueueName",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminRequeueGrokBotEmailDeadLetter",
+      "kind": "rpc",
+      "args": [
+        "queue",
+        "environment",
+        "messageId",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminResolveGrokBotAttachmentReads",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "agentId",
+        "sessionId",
+        "paths"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminRestoreSandBoxStoreSnapshot",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "manifestVersionId",
+        "expectedEntryCount"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminResumeGrokBotAgentTransfer",
+      "kind": "rpc",
+      "args": [
+        "transferId",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminRetryGrokBotSlackAppRemoval",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "teamId",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminSendGrokBotTestEmail",
+      "kind": "rpc",
+      "args": [
+        "userId",
+        "fromInboxEmail",
+        "to",
+        "subject",
+        "textBody",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminSetGrokBotEmailSendingState",
+      "kind": "rpc",
+      "args": [
+        "userId",
+        "state",
+        "reason",
+        "expiresAtMs",
+        "reinstatedUntilMs",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminSetGrokBotEmailThresholds",
+      "kind": "rpc",
+      "args": [
+        "userId",
+        "overridesJson",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminSnapshotSandBoxStore",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminStatSandBoxStoreObject",
+      "kind": "rpc",
+      "args": [
+        "s3Link"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminTransferGrokBotAgents",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "items",
+        "destinationTeamId",
+        "idempotencyKey",
+        "reason",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminUnsetGrokBotMeetingJoinConsent",
+      "kind": "rpc",
+      "args": [
+        "userId",
+        "authId",
+        "operatorEmail"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminUpdateSandBoxHost",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "force"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "AdminWatchSandBoxMigration",
+      "kind": "rpc",
+      "args": [
+        "authId",
+        "flavor",
+        "fromOffsetKey"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "ApproveOnePasswordCredentialRequest",
+      "kind": "rpc",
+      "args": [
+        "entryId",
+        "agentId",
+        "credentialId",
+        "connectionId",
+        "catalogRevision",
+        "targetSite",
+        "harness"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "AttachGrokBotAgentDelegatedCredential",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pluginId",
+        "accountKey",
+        "acknowledgedWarningVersion"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "BatchCreateGrokBotVaultCredentials",
+      "kind": "rpc",
+      "args": [
+        "logins"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "BeginGrokBotAgentFileUpload",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "fileName",
+        "sizeBytes",
+        "sha256Hex",
+        "contentType"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "BeginGrokBotAttachmentUpload",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "fileName",
+        "sizeBytes",
+        "supportsStoreAttachmentRefs",
+        "supportsMultipart",
+        "sha256Hex"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "BeginGrokBotSpendApproval",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "requestId",
+        "paymentMethodId",
+        "mode",
+        "enrollmentTicket"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Passkey or spend ceremony requires browser authentication."
+    },
+    {
+      "name": "BeginOnePasswordConnection",
+      "kind": "rpc",
+      "args": [
+        "connectionId",
+        "vaultId",
+        "serviceAccountToken"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "BeginPasskeyRegistration",
+      "kind": "rpc",
+      "args": [
+        "enrollmentTicket"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Passkey or spend ceremony requires browser authentication."
+    },
+    {
+      "name": "CallGrokBotMcpAppTool",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "entryId",
+        "toolName",
+        "argumentsJson",
+        "userActivated"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Interaction originates in an MCP app HTML UI."
+    },
+    {
+      "name": "CancelGrokBotRoomMemberTurn",
+      "kind": "rpc",
+      "args": [
+        "nonce",
+        "memberAgentId",
+        "reason"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "CancelGrokBotUserComputerRequest",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "requestId"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "CancelSandBoxUpgrade",
+      "kind": "rpc",
+      "args": [
+        "dismissTerminalOutcome"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CheckGrokBotEmailAddressAvailability",
+      "kind": "rpc",
+      "args": [
+        "usernames"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ClaimGrokBotSlackConnect",
+      "kind": "rpc",
+      "args": [
+        "claim"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ClearGrokBotConnectorAlwaysAllow",
+      "kind": "rpc",
+      "args": [],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ClearGrokBotHarnessMigrationHoldInternal",
+      "kind": "rpc",
+      "args": [
+        "ownerAuthId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "CloneGrokBotAgentToTeam",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "personalSecretNames",
+        "offerEntryId",
+        "inPlace"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CommitGrokBotTranscriptEntries",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "generation",
+        "entries",
+        "deletes",
+        "sessionId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "CommitSandBoxStoreManifest",
+      "kind": "rpc",
+      "args": [
+        "manifest",
+        "baseEtag"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "CompleteGrokBotAttachmentUpload",
+      "kind": "rpc",
+      "args": [
+        "uploadToken"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CompleteOnePasswordConnection",
+      "kind": "rpc",
+      "args": [
+        "mintTicket",
+        "serviceAccountToken",
+        "accountUuid",
+        "accountEmail",
+        "accountUrl"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CompleteOnePasswordOAuth",
+      "kind": "rpc",
+      "args": [
+        "state",
+        "code",
+        "error"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CompleteSandBoxStoreMultipartWrites",
+      "kind": "rpc",
+      "args": [
+        "completions"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "CreateGrokBotAgent",
+      "kind": "rpc",
+      "args": [
+        "legacyAgentId",
+        "name",
+        "description",
+        "title",
+        "avatarShape",
+        "avatarColor",
+        "avatarDataUrl",
+        "agentId",
+        "harness",
+        "kickstartRequested",
+        "introductionSuppressed",
+        "purpose",
+        "origin",
+        "language",
+        "createIntent",
+        "createCaller",
+        "createdAutomatically"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "CreateGrokBotAgentAccessInvite",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "email",
+        "sendEmail",
+        "language"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CreateGrokBotAgentFromTemplate",
+      "kind": "rpc",
+      "args": [
+        "shareId",
+        "agentId",
+        "expectedActiveVersion",
+        "firstPartyTemplate",
+        "creatorContext",
+        "setupDelegationSupported",
+        "language",
+        "importEntry"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CreateGrokBotChangelogInternal",
+      "kind": "rpc",
+      "args": [
+        "slug",
+        "featureDescription",
+        "relevanceGuidance",
+        "deliveryWindow",
+        "notBeforeMs",
+        "expiresAtMs",
+        "priority",
+        "announceInstructions",
+        "maxOffers",
+        "eligibilityGate",
+        "minClientVersion",
+        "minIosClientVersion",
+        "notifyProactively"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "CreateGrokBotEmailInbox",
+      "kind": "rpc",
+      "args": [
+        "username",
+        "displayName"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CreateGrokBotMarketplaceCategoryInternal",
+      "kind": "rpc",
+      "args": [
+        "name"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "CreateGrokBotMarketplaceCreatorInternal",
+      "kind": "rpc",
+      "args": [
+        "name",
+        "profilePhotoUrl",
+        "handles"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "CreateGrokBotMarketplaceListingInternal",
+      "kind": "rpc",
+      "args": [
+        "templateId",
+        "slug",
+        "category",
+        "creatorId",
+        "categoryIds"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "CreateGrokBotRoom",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "name",
+        "description",
+        "memberAgentIds",
+        "humanMemberUserIds"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CreateGrokBotTemplate",
+      "kind": "rpc",
+      "args": [
+        "name",
+        "avatarShape",
+        "avatarColor",
+        "sourceAgentId",
+        "blobContentType",
+        "blobByteSize",
+        "description",
+        "requestedVisibility"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "CreateGrokBotTemporalAgent",
+      "kind": "rpc",
+      "args": [
+        "legacyAgentId",
+        "name",
+        "description",
+        "title",
+        "avatarShape",
+        "avatarColor",
+        "avatarDataUrl",
+        "agentId",
+        "harness",
+        "kickstartRequested",
+        "introductionSuppressed",
+        "purpose",
+        "origin",
+        "language",
+        "createIntent",
+        "createCaller",
+        "createdAutomatically"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CreateGrokBotThreadFromMessage",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "CreateGrokBotVaultCard",
+      "kind": "rpc",
+      "args": [
+        "values"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Payment card entry requires the app."
+    },
+    {
+      "name": "DeleteGrokBotAgent",
+      "kind": "rpc",
+      "args": [
+        "id"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteGrokBotAgentAutomation",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "automationId",
+        "timeZone"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteGrokBotAgentFile",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "name"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteGrokBotEmailInbox",
+      "kind": "rpc",
+      "args": [
+        "email"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "DeleteGrokBotMarketplaceListingInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "DeleteGrokBotSecret",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "name"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteGrokBotTemplate",
+      "kind": "rpc",
+      "args": [
+        "shareId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteGrokBotUserFormVaultEntry",
+      "kind": "rpc",
+      "args": [
+        "entryId"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "DeleteGrokBotUserStoreFile",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "path"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteGrokBotVaultCredential",
+      "kind": "rpc",
+      "args": [
+        "id"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteOnePasswordConnection",
+      "kind": "rpc",
+      "args": [
+        "connectionId"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DeleteTeamGrokBot",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "agentId"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "DeleteTeamGroupSandSetupManifest",
+      "kind": "rpc",
+      "args": [
+        "groupId",
+        "manifestId",
+        "expectedEtag"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "DeleteTeamSandSetupManifest",
+      "kind": "rpc",
+      "args": [
+        "manifestId",
+        "expectedEtag"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "DeliverGrokBotRoomMemberTurnResult",
+      "kind": "rpc",
+      "args": [
+        "roomId",
+        "nonce",
+        "memberAgentId",
+        "outcome",
+        "messages",
+        "error",
+        "posts"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "DenyOnePasswordCredentialRequest",
+      "kind": "rpc",
+      "args": [
+        "entryId",
+        "agentId",
+        "harness"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DiscardGrokBotDraft",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "DisconnectGrokBotTeamsAccount",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "tenantId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DismissGrokBotAgentSuggestions",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "suggestionIds",
+        "reason"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "DismissGrokBotTask",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "taskId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "DismissGrokBotUserForm",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "mode",
+        "sessionId",
+        "platform"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "DismissGrokBotWidget",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "DuplicateGrokBotAgent",
+      "kind": "rpc",
+      "args": [
+        "sourceAgentId",
+        "agentId"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "EndGrokBotBoxHandoff",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "requestId",
+        "trigger"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "EnsureGrokBotBoxHarnessMigrationPass",
+      "kind": "rpc",
+      "args": [
+        "operationId",
+        "boxRooms"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "EnsureGrokBotDefaultMainAgent",
+      "kind": "rpc",
+      "args": [],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "EnsureGrokBotPullRequestChat",
+      "kind": "rpc",
+      "args": [
+        "originOrg",
+        "originRepo",
+        "changeNumber"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "EnsureSandBox",
+      "kind": "rpc",
+      "args": [
+        "wake",
+        "supportsAsleepBox"
+      ],
+      "area": "internal",
+      "milestone": "M1",
+      "status": "planned",
+      "note": "Establish or wake the sandbox gateway session."
+    },
+    {
+      "name": "EnsureSandBoxWindow",
+      "kind": "rpc",
+      "args": [
+        "windowIndex"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ExecuteInternalPrimaryBotMigration",
+      "kind": "rpc",
+      "args": [
+        "teamIds",
+        "emailSuffixes",
+        "selectedUserIds",
+        "cohortHash",
+        "previewToken",
+        "confirmation"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "ExtractGrokBotCardFromPhoto",
+      "kind": "rpc",
+      "args": [
+        "photos"
+      ],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "handoff",
+      "note": "Payment card entry requires the app."
+    },
+    {
+      "name": "FinishGrokBotAgentFileUpload",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "uploadToken"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "FinishGrokBotSpendApprovalAssertion",
+      "kind": "rpc",
+      "args": [
+        "ceremonyToken",
+        "challengeId",
+        "assertionJson",
+        "registration"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "FinishGrokBotXConnect",
+      "kind": "rpc",
+      "args": [
+        "connectId",
+        "code"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "FinishMicrosoftTeamsAccountLink",
+      "kind": "rpc",
+      "args": [
+        "code",
+        "state"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "FinishPasskeyRegistration",
+      "kind": "rpc",
+      "args": [
+        "ceremonyToken",
+        "attestationJson",
+        "name"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ForceRecreateSandBox",
+      "kind": "rpc",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetBulkTeamMemberSandBoxOperationStatus",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "operationId"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotAgentAccess",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "listsCrossTierPrincipals"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotAgentAnalytics",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": "View bot usage analytics."
+    },
+    {
+      "name": "GetGrokBotAgentCustomMcp",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pluginId"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotAgentInPlaceShareStatus",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotAgentLinkAccess",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotAgentPluginFile",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pluginId",
+        "path"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotAgentPlugins",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "includeMcpConfig"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotChangelogInternal",
+      "kind": "rpc",
+      "args": [
+        "changelogId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotCloudAgentWatchers",
+      "kind": "rpc",
+      "args": [
+        "bcId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotConnectorSharedSpaceAllowlist",
+      "kind": "rpc",
+      "args": [],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotDefaultPaymentMethod",
+      "kind": "rpc",
+      "args": [],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotEgressPolicy",
+      "kind": "rpc",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": "Inspect outbound network policy."
+    },
+    {
+      "name": "GetGrokBotHarnessMigrationStatusInternal",
+      "kind": "rpc",
+      "args": [
+        "ownerAuthId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotIMessageDraftSender",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotMarketplaceCategoryInternal",
+      "kind": "rpc",
+      "args": [
+        "categoryId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotMarketplaceCreatorInternal",
+      "kind": "rpc",
+      "args": [
+        "creatorId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotMarketplaceListingInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotMarketplaceListingSourceTemplateInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotMarketplaceListingTemplateInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotMcpToolPermissions",
+      "kind": "rpc",
+      "args": [],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotMeetingRecord",
+      "kind": "rpc",
+      "args": [
+        "meetingId",
+        "agentId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "GetGrokBotMessagingLinkStatus",
+      "kind": "rpc",
+      "args": [],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotOnePasswordExtensionDownload",
+      "kind": "rpc",
+      "args": [
+        "acceptsStoreCrx"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotPhoneUiGates",
+      "kind": "rpc",
+      "args": [],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotRuntimeCapabilities",
+      "kind": "rpc",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": "Inspect supported bot runtime features."
+    },
+    {
+      "name": "GetGrokBotSendStatus",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "messageId",
+        "sessionId",
+        "firstSentAgeMs",
+        "taskId"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotSlackInstallState",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTeamContextSummary",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTeamLinkPreview",
+      "kind": "rpc",
+      "args": [
+        "teamId"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTeamsInstallState",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "consentNonce"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTemplateExportPolicy",
+      "kind": "rpc",
+      "args": [],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTemplateForOperatorInternal",
+      "kind": "rpc",
+      "args": [
+        "shareId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "GetGrokBotTemplateForSourceAgent",
+      "kind": "rpc",
+      "args": [
+        "sourceAgentId"
+      ],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTemplateImportDetails",
+      "kind": "rpc",
+      "args": [
+        "shareId"
+      ],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTemplateVersion",
+      "kind": "rpc",
+      "args": [
+        "shareId",
+        "version"
+      ],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotTermsSeen",
+      "kind": "rpc",
+      "args": [
+        "teamId"
+      ],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetGrokBotUserMcpSettings",
+      "kind": "rpc",
+      "args": [],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotUserRuntimeSettings",
+      "kind": "rpc",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetGrokBotVoiceCall",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "callId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "GetMicrosoftTeamsAccountLinkStatus",
+      "kind": "rpc",
+      "args": [],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetOnePasswordState",
+      "kind": "rpc",
+      "args": [],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetPasskeyCeremony",
+      "kind": "rpc",
+      "args": [
+        "ceremonyToken"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetPasskeyCeremonyStatus",
+      "kind": "rpc",
+      "args": [
+        "ceremonyId"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Passkey or spend ceremony requires browser authentication."
+    },
+    {
+      "name": "GetPublicGrokBotAgentPreview",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetPublicGrokBotMarketplaceListing",
+      "kind": "rpc",
+      "args": [
+        "slug"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetPublicGrokBotTemplate",
+      "kind": "rpc",
+      "args": [
+        "shareId"
+      ],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "GetSandBoxRunState",
+      "kind": "rpc",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetSandBoxUpgradeSchedule",
+      "kind": "rpc",
+      "args": [],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "GetTeamMemberSandBoxMigrationStatus",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "userId",
+        "operationId"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "HangUpGrokBotOutboundCall",
+      "kind": "rpc",
+      "args": [
+        "outboundCallId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "InstallGrokBotSlackApp",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "slackTeamId",
+        "replaceExistingApp",
+        "approvalRequestResubmitted"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "InstallGrokBotTeamsApp",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "tenantId",
+        "teamIds",
+        "installPersonal",
+        "consentNonce"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "InterruptGrokBotAgentRun",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "reason",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "InvalidateGrokBotUserSkillsCache",
+      "kind": "rpc",
+      "args": [],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "IssueGrokBotMessagingLinkCode",
+      "kind": "rpc",
+      "args": [],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "IssueGrokBotUserComputerCredential",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "credential"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "KeepGrokBotTaskList",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "messages",
+        "isAwaitingUser",
+        "hasBackgroundWork",
+        "turnEnd",
+        "finishedWork"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "KillTeamMemberSandBox",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "userId",
+        "podId",
+        "cluster"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "LeaveGrokBotServerMeeting",
+      "kind": "rpc",
+      "args": [
+        "meetingId",
+        "agentId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "ListDeletedGrokBotAgentIds",
+      "kind": "rpc",
+      "args": [
+        "agentIds"
+      ],
+      "area": "roster",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotAccountAutomations",
+      "kind": "rpc",
+      "args": [
+        "timeZone",
+        "agentIds"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentAccessInvites",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentAccessPrincipals",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotAgentAutomations",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "timeZone"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentFiles",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pageToken"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentManagers",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentMeetings",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "fresh"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "ListGrokBotAgentRoutines",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "timeZone"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentSessions",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentSkills",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentStatuses",
+      "kind": "rpc",
+      "args": [
+        "agentIds"
+      ],
+      "area": "roster",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotAgentTasks",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "includeRecentlyDone"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentTodos",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotAgents",
+      "kind": "rpc",
+      "args": [
+        "role",
+        "includeTeamAgents",
+        "addedTeamAgentsOnly"
+      ],
+      "area": "roster",
+      "milestone": "M1",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotAgentsForOperatorInternal",
+      "kind": "rpc",
+      "args": [
+        "ownerAuthId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "ListGrokBotChangelogsInternal",
+      "kind": "rpc",
+      "args": [
+        "status",
+        "pageSize",
+        "pageToken"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "ListGrokBotEmailInboxes",
+      "kind": "rpc",
+      "args": [
+        "showsAssigned"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotEmailThreads",
+      "kind": "rpc",
+      "args": [
+        "inboxEmail",
+        "unreadOnly",
+        "afterMs",
+        "limit",
+        "pageToken"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotLibraryDocs",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotLibraryPins",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotMarketplaceCategoriesInternal",
+      "kind": "rpc",
+      "args": [
+        "pageSize",
+        "pageToken"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "ListGrokBotMarketplaceCreatorsInternal",
+      "kind": "rpc",
+      "args": [
+        "pageSize",
+        "pageToken"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "ListGrokBotMarketplaceListingsInternal",
+      "kind": "rpc",
+      "args": [
+        "status",
+        "category",
+        "templateId",
+        "pageSize",
+        "pageToken"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "ListGrokBotMessagingLinkedPhones",
+      "kind": "rpc",
+      "args": [],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotPullRequestChatEntries",
+      "kind": "rpc",
+      "args": [
+        "roomAgentId",
+        "beforeSeq",
+        "limit"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotSecrets",
+      "kind": "rpc",
+      "args": [
+        "id"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotServerMeetings",
+      "kind": "rpc",
+      "args": [
+        "sinceMs",
+        "agentId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "ListGrokBotStripeLinkPaymentMethods",
+      "kind": "rpc",
+      "args": [],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotSubagents",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotTasks",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotTeamAgents",
+      "kind": "rpc",
+      "args": [
+        "role"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotTeamReviewItems",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "statuses",
+        "limit"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotTeamsJoinedTeams",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "tenantId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotTemplates",
+      "kind": "rpc",
+      "args": [],
+      "area": "templates",
+      "milestone": "M3",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotTranscriptEntries",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "generation",
+        "beforeSeq",
+        "limit",
+        "sessionId",
+        "unreadBoundaryMs"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotUserBotMemories",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotUserComputers",
+      "kind": "rpc",
+      "args": [],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotUserFormVaultEntries",
+      "kind": "rpc",
+      "args": [],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotUserFormVaultKeys",
+      "kind": "rpc",
+      "args": [],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListGrokBotUserStoreFiles",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListGrokBotVaultCredentials",
+      "kind": "rpc",
+      "args": [
+        "includeKinds",
+        "includeManaged"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListPasskeys",
+      "kind": "rpc",
+      "args": [],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListPublicGrokBotMarketplaceListings",
+      "kind": "rpc",
+      "args": [
+        "category",
+        "pageSize",
+        "pageToken"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ListSandBoxStoreObjects",
+      "kind": "rpc",
+      "args": [
+        "prefix",
+        "cursor",
+        "maxEntries"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "ListSandBoxes",
+      "kind": "rpc",
+      "args": [],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListSandSetupManifests",
+      "kind": "rpc",
+      "args": [
+        "includeTeamSecrets"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListTeamGroupSandSetupManifests",
+      "kind": "rpc",
+      "args": [
+        "groupPublicId"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListTeamMemberSandBoxes",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "userId"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ListTeamSandSetupManifests",
+      "kind": "rpc",
+      "args": [],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "MarkGrokBotAgentTaskDone",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "taskId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "MarkGrokBotAgentTaskRead",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "taskId",
+        "entryId"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "MarkGrokBotTasksSeen",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "taskIds"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "MarkGrokBotTermsSeen",
+      "kind": "rpc",
+      "args": [],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "MergeGrokBotLibraryPins",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pins"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "MintSandVoiceCallSecret",
+      "kind": "rpc",
+      "args": [
+        "model",
+        "callId",
+        "agentId",
+        "startSurface",
+        "attempt"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "NotifySandAgentTurnFinished",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "agentName",
+        "messagePreview",
+        "lastMessageId",
+        "awaitingUserResponse",
+        "memberAgentIds",
+        "senderAgentId",
+        "messageContentJson"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "NudgeOnePasswordAccessRequest",
+      "kind": "rpc",
+      "args": [
+        "accessRequestId",
+        "agentId",
+        "entryId"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "OpenGrokBotUserComputerRequest",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "frame",
+        "idempotencyKey"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "PollGrokBotUserComputerRequests",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "credential",
+        "ackIds",
+        "limit"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "PresignGrokBotAttachmentUploadParts",
+      "kind": "rpc",
+      "args": [
+        "uploadToken",
+        "parts"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "PresignGrokBotMarketplaceCreatorProfileUploadInternal",
+      "kind": "rpc",
+      "args": [
+        "contentType",
+        "byteSize"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "PresignGrokBotMarketplaceImageUploadInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId",
+        "imageKind",
+        "contentType",
+        "byteSize"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "PresignSandBoxStoreReads",
+      "kind": "rpc",
+      "args": [
+        "relPaths"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "PresignSandBoxStoreWrites",
+      "kind": "rpc",
+      "args": [
+        "files"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "PreviewGrokBotAgentAccessInvite",
+      "kind": "rpc",
+      "args": [
+        "code"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "PreviewGrokBotMarketplaceSourceInternal",
+      "kind": "rpc",
+      "args": [
+        "sourceRef"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "PreviewInternalPrimaryBotMigration",
+      "kind": "rpc",
+      "args": [
+        "teamIds",
+        "emailSuffixes",
+        "afterUserId",
+        "pageSize"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "PromoteGrokBotMemoriesToTeam",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "factIds"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "PublishGrokBotAgent",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "PublishGrokBotUserSkillsSnapshot",
+      "kind": "rpc",
+      "args": [
+        "fingerprint"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "PullGrokBotMeetings",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "waitMs"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "PutGrokBotSecret",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "name",
+        "description",
+        "value"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "PutGrokBotVaultCredential",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "title",
+        "username",
+        "notes",
+        "sites",
+        "password"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "PutGrokBotVaultItem",
+      "kind": "rpc",
+      "args": [
+        "item",
+        "secretFields",
+        "notes"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": "Save a structured vault item; payment entry uses app UI."
+    },
+    {
+      "name": "RaiseGrokBotVirtualCard",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "amountCents",
+        "currency",
+        "merchantName",
+        "merchantUrl",
+        "context"
+      ],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ReactToGrokBotMessage",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "emoji",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ReadGrokBotAgentAttachmentChunk",
+      "kind": "rpc",
+      "args": [
+        "path",
+        "offset",
+        "length",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ReadGrokBotEmailAttachment",
+      "kind": "rpc",
+      "args": [
+        "attachmentId"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ReadGrokBotEmailThread",
+      "kind": "rpc",
+      "args": [
+        "threadId",
+        "maxMessages",
+        "bodyMaxChars"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ReadGrokBotGroupChatCanvas",
+      "kind": "rpc",
+      "args": [
+        "groupChatId",
+        "storeId",
+        "canvasId"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ReadGrokBotGroupChatDocument",
+      "kind": "rpc",
+      "args": [
+        "groupChatId",
+        "storeId",
+        "documentId"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ReadGrokBotMcpAppDocument",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "entryId"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "MCP app HTML requires browser rendering."
+    },
+    {
+      "name": "RecordGrokBotVoiceCall",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "record"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "RecreateSandBox",
+      "kind": "rpc",
+      "args": [
+        "preserveData",
+        "force",
+        "acknowledgeTerminalUpgradeSchedule"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "RecreateTeamMemberSandBox",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "userId",
+        "force"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "RefreshGrokBotTeamsApp",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ReinstallGrokBotSlackApp",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "automatic"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ReinstallGrokBotTeamsApp",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "tenantId",
+        "consentNonce"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "RemoveGrokBotAgentAccessPrincipal",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "principal"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "RemoveGrokBotAgentDelegatedCredential",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pluginId"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "RemoveGrokBotAgentManager",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "userId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "RemoveGrokBotAgentSkill",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "name"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "RemoveGrokBotRoomPeople",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "userIds"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ReportGrokBotClientPresence",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "viewing",
+        "surface",
+        "trigger",
+        "intent",
+        "taskId",
+        "seenViewedAtMs",
+        "installId"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "ReportGrokBotDesktopActivity",
+      "kind": "rpc",
+      "args": [
+        "installId",
+        "active"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "ReportGrokBotMeetings",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "reportJson"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "ReportGrokBotNotificationPermission",
+      "kind": "rpc",
+      "args": [
+        "platform",
+        "deviceId",
+        "osPermission",
+        "osSetting",
+        "alertSetting",
+        "canAskAgain",
+        "inAppEnabled"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "ReportSandBoxHostState",
+      "kind": "rpc",
+      "args": [
+        "diskPressure",
+        "hostVersion",
+        "hostUpdateAvailable",
+        "imageTag",
+        "staticSnapshotPath",
+        "imageGitSha",
+        "boxCreatedAtMs",
+        "governorVersion",
+        "browserLaunchMarkers"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "RequestGrokBotRoomMemberTurn",
+      "kind": "rpc",
+      "args": [
+        "nonce",
+        "room",
+        "memberAgentId",
+        "peers",
+        "newMessages",
+        "isWindingDown",
+        "deadlineMs",
+        "parentRequestId",
+        "rootParentRequestId"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "RescheduleSandBoxUpgrade",
+      "kind": "rpc",
+      "args": [
+        "timezone",
+        "localTime",
+        "recurring"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ResolveGrokBotAddress",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "sessionToken"
+      ],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ResolveGrokBotAttachmentReads",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId",
+        "paths"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ResolveGrokBotAutoReviewApproval",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "requestId",
+        "resolution",
+        "approvalPlatform",
+        "approvedCommand",
+        "sessionId",
+        "mcpElicitationContent"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "ResolveGrokBotConnectorGrant",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "requestId",
+        "resolution",
+        "sessionId",
+        "entryId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ResolveGrokBotCredentialRequest",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "resolution",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "planned",
+      "note": "Answer a requested vault credential selection."
+    },
+    {
+      "name": "ResolveGrokBotLocalToolPermission",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "requestId",
+        "resolution",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "ResolveGrokBotTeamReviewItem",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "itemId",
+        "decision"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ResolveGrokBotVirtualCardApproval",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "requestId",
+        "resolution",
+        "paymentMethodId",
+        "attestation",
+        "payAnotherWay"
+      ],
+      "area": "cards",
+      "milestone": "M2",
+      "status": "handoff",
+      "note": "Payment approval can require browser authentication."
+    },
+    {
+      "name": "RespondGrokBotWidget",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "value",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "RetryGrokBotOutboundCallRecording",
+      "kind": "rpc",
+      "args": [
+        "outboundCallId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "RevokeGrokBotAgentAccessInvite",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "email"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "RevokePasskey",
+      "kind": "rpc",
+      "args": [
+        "credentialId"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "RollBackGrokBotConversation",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SaveTeamGroupSandSetupManifest",
+      "kind": "rpc",
+      "args": [
+        "groupId",
+        "manifestId",
+        "expectedEtag",
+        "entries"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "SaveTeamSandSetupManifest",
+      "kind": "rpc",
+      "args": [
+        "manifestId",
+        "expectedEtag",
+        "entries"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "ScheduleSandBoxUpgrade",
+      "kind": "rpc",
+      "args": [
+        "timezone",
+        "localTime",
+        "recurring"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SearchGrokBotEmailThreads",
+      "kind": "rpc",
+      "args": [
+        "query",
+        "inboxEmail",
+        "fromAddress",
+        "afterMs",
+        "beforeMs",
+        "limit",
+        "mode"
+      ],
+      "area": "email",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "SearchGrokBotPlacesArea",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "cardIndex",
+        "area",
+        "language",
+        "sessionId"
+      ],
+      "area": "search",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SendGrokBotAgentMessage",
+      "kind": "rpc",
+      "args": [
+        "fromAgentId",
+        "toAgentId",
+        "messageId",
+        "text",
+        "sentAtMs",
+        "replyToId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "SendGrokBotDraft",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "sessionId",
+        "email",
+        "slack",
+        "meetingChat",
+        "imessage",
+        "shownSignatureHtml"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "SendGrokBotPullRequestChatMessage",
+      "kind": "rpc",
+      "args": [
+        "roomAgentId",
+        "messageId",
+        "text",
+        "sentAtMs"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "SendGrokBotUserMessage",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "messageId",
+        "text",
+        "sentAtMs",
+        "richText",
+        "replyToId",
+        "isFork",
+        "replyQuote",
+        "attachmentPaths",
+        "attachmentNames",
+        "traceparent",
+        "enterEpochMs",
+        "composedAtMs",
+        "source",
+        "mcpConfigJson",
+        "sessionId",
+        "machineId",
+        "onePasswordAppInstalled",
+        "initiator",
+        "taskId",
+        "language",
+        "sendSource",
+        "firstSentAgeMs",
+        "rendersMcpElicitationForms"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentAllowCollaboratorAutomationCreation",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "allow"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentAutomationEnabled",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "automationId",
+        "isEnabled",
+        "timeZone"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentClientState",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "markRead",
+        "markUnread",
+        "notificationsEnabled",
+        "notifyOnUpdatesEnabled",
+        "hiddenFromSidebar",
+        "markFollowedThreadsRead"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentDraftingDisabled",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "disabled"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentPluginVariables",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pluginId",
+        "variables",
+        "mergeWithStored"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentPlugins",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "plugins"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentRoutineEnabled",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "automationId",
+        "isEnabled",
+        "timeZone"
+      ],
+      "area": "automations",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentTaskPinned",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "taskId",
+        "pinned"
+      ],
+      "area": "tasks",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentVisibility",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "visibility",
+        "personalSecretNames"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotAgentVoice",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "voiceId",
+        "voiceSpeed",
+        "voiceLanguage"
+      ],
+      "area": "avatar-voice",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotChangelogStatusInternal",
+      "kind": "rpc",
+      "args": [
+        "changelogId",
+        "status"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "SetGrokBotDefaultPaymentMethod",
+      "kind": "rpc",
+      "args": [
+        "method"
+      ],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "handoff",
+      "note": "Payment selection requires browser or app UI."
+    },
+    {
+      "name": "SetGrokBotLibraryPin",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pin",
+        "isPinned"
+      ],
+      "area": "memory-files",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotMainAgent",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotMarketplaceListingStatusInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId",
+        "status"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "SetGrokBotMcpToolPermissions",
+      "kind": "rpc",
+      "args": [
+        "serverId",
+        "tools",
+        "reads",
+        "writes"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotRoomMembers",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "memberAgentIds"
+      ],
+      "area": "rooms",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotTeamLinkPreview",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "enabled"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotTemplateCreatorAttributionInternal",
+      "kind": "rpc",
+      "args": [
+        "shareId",
+        "creatorAttribution"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "SetGrokBotTemplateVisibility",
+      "kind": "rpc",
+      "args": [
+        "shareId",
+        "visibility"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SetGrokBotUserMcpSettings",
+      "kind": "rpc",
+      "args": [
+        "settings",
+        "keepDisabledTools"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "ShareGrokBotAgentInPlace",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "StartBulkTeamMemberSandBoxOperation",
+      "kind": "rpc",
+      "args": [
+        "teamId",
+        "userIds",
+        "action",
+        "force",
+        "operationId",
+        "clearSandBoxRestartRequired"
+      ],
+      "area": "teams",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "StartFreshGrokBotConversation",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "StartGrokBotImagePrecaption",
+      "kind": "rpc",
+      "args": [
+        "image",
+        "mimeType",
+        "draftText",
+        "priorUserMessages",
+        "agentId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": "Prepare an attached image for the message composer."
+    },
+    {
+      "name": "StartGrokBotSilentSubagentInternal",
+      "kind": "rpc",
+      "args": [
+        "ownerAuthId",
+        "agentId",
+        "prompt",
+        "title",
+        "reason",
+        "operatorEmail",
+        "runUuid"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "StartGrokBotSlackConnect",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "returnToMobileApp"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "StartGrokBotTeamsConnect",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "requestAdminScopes",
+        "grantScopeTeam",
+        "forceAccountSelection"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "StartGrokBotXConnect",
+      "kind": "rpc",
+      "args": [],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "StartMicrosoftTeamsAccountLink",
+      "kind": "rpc",
+      "args": [
+        "tenantHint"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "StartOnePasswordOAuth",
+      "kind": "rpc",
+      "args": [
+        "connectionId",
+        "connectLink",
+        "locale"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "StartPasskeyEnrollment",
+      "kind": "rpc",
+      "args": [],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Passkey or spend ceremony requires browser authentication."
+    },
+    {
+      "name": "StatSandBoxStoreObject",
+      "kind": "rpc",
+      "args": [
+        "relPath"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "StoreOnePasswordIntegrationKey",
+      "kind": "rpc",
+      "args": [
+        "state",
+        "integrationKey"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SubmitGrokBotSecret",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "value",
+        "sessionId"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "SubmitGrokBotUserComputerResponses",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "credential",
+        "frames"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "SubmitGrokBotUserForm",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "values",
+        "sessionId",
+        "platform",
+        "saveToVault"
+      ],
+      "area": "cards",
+      "milestone": "M1",
+      "status": "done",
+      "note": ""
+    },
+    {
+      "name": "SuggestGrokBotAddresses",
+      "kind": "rpc",
+      "args": [
+        "query",
+        "sessionToken"
+      ],
+      "area": "account-billing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "SyncOnePasswordConnections",
+      "kind": "rpc",
+      "args": [
+        "trigger"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "TransferGrokBotOutboundCall",
+      "kind": "rpc",
+      "args": [
+        "outboundCallId"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "UninstallGrokBotSlackApp",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "forgetIfUnreachable"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UninstallGrokBotTeamsApp",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UnlinkGrokBotMessagingPhone",
+      "kind": "rpc",
+      "args": [
+        "handleId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UnlinkMicrosoftTeamsAccount",
+      "kind": "rpc",
+      "args": [
+        "tenantId"
+      ],
+      "area": "channels",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UnpublishGrokBotAgent",
+      "kind": "rpc",
+      "args": [
+        "agentId"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UpdateGrokBotAgent",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "name",
+        "description",
+        "title",
+        "avatarShape",
+        "avatarColor",
+        "clearAvatar",
+        "avatarDataUrl",
+        "partialUpdate"
+      ],
+      "area": "bots",
+      "milestone": "M3",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UpdateGrokBotAgentAccess",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "update"
+      ],
+      "area": "sharing",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UpdateGrokBotAgentCustomMcp",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "pluginId",
+        "name",
+        "http",
+        "stdio"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "UpdateGrokBotAgentMarketplace",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "displayName",
+        "description"
+      ],
+      "area": "publishing",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "UpdateGrokBotAgentSkill",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "name",
+        "description",
+        "content"
+      ],
+      "area": "plugins-skills",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UpdateGrokBotChangelogInternal",
+      "kind": "rpc",
+      "args": [
+        "changelogId",
+        "slug",
+        "featureDescription",
+        "relevanceGuidance",
+        "deliveryWindow",
+        "notBeforeMs",
+        "expiresAtMs",
+        "priority",
+        "announceInstructions",
+        "maxOffers",
+        "eligibilityGate",
+        "minClientVersion",
+        "minIosClientVersion",
+        "notifyProactively"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "UpdateGrokBotConnectorSharedSpaceAllowlist",
+      "kind": "rpc",
+      "args": [
+        "addServerIds",
+        "removeServerIds"
+      ],
+      "area": "connectors",
+      "milestone": "M4",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UpdateGrokBotMarketplaceCategoryInternal",
+      "kind": "rpc",
+      "args": [
+        "categoryId",
+        "name"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "UpdateGrokBotMarketplaceCreatorInternal",
+      "kind": "rpc",
+      "args": [
+        "creatorId",
+        "name",
+        "profilePhotoUrl",
+        "handles",
+        "replaceHandles"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "UpdateGrokBotMarketplaceListingInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId",
+        "slug",
+        "category",
+        "name",
+        "description",
+        "imageUrl",
+        "defaultAvatar",
+        "creatorId",
+        "categoryIds",
+        "replaceCategories"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "UpdateGrokBotMarketplaceListingTemplateInternal",
+      "kind": "rpc",
+      "args": [
+        "listingId",
+        "recipeJson"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Staff or administrator operation."
+    },
+    {
+      "name": "UpdateGrokBotUserRuntimeSettings",
+      "kind": "rpc",
+      "args": [
+        "pinnedAgents",
+        "sidebarSections",
+        "hasSeenOnboarding",
+        "autoReviewInstructions",
+        "xToolAccess",
+        "autoReviewRuleSave",
+        "botsHidden",
+        "sidebarSectionsBase"
+      ],
+      "area": "settings",
+      "milestone": "M5",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "UpdateGrokBotVaultCard",
+      "kind": "rpc",
+      "args": [
+        "id",
+        "holderName",
+        "expiry",
+        "billingAddress",
+        "billingAddressId",
+        "nickname",
+        "notes"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Payment card entry requires the app."
+    },
+    {
+      "name": "UploadGrokBotAgentAttachmentChunk",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "uploadId",
+        "fileName",
+        "offset",
+        "totalSize",
+        "data",
+        "sha256Hex",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "UpsertGrokBotUserFormVaultEntry",
+      "kind": "rpc",
+      "args": [
+        "entry"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "VerifyPasskeyEnrollmentCode",
+      "kind": "rpc",
+      "args": [
+        "code"
+      ],
+      "area": "secrets-vault",
+      "milestone": "M4",
+      "status": "handoff",
+      "note": "Passkey or spend ceremony requires browser authentication."
+    },
+    {
+      "name": "VoiceCallHarnessSession",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "agentName",
+        "userName",
+        "description",
+        "spokenLanguage"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "VoiceCallHarnessTool",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "callId",
+        "name",
+        "input",
+        "line"
+      ],
+      "area": "voice-meetings",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Calls, meetings, and audio are outside terminal scope."
+    },
+    {
+      "name": "VoteGrokBotFeedback",
+      "kind": "rpc",
+      "args": [
+        "agentId",
+        "entryId",
+        "action",
+        "categories",
+        "comment",
+        "sessionId"
+      ],
+      "area": "conversation",
+      "milestone": "M2",
+      "status": "planned",
+      "note": ""
+    },
+    {
+      "name": "WatchGrokBotTranscripts",
+      "kind": "rpc",
+      "args": [
+        "cursors",
+        "includeUnlistedAgents",
+        "inlineBodyMaxBytes"
+      ],
+      "area": "conversation",
+      "milestone": "M1",
+      "status": "declined",
+      "note": "No desktop call site found in main or renderer bundles."
+    },
+    {
+      "name": "WatchGrokBotUserComputerRequests",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "credential",
+        "hello",
+        "presenceToken"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "WatchSandBoxMigration",
+      "kind": "rpc",
+      "args": [
+        "fromOffsetKey",
+        "includeFinished"
+      ],
+      "area": "internal",
+      "milestone": "M5",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    },
+    {
+      "name": "WithdrawGrokBotUserComputerPresence",
+      "kind": "rpc",
+      "args": [
+        "machineId",
+        "credential",
+        "presenceToken"
+      ],
+      "area": "computer",
+      "milestone": "M4",
+      "status": "declined",
+      "note": "Transport, machine registration, migration, or telemetry plumbing."
+    }
+  ]
+}
