@@ -9,7 +9,7 @@ from textual.command import Provider
 from textual.message import Message
 
 from gbot.output import terminal_safe
-from gbot.service import events
+from gbot.service import events, trays
 from gbot.service.api import Service
 from gbot.service.models import Bot, Card, ConnectionStatus
 from gbot.tui.glyphs import glyphs
@@ -66,6 +66,7 @@ class GbotApp(App[None]):
         self.animations_enabled = animate
         self.state = AppState()
         self.bots: list[Bot] = []
+        self.trays: list[trays.Tray] = []
         self.notifier = Notifier()
         self.home = HomeScreen()
         self._source: events.EventSource | None = None
@@ -191,6 +192,7 @@ class GbotApp(App[None]):
         self.home.initialize_preferences(bots)
         self.notify_roster()
         self._loaded = True
+        self.refresh_trays()
         for event in self._queued:
             self.on_service_event(ServiceEvent(event))
         self._queued.clear()
@@ -248,6 +250,8 @@ class GbotApp(App[None]):
             self._queued.append(message.event)
             return
         previous_status = self.state.status
+        if isinstance(message.event, events.Other) and message.event.channel == "tray":
+            self.refresh_trays()
         changes = self.state.apply(message.event)
         if (
             self.state.status == ConnectionStatus.SIGNED_OUT
@@ -287,6 +291,19 @@ class GbotApp(App[None]):
 
     def on_resize(self) -> None:
         self.call_after_refresh(self.home.refresh_state)
+
+    @work(thread=True, exit_on_error=False, group="trays", exclusive=True)
+    def refresh_trays(self) -> None:
+        try:
+            loaded = trays.trays(self.service.transport)
+        except Exception:  # noqa: BLE001 - optional gateway capability
+            return
+        if not self._service_closing:
+            self.call_from_thread(self._install_trays, loaded)
+
+    def _install_trays(self, loaded: list[trays.Tray]) -> None:
+        self.trays = loaded
+        self.refresh_home()
 
     @work(thread=True, exit_on_error=False)
     def refresh_roster(self) -> None:

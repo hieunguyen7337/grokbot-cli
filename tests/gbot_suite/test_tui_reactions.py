@@ -3,6 +3,7 @@ from dataclasses import replace
 from unittest.mock import Mock
 
 import pytest
+from fake_calls import actions
 from textual.widgets import Input, Select, Static, Switch, TextArea
 from tui_snapshots import assert_snapshot
 
@@ -80,7 +81,7 @@ def test_react_newest_and_remove(monkeypatch):
                     "sessionId": "s1",
                 },
             )
-            assert service.transport.calls == [expected]
+            assert actions(service.transport) == [expected]
             notice.assert_any_call("Reacted", markup=False)
             app._receive_event(
                 events.EntryChanged(
@@ -94,7 +95,7 @@ def test_react_newest_and_remove(monkeypatch):
             await settle(app, pilot)
             assert run(ctx, f"/react {UP}") is None
             await settle(app, pilot)
-            assert service.transport.calls == [expected, expected]
+            assert actions(service.transport) == [expected, expected]
             notice.assert_any_call("Removed reaction", markup=False)
 
     asyncio.run(exercise())
@@ -131,7 +132,7 @@ def test_reaction_picker_and_other():
                     await pilot.press("enter")
                 await settle(app, pilot)
                 assert app.screen is screen
-                assert service.transport.calls[-1] == (
+                assert actions(service.transport)[-1] == (
                     "command",
                     "reactToMessage",
                     {
@@ -160,7 +161,7 @@ def test_feedback_down_and_form(monkeypatch):
             }
             assert run(ctx, "/feedback down") is None
             await settle(app, pilot)
-            assert service.transport.calls == [
+            assert actions(service.transport) == [
                 ("command", "voteFeedback", {**base, "action": "down"})
             ]
             service.transport.calls.clear()
@@ -180,7 +181,7 @@ def test_feedback_down_and_form(monkeypatch):
             await pilot.press("ctrl+s")
             await settle(app, pilot)
             assert app.screen is screen
-            assert service.transport.calls == [
+            assert actions(service.transport) == [
                 ("command", "voteFeedback", {**base, "action": "down"}),
                 (
                     "command",
@@ -217,7 +218,9 @@ def test_feedback_failure_keeps_comment():
                 form.query_one("#form-notice", Static).render()
             )
             assert form.query_one(TextArea).text == "Keep this comment"
-            assert [name for _, name, _ in service.transport.calls] == ["voteFeedback"]
+            assert [name for _, name, _ in actions(service.transport)] == [
+                "voteFeedback"
+            ]
 
     asyncio.run(exercise())
 
@@ -243,7 +246,7 @@ def test_thread_cancel_and_confirm(monkeypatch):
                 else:
                     await pilot.press("escape")
                 await settle(app, pilot)
-                assert service.transport.calls == (
+                assert actions(service.transport) == (
                     [
                         (
                             "command",
@@ -272,14 +275,16 @@ def test_read_only_reactions_and_search(monkeypatch):
                 assert run(ctx, command) is None
                 await settle(app, pilot)
                 assert app.screen is screen
-            assert service.transport.calls == []
+            assert actions(service.transport) == []
             assert notice.call_count == 3
             notice.assert_called_with("Read-only mode", markup=False)
             assert run(ctx, "/search hello") is None
             await settle(app, pilot)
             assert isinstance(app.screen, ListPanel)
             assert app.screen.rows
-            assert [name for _, name, _ in service.transport.calls] == ["searchAgents"]
+            assert [name for _, name, _ in actions(service.transport)] == [
+                "searchAgents"
+            ]
 
     asyncio.run(exercise())
 

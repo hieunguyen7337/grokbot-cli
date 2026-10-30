@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import replace
 
+from fake_calls import actions
 from textual.widgets import Input
 
 from gbot.service import events
@@ -33,14 +34,14 @@ def test_session_run_controls(tmp_path, monkeypatch):
                 "command",
                 "interruptAgentRun",
                 {"id": bot.id, "sessionId": "sub"},
-            ) in service.transport.calls
+            ) in actions(service.transport)
             ctx = SlashContext(app, screen, bot.id, "sub")
             assert run(ctx, "/fresh") is None
             assert isinstance(app.screen, ConfirmScreen)
             await pilot.pause()
             await pilot.press("escape")
             assert not any(
-                c[1] == "startFreshConversation" for c in service.transport.calls
+                c[1] == "startFreshConversation" for c in actions(service.transport)
             )
             assert run(ctx, "/fresh") is None
             await pilot.pause()
@@ -50,7 +51,7 @@ def test_session_run_controls(tmp_path, monkeypatch):
                 "command",
                 "startFreshConversation",
                 {"id": bot.id, "sessionId": "sub"},
-            ) in service.transport.calls
+            ) in actions(service.transport)
             assert run(ctx, "/rollback") is None
             await pilot.pause()
             await pilot.click("#confirm")
@@ -59,7 +60,7 @@ def test_session_run_controls(tmp_path, monkeypatch):
                 "command",
                 "rollBackConversation",
                 {"id": bot.id, "sessionId": "sub"},
-            ) in service.transport.calls
+            ) in actions(service.transport)
             assert screen.query_one("#session-input", Input).has_focus
             assert (
                 run(SlashContext(app, app.home, bot.id, None), "/rollback")
@@ -89,7 +90,7 @@ def test_home_interrupt_sessions_and_idle(tmp_path, monkeypatch):
             await app.workers.wait_for_complete()
             assert [
                 (name, args)
-                for _, name, args in service.transport.calls
+                for _, name, args in actions(service.transport)
                 if name == "interruptAgentRun"
             ] == [
                 ("interruptAgentRun", {"id": selected, "sessionId": "a"}),
@@ -109,7 +110,7 @@ def test_home_interrupt_sessions_and_idle(tmp_path, monkeypatch):
             await pilot.press("ctrl+x")
             await app.workers.wait_for_complete()
             assert field.value == "hello"
-            assert len(service.transport.calls) == 2
+            assert len(actions(service.transport)) == 2
 
     asyncio.run(exercise())
 
