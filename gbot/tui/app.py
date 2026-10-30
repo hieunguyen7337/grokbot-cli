@@ -1,16 +1,20 @@
+from collections.abc import Callable
 from time import monotonic
 from typing import ClassVar
 
 from textual import work
 from textual.app import App
 from textual.binding import Binding, BindingType
+from textual.command import Provider
 from textual.message import Message
 
 from gbot.output import terminal_safe
 from gbot.service import events
 from gbot.service.api import Service
-from gbot.service.models import Bot, Card
+from gbot.service.models import Bot, Card, ConnectionStatus
 from gbot.tui.glyphs import glyphs
+from gbot.tui.notifications import Notifier
+from gbot.tui.palette import GbotCommands
 from gbot.tui.screens.help import HelpScreen
 from gbot.tui.screens.home import HOME_BINDINGS, HomeScreen
 from gbot.tui.screens.session import SessionScreen
@@ -38,6 +42,10 @@ class GbotApp(App[None]):
     BINDINGS: ClassVar[list[BindingType]] = [*SHELL_BINDINGS]
     COMMAND_PALETTE_BINDING = "ctrl+p"
     ENABLE_COMMAND_PALETTE = True
+    COMMANDS: ClassVar[set[type[Provider] | Callable[[], type[Provider]]]] = {
+        GbotCommands
+    }
+    bell_enabled = True
 
     def __init__(
         self,
@@ -55,6 +63,7 @@ class GbotApp(App[None]):
         self.animations_enabled = animate
         self.state = AppState()
         self.bots: list[Bot] = []
+        self.notifier = Notifier()
         self.home = HomeScreen()
         self._source: events.EventSource | None = None
         self._service_closing = False
@@ -72,6 +81,40 @@ class GbotApp(App[None]):
 
     def service_error(self, error: Exception) -> None:
         self.notify(terminal_safe(str(error)), severity="error", markup=False)
+
+    def bot_error(self, bot_id: str, error: Exception | None = None) -> None:
+        if error is None:
+            self.state.errors.pop(bot_id, None)
+        else:
+            self.state.errors[bot_id] = terminal_safe(str(error)).partition("\n")[0][
+                :160
+            ]
+            self.service_error(error)
+        self.refresh_home()
+
+    def user_acted(self) -> None:
+        if self._source is not None and self.state.status in {
+            ConnectionStatus.ASLEEP,
+            ConnectionStatus.SIGNED_OUT,
+        }:
+            self._source.nudge()
+
+    def notify_roster(self) -> None:
+        open_bot_id = next(
+            (
+                screen.bot_id
+                for screen in reversed(self.screen_stack)
+                if isinstance(screen, SessionScreen)
+            ),
+            None,
+        )
+        notices = self.notifier.update(
+            self.state.bots.values(), open_bot_id=open_bot_id
+        )
+        for notice in notices:
+            self.notify(terminal_safe(notice.text), markup=False)
+        if self.bell_enabled and any(notice.bell for notice in notices):
+            self.bell()
 
     def _receive_event(self, event: events.Event) -> None:
         self.post_message(ServiceEvent(event))
@@ -107,6 +150,7 @@ class GbotApp(App[None]):
             bot.id: [c for c in cards if c.bot_id == bot.id] for bot in bots
         }
         self.home.initialize_preferences(bots)
+        self.notify_roster()
         self._loaded = True
         for event in self._queued:
             self.on_service_event(ServiceEvent(event))
@@ -133,7 +177,15 @@ class GbotApp(App[None]):
         if not self._loaded:
             self._queued.append(message.event)
             return
+        previous_status = self.state.status
         changes = self.state.apply(message.event)
+        if (
+            self.state.status == ConnectionStatus.SIGNED_OUT
+            and previous_status != ConnectionStatus.SIGNED_OUT
+        ):
+            self.notify("Signed out. Run: gbot login", severity="error", markup=False)
+        if "roster" in changes:
+            self.notify_roster()
         for change in changes:
             if change.startswith("cards:"):
                 self.refresh_cards(change[6:])
@@ -145,6 +197,9 @@ class GbotApp(App[None]):
     def refresh_home(self) -> None:
         self.bots = list(self.state.bots.values())
         self.home.refresh_state()
+
+    def on_resize(self) -> None:
+        self.call_after_refresh(self.home.refresh_state)
 
     @work(thread=True, exit_on_error=False)
     def refresh_roster(self) -> None:
@@ -160,11 +215,12 @@ class GbotApp(App[None]):
             cards, warnings = self.service.pending([bot_id])
             self.call_from_thread(self._install_cards, bot_id, cards, warnings)
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
-            self.call_from_thread(self.service_error, error)
+            self.call_from_thread(self.bot_error, bot_id, error)
 
     def _install_cards(
         self, bot_id: str, cards: list[Card], warnings: list[str]
     ) -> None:
+        self.state.errors.pop(bot_id, None)
         if bot_id in self.state.bots:
             self.state.cards[bot_id] = cards
             self.refresh_home()
@@ -198,8 +254,11 @@ class GbotApp(App[None]):
     def action_request_exit(self) -> None:
         now = monotonic()
         if self._exit_requested_at is not None and now - self._exit_requested_at <= 2:
-            self._close_source()
-            self.exit()
+            self.action_palette_quit()
         else:
             self._exit_requested_at = now
             self.notify("Press Ctrl+C again to exit", timeout=2)
+
+    def action_palette_quit(self) -> None:
+        self._close_source()
+        self.exit()

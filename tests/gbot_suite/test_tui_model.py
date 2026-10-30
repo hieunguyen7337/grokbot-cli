@@ -149,3 +149,31 @@ def test_layout_headers_and_hostile_text():
     assert [
         age_text(x) for x in (0, 12000, 240000, 10800000, 172800000, 3024000000)
     ] == ["now", "12s", "4m", "3h", "2d", "5w"]
+
+
+def test_error_badge_precedence():
+    bots = [
+        Bot("a", "A", last_outcome="failed", retrying=True),
+        Bot("b", "B", retrying=True),
+        Bot("c", "C"),
+        Bot("d", "D"),
+    ]
+    rows = build_rows(bots, [], now_ms=0, errors=dict.fromkeys("abc", "failure"))
+    assert [r.badge for r in rows] == ["failed", "retrying", "error", None]
+
+
+def test_precise_header_text():
+    expected = (
+        "connecting",
+        "live",
+        "reconnecting (3)",
+        "computer asleep · wakes when you act",
+        "signed out · run gbot login",
+        "offline · retrying",
+    )
+    for status, label in zip(ConnectionStatus, expected):
+        assert header_text({}, status, attempt=3)[1] == f"● {label}"
+        assert header_text({}, status, attempt=3, ascii_only=True)[1] == (
+            "o " + label.replace("·", "-")
+        )
+    assert header_text({}, ConnectionStatus.RECONNECTING)[1] == "● reconnecting"

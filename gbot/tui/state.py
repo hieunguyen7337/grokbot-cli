@@ -11,12 +11,19 @@ class AppState:
     bots: dict[str, Bot] = field(default_factory=dict)
     cards: dict[str, list[Card]] = field(default_factory=dict)
     status: ConnectionStatus = ConnectionStatus.CONNECTING
+    connection: events.ConnectionChanged = field(
+        default_factory=lambda: events.ConnectionChanged(ConnectionStatus.CONNECTING)
+    )
+    errors: dict[str, str] = field(default_factory=dict)
 
     def apply(self, event: events.Event) -> set[str]:
         if isinstance(event, events.RosterReplaced):
             self.bots = {bot.id: bot for bot in event.bots}
             self.cards = {
                 key: value for key, value in self.cards.items() if key in self.bots
+            }
+            self.errors = {
+                key: value for key, value in self.errors.items() if key in self.bots
             }
             return {"roster"}
         if isinstance(event, events.BotChanged):
@@ -27,6 +34,7 @@ class AppState:
             return {"roster"}
         if isinstance(event, events.ConnectionChanged):
             self.status = event.status
+            self.connection = event
             return {"status"}
         if isinstance(event, events.RosterResync):
             ids = [event.bot_id] if event.bot_id else self.bots

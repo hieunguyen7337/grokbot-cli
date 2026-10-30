@@ -124,11 +124,29 @@ class HomeScreen(Screen):
             [c for cards in state.cards.values() for c in cards],
             now_ms=now,
             pins=self.preferences.pins,
+            errors=state.errors,
         )
         totals = model.counts(self.rows)
         left, right = model.header_text(
-            totals, state.status, ascii_only=self.gbot.ascii_only
+            totals,
+            state.status,
+            ascii_only=self.gbot.ascii_only,
+            attempt=state.connection.attempt,
         )
+        if Text(left + " " + right).cell_len > self.content_size.width:
+            right = right.split(f" {self.gbot.symbols.separator} ")[0]
+            if state.status == ConnectionStatus.ASLEEP:
+                right = f"{self.gbot.symbols.dot} asleep"
+            if (
+                state.status
+                in {
+                    ConnectionStatus.ASLEEP,
+                    ConnectionStatus.SIGNED_OUT,
+                    ConnectionStatus.OFFLINE,
+                }
+                and Text(left + " " + right).cell_len > self.content_size.width
+            ):
+                left = left.removeprefix(f"Grok Bot {self.gbot.symbols.separator} ")
         self.query_one("#heading", Static).update(Text(left))
         color = (
             "#78b878"
@@ -334,10 +352,12 @@ class HomeScreen(Screen):
             result = self.gbot.service.send(bot_id, text, nonce=nonce)
             if not result.accepted:
                 raise ValueError("Message was not accepted")
+            self.app.call_from_thread(self.gbot.bot_error, bot_id)
+            self.app.call_from_thread(self.gbot.user_acted)
             name = terminal_safe(self.gbot.state.bots[bot_id].name)
             self.app.call_from_thread(self.notify, f"Sent to {name}", markup=False)
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
-            self.app.call_from_thread(self.gbot.service_error, error)
+            self.app.call_from_thread(self.gbot.bot_error, bot_id, error)
 
     def on_key(self, event: events.Key) -> None:
         if (
