@@ -1,6 +1,13 @@
-"""Gateway argument kinds used by gbot, as reported by the contract extractor."""
+"""Gateway commands and backend RPCs gbot uses, with argument kinds as reported by the contract extractor.
 
-USED_COMMANDS: dict[str, str] = {
+The CLI's own names are listed here; each `gbot.service` area module adds its own through module-level `COMMANDS`
+and `RPCS`, so parallel features never edit one shared list. `docs/parity.json` marks all of them `done`.
+"""
+
+import importlib
+import pkgutil
+
+_CLI_COMMANDS: dict[str, str] = {
     "listAgents": "none",
     "sendPrompt": "object",
     "getAgentTranscriptTail": "object",
@@ -13,7 +20,7 @@ USED_COMMANDS: dict[str, str] = {
     "listMcpServerTools": "object",
 }
 
-USED_RPCS: tuple[str, ...] = (
+_CLI_RPCS: tuple[str, ...] = (
     "ResolveGrokBotAutoReviewApproval",
     "ResolveGrokBotLocalToolPermission",
     "RespondGrokBotWidget",
@@ -24,3 +31,20 @@ USED_RPCS: tuple[str, ...] = (
     "SendGrokBotDraft",
     "DiscardGrokBotDraft",
 )
+
+
+def _collect() -> tuple[dict[str, str], tuple[str, ...]]:
+    from gbot import service
+
+    commands = dict(_CLI_COMMANDS)
+    rpcs = list(_CLI_RPCS)
+    for info in sorted(
+        pkgutil.iter_modules(service.__path__), key=lambda item: item.name
+    ):
+        module = importlib.import_module(f"gbot.service.{info.name}")
+        commands.update(getattr(module, "COMMANDS", {}))
+        rpcs.extend(name for name in getattr(module, "RPCS", ()) if name not in rpcs)
+    return commands, tuple(rpcs)
+
+
+USED_COMMANDS, USED_RPCS = _collect()
