@@ -72,6 +72,7 @@ class SessionScreen(Screen):
     """
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("escape", "escape", "Home", priority=True),
+        Binding("ctrl+x", "interrupt", "Stop", priority=True),
         Binding("up", "menu_up", "Previous command", priority=True),
         Binding("down", "menu_down", "Next command", priority=True),
         Binding("pageup", "earlier", "Earlier", priority=True),
@@ -391,6 +392,10 @@ class SessionScreen(Screen):
             self._start_load()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action == "interrupt":
+            from gbot.tui.slash.runs import working
+
+            return working(self.gbot.state.bots.get(self.bot_id))
         # Printable and editing keys belong to the composer once it holds text.
         empty = not self.query_one("#session-input", Input).value
         if action == "retry":
@@ -402,6 +407,17 @@ class SessionScreen(Screen):
         if action in {"menu_up", "menu_down"}:
             return self.query_one(SlashMenu).display
         return super().check_action(action, parameters)
+
+    def action_interrupt(self) -> None:
+        from gbot.tui.slash.runs import stop
+
+        stop(SlashContext(self.gbot, self, self.bot_id, self.session_id))
+
+    def restore_draft(self, text: str) -> None:
+        field = self.query_one("#session-input", Input)
+        field.value = text
+        field.cursor_position = len(text)
+        field.focus()
 
     def action_menu_up(self) -> None:
         self.query_one(SlashMenu).move(-1)

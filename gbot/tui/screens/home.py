@@ -31,7 +31,7 @@ HOME_BINDINGS = [
         key,
         action,
         description,
-        priority=key in {"up", "down", "pageup", "pagedown", "home", "end"},
+        priority=key in {"up", "down", "pageup", "pagedown", "home", "end", "ctrl+x"},
     )
     for key, action, description in (
         ("up", "navigate(-1)", "Previous row or header"),
@@ -51,7 +51,7 @@ HOME_BINDINGS = [
         ("shift+down", "reorder(1)", "Move bot down in section"),
         ("ctrl+s", "group_by", "Toggle state / team grouping"),
         ("ctrl+f", "find", "Filter by name"),
-        ("ctrl+x", "interrupt", "Interrupt (arrives later)"),
+        ("ctrl+x", "interrupt", "Stop"),
         ("space", "peek", "Toggle Peek"),
         ("tab", "peek_reply", "Focus Peek reply"),
         ("?", "help", "Keyboard help"),
@@ -192,6 +192,16 @@ class HomeScreen(Screen):
         return self.query_one(Peek)
 
     def sync_peek(self) -> None:
+        from gbot.tui.slash.runs import working
+
+        bot = self.gbot.state.bots.get(self.bot_list.selected_id or "")
+        stop_hint = (
+            f" {self.gbot.symbols.separator} ctrl+x stop" if working(bot) else ""
+        )
+        self.query_one("#home-hints", Static).update(
+            f"space peek {self.gbot.symbols.separator} enter open {self.gbot.symbols.separator} ctrl+t pin {self.gbot.symbols.separator} ctrl+s group{stop_hint} {self.gbot.symbols.separator} ? help"
+        )
+
         if not self.peek.display:
             return
         selected = self.bot_list.selected_id
@@ -269,6 +279,12 @@ class HomeScreen(Screen):
         self.bot_list.focus()
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        if action == "interrupt":
+            from gbot.tui.slash.runs import working
+
+            return self.bot_list.header_key is None and working(
+                self.gbot.state.bots.get(self.bot_list.selected_id or "")
+            )
         if (
             isinstance(self.focused, (Input, TextArea))
             and action
@@ -415,7 +431,9 @@ class HomeScreen(Screen):
         self.notify(f"{feature} arrives in a later unit")
 
     def action_interrupt(self) -> None:
-        self.action_later("Interrupt")
+        from gbot.tui.slash.runs import stop
+
+        stop(SlashContext(self.gbot, self, self.bot_list.selected_id, None))
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id != "dispatch":

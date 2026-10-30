@@ -950,7 +950,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1479,7 +1479,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -1860,7 +1860,7 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
+      "status": "done",
       "note": ""
     },
     {
@@ -4729,8 +4729,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of interruptAgentRun; gbot reaches bots through the gateway command."
     },
     {
       "name": "InvalidateGrokBotUserSkillsCache",
@@ -6215,8 +6215,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of rollBackConversation; gbot reaches bots through the gateway command."
     },
     {
       "name": "SaveTeamGroupSandSetupManifest",
@@ -6677,8 +6677,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": ""
+      "status": "declined",
+      "note": "Backend twin of startFreshConversation; gbot reaches bots through the gateway command."
     },
     {
       "name": "StartGrokBotImagePrecaption",
