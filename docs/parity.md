@@ -11,7 +11,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | Area | Planned | Done | Handoff | Declined | Milestone |
 |---|---:|---:|---:|---:|---|
 | roster | 5 | 1 | 0 | 2 | M1, M3 |
-| conversation | 21 | 8 | 0 | 13 | M1, M2 |
+| conversation | 15 | 11 | 0 | 16 | M1, M2 |
 | cards | 15 | 9 | 2 | 1 | M1, M2 |
 | rooms | 8 | 0 | 0 | 4 | M2 |
 | tasks | 0 | 7 | 0 | 12 | M2 |
@@ -32,7 +32,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | settings | 17 | 1 | 2 | 1 | M1, M5 |
 | account-billing | 4 | 0 | 2 | 2 | M5 |
 | voice-meetings | 0 | 0 | 0 | 19 | M5 |
-| search | 3 | 0 | 0 | 2 | M2 |
+| search | 1 | 3 | 0 | 1 | M2 |
 | internal | 1 | 0 | 0 | 123 | M1, M5 |
 
 **roster.** List and open bots, expose live state, and manage sidebar visibility and update notifications.

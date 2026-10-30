@@ -2,7 +2,7 @@
 
 from rich.text import Text
 from textual.app import ComposeResult
-from textual.containers import VerticalScroll
+from textual.containers import Vertical, VerticalScroll
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Markdown, Static
@@ -10,6 +10,7 @@ from textual.widgets import Markdown, Static
 from gbot.output import terminal_safe
 from gbot.pending import describe, one_line
 from gbot.service.models import Entry
+from gbot.service.reactions import entry_reactions
 from gbot.tui.glyphs import Glyphs
 
 
@@ -101,6 +102,17 @@ def entry_widget(entry: Entry, symbols: Glyphs) -> Widget:
         widget = UnsupportedEntry(
             Text(one_line(terminal_safe(entry.kind)) + suffix), name=entry.id
         )
+    reactions = entry_reactions(entry)
+    if reactions:
+        line = Text(
+            "  ".join(
+                f"{terminal_safe(emoji)} {count}" for emoji, count, _ in reactions
+            ),
+            style="dim",
+        )
+        widget = Vertical(widget, Static(line), name=entry.id, classes="reacted-entry")
+        widget.styles.height = "auto"
+    setattr(widget, "entry", entry)  # noqa: B010 - widgets retain their source entry
     return widget
 
 
