@@ -2,7 +2,7 @@
   {
     "id": "bot-inbox",
     "name": "Inbox",
-    "state": "idle",
+    "state": "awaiting",
     "default": true
   },
   {

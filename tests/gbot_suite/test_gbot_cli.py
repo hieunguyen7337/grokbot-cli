@@ -25,11 +25,18 @@ class FakeManager:
         self.entries: list[dict[str, object]] = [
             {
                 "id": "1",
+                "seq": 1,
                 "timestampMs": 0,
                 "kind": "user",
                 "message": {"content": "hello"},
             },
-            {"id": "2", "timestampMs": 1000, "kind": "assistant", "content": "x" * 180},
+            {
+                "id": "2",
+                "seq": 2,
+                "timestampMs": 1000,
+                "kind": "assistant",
+                "content": "x" * 180,
+            },
         ]
         self.calls: list[object] = []
         self.failure: Exception | None = None
@@ -59,6 +66,8 @@ class FakeManager:
             raise self.failure
         return {
             "listAgents": self.bots,
+            "getAgentTranscriptTail": {"entries": self.entries},
+            "sendPrompt": {"ok": True},
             "getForeverBoxStatus": {"state": "running"},
             "getHostStatus": {
                 "hostVersion": "0.30",
@@ -238,7 +247,7 @@ def test_command_outputs(fake, capsys, command, json_mode):
             assert value == {
                 "accepted": False,
                 "bot": {"id": "a", "name": "Alpha"},
-                "last_seq": None,
+                "last_seq": 2,
             }
         elif command == "tail":
             assert [row["id"] for row in value] == ["1", "2"]
@@ -630,3 +639,20 @@ def test_untrusted_text_cannot_drive_the_terminal(fake, monkeypatch, capsys):
     assert cli.main(["bots"]) == 1
     err = capsys.readouterr().err
     assert "\x1b" not in err and "\\u001b[31mboom" in err
+
+
+def test_send_session(fake, capsys):
+    assert cli.main(["send", "--session", "task-1", "hello"]) == 0
+    sent = [args for name, args in fake.calls if name == "sendPrompt"]
+    assert sent[0]["sessionId"] == "task-1"
+    assert sent[0]["clientNonce"]
+    assert (
+        "getAgentTranscriptTail",
+        {"id": "a", "limit": 1, "sessionId": "task-1"},
+    ) in fake.calls
+
+
+def test_bots_awaiting_priority(fake, capsys):
+    fake.bots[0]["awaitingUserResponse"] = {"reason": "approval"}
+    assert cli.main(["bots", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)[0]["state"] == "awaiting"

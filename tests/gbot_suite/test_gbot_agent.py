@@ -77,21 +77,26 @@ def test_send_cursor(monkeypatch, capsys):
             self.calls = []
 
         def command(self, method, args=None):
-            return [{"id": "a", "name": "Alpha"}]
-
-        def transcript_tail(self, bot_id):
-            self.calls.append("tail")
-            return self.entries
-
-        def send_prompt(self, bot_id, text):
-            self.calls.append("send")
+            if method == "listAgents":
+                return [{"id": "a", "name": "Alpha"}]
+            self.calls.append((method, args))
+            if method == "getAgentTranscriptTail":
+                # The gateway returns the newest `limit` entries.
+                return {"entries": self.entries[-args["limit"] :]}
             return {"accepted": True}
 
     manager = Manager()
     monkeypatch.setattr(context, "manager_factory", lambda: manager)
     for entries, expected in [
         ([], None),
-        ([{"seq": 2}, {"seq": 8}, {"seq": True}, {"seq": "9"}, {}], 8),
+        (
+            [
+                {"id": "t1u", "seq": 2},
+                {"id": "t1s0", "seq": True},
+                {"id": "t2u", "seq": 8},
+            ],
+            8,
+        ),
     ]:
         manager.entries = entries
         assert cli.main(["send", "--bot", "Alpha", "--json", "hello"]) == 0
@@ -100,7 +105,10 @@ def test_send_cursor(monkeypatch, capsys):
             "bot": {"id": "a", "name": "Alpha"},
             "last_seq": expected,
         }
-        assert manager.calls[-2:] == ["tail", "send"]
+        (read, read_args), (send, send_args) = manager.calls[-2:]
+        assert (read, read_args) == ("getAgentTranscriptTail", {"id": "a", "limit": 1})
+        assert send == "sendPrompt" and send_args["prompt"] == "hello"
+        assert send_args["agentId"] == "a" and send_args["clientNonce"]
 
 
 def test_exit_codes_and_help(monkeypatch, capsys):

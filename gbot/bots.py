@@ -11,14 +11,10 @@ def record(value: object) -> dict[str, object]:
 
 
 def list_bots(ctx: Context) -> list[dict[str, object]]:
-    result = ctx.manager().command("listAgents")
-    # The 0.72 gateway replies with a bare array; accept {"agents": [...]} too.
-    rows = result if isinstance(result, list) else record(result).get("agents", [])
-    if not isinstance(rows, list):
-        raise TypeError("Invalid bot list from gateway.")
-    return [
-        record(row) for row in rows if record(row).get("id") and record(row).get("name")
-    ]
+    from .service import conversation
+    from .service.transport import ContextTransport
+
+    return [dict(bot.raw) for bot in conversation.roster(ContextTransport(ctx))]
 
 
 def resolve_bot(ctx: Context, requested: str | None) -> tuple[str, str]:
