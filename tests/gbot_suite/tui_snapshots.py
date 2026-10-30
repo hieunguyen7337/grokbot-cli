@@ -6,6 +6,8 @@ from textual.pilot import Pilot
 
 
 async def assert_snapshot(app: App, pilot: Pilot, name: str) -> None:
+    # Some terminals and sandboxes report a blur, which dims focus styles; draw snapshots as focused.
+    app.app_focus = True
     await pilot.pause()
     path = Path(__file__).parent / "snapshots" / f"{name}.svg"
     actual = app.export_screenshot()
