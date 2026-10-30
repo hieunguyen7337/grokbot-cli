@@ -14,10 +14,17 @@ gbot bots --json                                   # list bots; * marks the defa
 gbot ask --bot Research --json "Summarize the inbox"   # wait for the reply (key: reply)
 gbot ask --bot Research --timeout 300 --json -     # prompt from stdin
 gbot send --bot Research --json "Prepare a summary"    # returns last_seq; does not wait
+gbot send --bot Research --session ID --json "…"   # send into a session or thread instead of the main chat
 gbot tail --bot Research --after <last_seq> --json # only entries newer than last_seq
+gbot watch --once --json                           # every bot's state now (exit 2: a bot is waiting)
+gbot watch --json                                  # NDJSON stream of bot state changes; Ctrl+C stops
 gbot approvals --all --json                        # pending cards on every bot
 gbot connectors --json                             # connected accounts; kind and usable
+gbot interrupt --bot Research --yes --json         # stop the bot's current turn (only when the human asks)
+gbot tui --screenshot home.svg --size 120x40       # read-only SVG of the terminal UI's home view
 ```
+
+The human can run `gbot tui` for a full-screen view of every bot (Claude Code agent-view style).
 
 Answering a card (REF = `entry_id` from `approvals`; add `--bot NAME` if two bots share it):
 
