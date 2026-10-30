@@ -15,6 +15,7 @@ from gbot.tui.app import GbotApp
 from gbot.tui.glyphs import ASCII, UNICODE
 from gbot.tui.screens.home import HomeScreen
 from gbot.tui.screens.session import SessionScreen
+from gbot.tui.widgets.prompt import CardPrompt
 from gbot.tui.widgets.transcript import (
     BotEntry,
     CardEntry,
@@ -97,19 +98,30 @@ def test_inbox_and_input():
                 "invoice",
                 "needs",
                 "asleep",
-                "Beginning",
             ):
                 assert phrase in svg
+            # The inline prompt can push the top marker out of view; check the widget.
+            assert "Beginning" in str(history.marker.render())
             assert "Check" in str(history.children[1].render())
             assert "Searched 24 unread threads" in str(history.children[2].render())
             assert screen.query_one(Markdown).source.startswith("Two threads")
-            await pilot.press("h", "i", "enter")
-            assert screen.query_one(Input).value == "hi"
-            assert "Sending arrives" in str(
-                screen.query_one("#session-notice", Static).render()
-            )
-            assert service.sent == []
-            await pilot.press("left")
+            # The pending email draft takes focus; Tab switches to the composer and back.
+            composer = screen.query_one(Input)
+            assert isinstance(app.focused, CardPrompt)
+            await pilot.press("tab")
+            assert composer.has_focus
+            await pilot.press("tab")
+            assert isinstance(app.focused, CardPrompt)
+            await pilot.press("tab", "h", "i")
+            assert composer.value == "hi"
+            await pilot.press("enter")
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert service.sent == [("demo-inbox", "hi", None)]
+            assert service.answered == []
+            assert screen.query_one(Input).value == ""
+            assert str(screen.query_one("#session-notice", Static).render()) == ""
+            await pilot.press("x", "left")
             assert app.screen is screen
             await pilot.press("escape")
             assert isinstance(app.screen, HomeScreen)
