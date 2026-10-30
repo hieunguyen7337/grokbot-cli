@@ -1,8 +1,12 @@
 import argparse
 import asyncio
+import sys
 from pathlib import Path
+from time import monotonic
 
 from gbot.context import Context
+
+SCREENSHOT_TIMEOUT = 20.0
 
 
 def size(value: str) -> tuple[int, int]:
@@ -26,8 +30,6 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
-    if not args.demo:
-        raise ValueError("gbot tui needs --demo until live mode is wired in.")
     try:
         # Command discovery and --help must work without the optional dependency.
         import textual  # noqa: F401
@@ -42,26 +44,48 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         ) from exc
     from gbot.service.fake import FakeService
 
-    service = FakeService(auto_reply=True)
-    app = GbotApp(
-        service,
-        ascii_only=args.ascii,
-        bot=args.bot,
-        animate=not args.screenshot,
-    )
+    service = FakeService(auto_reply=True) if args.demo else ctx.service()
+    closed = False
 
-    async def screenshot() -> None:
+    def close() -> None:
+        nonlocal closed
+        if not closed:
+            closed = True
+            if args.demo:
+                service.close()
+            else:
+                ctx.close()
+
+    async def screenshot(app: GbotApp) -> int:
         async with app.run_test(size=args.size) as pilot:
-            await pilot.pause()
+            deadline = monotonic() + SCREENSHOT_TIMEOUT
+            while True:
+                await pilot.pause()
+                if app.loaded or monotonic() >= deadline:
+                    break
             args.screenshot.write_text(
                 app.export_screenshot(), encoding="utf-8", newline="\n"
             )
+            timed_out = not app.loaded
+            if timed_out:
+                close()
+        if timed_out:
+            print("gbot tui: still loading after 20 s", file=sys.stderr)
+            return 1
+        return 0
 
     try:
+        app = GbotApp(
+            service,
+            ascii_only=args.ascii,
+            bot=args.bot,
+            animate=not args.screenshot,
+            read_only=bool(args.screenshot),
+        )
         if args.screenshot:
-            asyncio.run(screenshot())
+            return asyncio.run(screenshot(app))
         else:
             app.run()
     finally:
-        service.close()
+        close()
     return 0

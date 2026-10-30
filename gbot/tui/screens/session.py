@@ -207,9 +207,12 @@ class SessionScreen(Screen):
     def load_page(self, before: int | None, generation: int) -> None:
         try:
             if before is None:
-                page = self.gbot.service.open(
-                    self.bot_id, session_id=self.session_id, limit=200
+                first_page = (
+                    self.gbot.service.transcript
+                    if self.gbot.read_only
+                    else self.gbot.service.open
                 )
+                page = first_page(self.bot_id, session_id=self.session_id, limit=200)
             else:
                 page = self.gbot.service.transcript(
                     self.bot_id,
