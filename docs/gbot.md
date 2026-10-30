@@ -524,3 +524,28 @@ Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetche
 returns template, expected_active_version and creator_display_name; use returns
 bot, setup_handled_by_server and note. Template version inspection and publishing
 remain planned for a later milestone.
+
+## teams
+
+```text
+gbot teams BOT [--json]
+gbot teams BOT --connect [--admin] [--no-browser] --yes [--json]
+gbot teams BOT --install [--team ID ...] [--no-personal] --yes [--json]
+gbot teams BOT --reinstall|--uninstall --yes [--json]
+gbot teams BOT --add-to-team ID --yes [--json]
+gbot teams BOT --disconnect TENANT --yes [--json]
+gbot teams --account [--json]
+gbot teams --link-account [--no-browser] --yes [--json]
+gbot teams --unlink-account TENANT --yes [--json]
+```
+
+Show whether a bot's Microsoft Teams app is set up and where it is installed,
+connect it (Microsoft consent in the browser; `--admin` asks for admin consent),
+install it personally or into teams, reinstall, uninstall, add it to another team,
+or disconnect a tenant. `--account` lists your own Teams account links, and
+`--link-account` and `--unlink-account` change them. Browser steps wait until the
+status changes; `--no-browser` prints the link without opening it. Changes need
+`--yes`.
+
+`--json`: The state object (state, tenant, installed teams, flags and messages);
+account links have tenant_id, aad_object_id and linked_at_ms.
