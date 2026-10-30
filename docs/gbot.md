@@ -348,7 +348,8 @@ Example: `gbot tail -n 10 --follow`.
 
 ## tui
 
-Open the terminal UI shell over synthetic demo bots.
+Open the terminal UI against your signed-in account and its live event stream.
+Run `gbot login` first if signed out; `--demo` uses synthetic bots offline.
 
 ```text
 usage: gbot tui [-h] [--bot BOT] [--demo] [--screenshot PATH] [--size WxH] [--ascii]
@@ -366,17 +367,21 @@ Example: `gbot tui --demo`.
 
 Install the repository's `tui` extra using the editable uv tool installation
 described in the [README](../README.md). Help works without this extra.
-Live mode is not wired in yet; omitting `--demo` returns 1.
+`--bot BOT` opens a session by ID or name. `--ascii` uses plain ASCII symbols.
+`--screenshot PATH` writes a read-only headless SVG after the first load and exits;
+it never marks a chat read, sends a message or answers a card. If loading takes
+more than 20 seconds it still writes the SVG, reports the timeout and exits 1.
+`--size WxH` sets screenshot dimensions (120x40 default).
+Example: `gbot tui --demo --screenshot home.svg --size 100x30`.
 
-`--bot BOT` opens a placeholder session by ID or name. `--screenshot PATH`
-writes a headless SVG and exits 0; `--size WxH` sets its terminal dimensions
-(120x40 default). Example: `gbot tui --demo --screenshot home.svg --size 100x30`.
-`--ascii` uses plain ASCII symbols.
-
-`?` lists every binding, Escape closes help or returns home, and Ctrl+P opens
-the command palette. Press Ctrl+C twice within two seconds to exit. Navigation,
-peek, pinning, grouping, finding, reordering and answering are placeholders.
-Printable shortcuts only act when no text input has focus.
+On home, Up/Down select, Enter/Right open a bot, Space toggles Peek,
+Ctrl+F filters, Ctrl+T pins, Ctrl+S changes grouping, and Shift+Up/Down
+reorders. In Peek, Tab focuses reply and 1-9 choose an answer.
+In a session, Enter sends, Tab focuses the prompt, PageUp/PageDown browse
+history, Home/End jump to top/latest, and Escape returns home.
+`?` shows home help and Ctrl+P opens the command palette.
+Press Ctrl+C twice within two seconds to exit. Printable shortcuts only act
+when no text input has focus.
 
 ## use
 

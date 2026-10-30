@@ -38,7 +38,7 @@ def test_success_and_live_commands(capsys):
     def run(command, **kwargs):
         calls.append(command)
         return subprocess.CompletedProcess(
-            command, 2 if command[4] == "approvals" else 0
+            command, 2 if command[4] in {"approvals", "watch"} else 0
         )
 
     assert ci.execute(["live"], True, False, run) == 0
@@ -48,14 +48,37 @@ def test_success_and_live_commands(capsys):
         ["uv", "run", "--no-sync", "gbot", "bots", "--json"],
         ["uv", "run", "--no-sync", "gbot", "connectors", "--json"],
         ["uv", "run", "--no-sync", "gbot", "approvals", "--all", "--json"],
+        ["uv", "run", "--no-sync", "gbot", "watch", "--once", "--json"],
+        [
+            "uv",
+            "run",
+            "--no-sync",
+            "gbot",
+            "tui",
+            "--screenshot",
+            calls[-1][6],
+            "--size",
+            "120x40",
+        ],
     ]
     assert "live     PASS" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("attention", ["doctor", "tui"])
+def test_live_exit_two_is_not_always_success(attention):
+    def run(command, **kwargs):
+        return subprocess.CompletedProcess(command, 2 if command[4] == attention else 0)
+
+    assert ci.execute(["live"], True, False, run) == 1
+
+
+@pytest.mark.parametrize(
+    "screenshot_content", [None, "wrong", "Grok&#160;Bot", "Grok Bot"]
+)
 @pytest.mark.parametrize("windows", [False, True])
 @pytest.mark.parametrize("tui_code,tui_output", [(0, "--demo"), (1, "--demo"), (0, "")])
 def test_build_commands_and_cleanup(
-    tmp_path, monkeypatch, windows, tui_code, tui_output
+    tmp_path, monkeypatch, windows, tui_code, tui_output, screenshot_content
 ):
     monkeypatch.setattr(ci.tempfile, "tempdir", str(tmp_path))
     monkeypatch.setattr(ci, "WINDOWS", windows)
@@ -76,6 +99,11 @@ def test_build_commands_and_cleanup(
                     "docs/capabilities-0.30.0.md",
                 ):
                     wheel.writestr("pkg.data/data/" + name, "test")
+        if "--screenshot" in command:
+            assert command[1:4] == ["tui", "--demo", "--screenshot"]
+            assert command[-2:] == ["--size", "100x30"]
+            if screenshot_content is not None:
+                Path(command[4]).write_text(screenshot_content, encoding="utf-8")
         if command[-2:] == ["install", "codex-skills"]:
             skill = Path(kwargs["env"]["HOME"]) / ".codex/skills/groken/SKILL.md"
             skill.parent.mkdir(parents=True)
@@ -85,7 +113,8 @@ def test_build_commands_and_cleanup(
             return subprocess.CompletedProcess(command, tui_code, stdout=tui_output)
         return subprocess.CompletedProcess(command, 0)
 
-    success = tui_code == 0 and "--demo" in tui_output
+    help_ok = tui_code == 0 and "--demo" in tui_output
+    success = help_ok and screenshot_content in {"Grok&#160;Bot", "Grok Bot"}
     assert ci.build(run) == success
     assert [cmd[:2] for cmd in calls[:3]] == [
         ["uv", "build"],
@@ -95,9 +124,9 @@ def test_build_commands_and_cleanup(
     assert calls[3][-1] == "--help"
     # The upstream groken CLI cannot start on Windows, so its smoke test is POSIX-only.
     assert calls[4][-2:] == ["tui", "--help"]
-    assert len(calls) == (5 if windows or not success else 6)
+    assert len(calls) == 5 + int(help_ok) + int(not windows and success)
     if not windows and success:
-        assert calls[5][-2:] == ["install", "codex-skills"]
+        assert calls[6][-2:] == ["install", "codex-skills"]
     assert temp_root is not None and not temp_root.exists()
 
 

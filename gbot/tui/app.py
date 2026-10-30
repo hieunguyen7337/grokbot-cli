@@ -54,9 +54,11 @@ class GbotApp(App[None]):
         ascii_only: bool = False,
         bot: str | None = None,
         animate: bool = True,
+        read_only: bool = False,
     ) -> None:
         super().__init__()
         self.service = service
+        self.read_only = read_only
         self.ascii_only = ascii_only
         self.symbols = glyphs(ascii_only)
         self.initial_bot = bot
@@ -75,6 +77,10 @@ class GbotApp(App[None]):
         self.theme = "gbot"
         if not animate:
             self.animation_level = "none"
+
+    @property
+    def loaded(self) -> bool:
+        return self._loaded
 
     async def on_mount(self) -> None:
         await self.push_screen(self.home)

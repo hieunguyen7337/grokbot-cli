@@ -30,13 +30,6 @@ def test_screenshot(tmp_path, monkeypatch, ascii_only):
         assert all(frame not in svg for frame in UNICODE.working)
 
 
-def test_live_not_wired(capsys):
-    assert main(["tui"]) == 1
-    assert (
-        "gbot tui needs --demo until live mode is wired in." in capsys.readouterr().err
-    )
-
-
 def test_missing_textual(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "textual", None)
     for args in (["--help"], ["tui", "--help"]):
