@@ -1,0 +1,68 @@
+[
+  {
+    "id": "inbox-note-5",
+    "seq": 5,
+    "kind": "message",
+    "timestampMs": 5000,
+    "message": {
+      "content": "Report update 5"
+    }
+  },
+  {
+    "id": "card0006-entry",
+    "seq": 6,
+    "kind": "send-message",
+    "timestampMs": 6000,
+    "sessionId": null,
+    "message": {
+      "type": "widget",
+      "widget": {
+        "prompt": "Which colour?",
+        "options": [
+          {
+            "label": "A",
+            "value": "blue"
+          },
+          {
+            "label": "B",
+            "value": "red"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "card0007-entry",
+    "seq": 7,
+    "kind": "send-message",
+    "timestampMs": 7000,
+    "sessionId": null,
+    "message": {
+      "type": "user-form",
+      "formRequest": {
+        "title": "Report details",
+        "instruction": "Enter the colour",
+        "reason": "other",
+        "fields": [
+          {
+            "id": "color",
+            "label": "Color",
+            "type": "text",
+            "required": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "inbox-note-8",
+    "seq": 8,
+    "kind": "message",
+    "timestampMs": 8000,
+    "message": {
+      "content": "Report update 8"
+    }
+  }
+]
+--- stderr ---
+--- exit 0 ---

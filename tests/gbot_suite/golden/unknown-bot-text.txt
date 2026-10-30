@@ -1,0 +1,3 @@
+--- stderr ---
+unknown bot: Nope (available: Inbox, Research, Ledger, Reports)
+--- exit 1 ---

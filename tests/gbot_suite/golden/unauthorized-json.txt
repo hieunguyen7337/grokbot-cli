@@ -1,0 +1,3 @@
+--- stderr ---
+{"error": {"type": "auth", "message": "Authentication refresh failed repeatedly. Run: gbot login", "exit_code": 3}}
+--- exit 3 ---

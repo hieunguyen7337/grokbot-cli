@@ -1,0 +1,25 @@
+{
+  "answered": true,
+  "bot_id": "bot-inbox",
+  "bot_name": "Inbox",
+  "entry_id": "card0006-entry",
+  "type": "widget",
+  "rpc": "RespondGrokBotWidget",
+  "effect": null
+}
+--- stderr ---
+Bot: Inbox (bot-inbox)  Type: widget  REF: card0006-entry
+Summary: Which colour?
+Answer: RespondGrokBotWidget
+--- exit 0 ---
+--- rpc ---
+[
+  {
+    "method": "RespondGrokBotWidget",
+    "payload": {
+      "agentId": "bot-inbox",
+      "entryId": "card0006-entry",
+      "value": "A"
+    }
+  }
+]

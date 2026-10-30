@@ -1,0 +1,10 @@
+{
+  "accepted": true,
+  "bot": {
+    "id": "bot-inbox",
+    "name": "Inbox"
+  },
+  "last_seq": 8
+}
+--- stderr ---
+--- exit 0 ---

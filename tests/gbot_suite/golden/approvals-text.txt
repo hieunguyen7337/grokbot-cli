@@ -1,0 +1,9 @@
+card0002  Inbox  auto-review-approval  2m  Run report
+card0004  Inbox  email-draft  2m  From: ada@example.com; To: bob@example.com; Subject: Report
+card0006  Inbox  widget  1m  Which colour?
+  options: A | B
+card0007  Inbox  user-form  1m  Report details
+  fields: color (text, required)
+Answer with: auto-review-approval: gbot approve REF / gbot deny REF; email-draft: gbot approve REF / gbot deny REF; widget: gbot respond REF VALUE / gbot dismiss REF; user-form: gbot respond REF --field ID=VALUE / gbot dismiss REF
+--- stderr ---
+--- exit 2 ---

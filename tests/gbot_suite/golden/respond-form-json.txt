@@ -1,0 +1,29 @@
+{
+  "answered": true,
+  "bot_id": "bot-inbox",
+  "bot_name": "Inbox",
+  "entry_id": "card0007-entry",
+  "type": "user-form",
+  "rpc": "SubmitGrokBotUserForm",
+  "effect": null
+}
+--- stderr ---
+Bot: Inbox (bot-inbox)  Type: user-form  REF: card0007-entry
+Summary: Report details
+Answer: SubmitGrokBotUserForm
+--- exit 0 ---
+--- rpc ---
+[
+  {
+    "method": "SubmitGrokBotUserForm",
+    "payload": {
+      "agentId": "bot-inbox",
+      "entryId": "card0007-entry",
+      "values": {
+        "color": "blue"
+      },
+      "saveToVault": false,
+      "platform": 1
+    }
+  }
+]

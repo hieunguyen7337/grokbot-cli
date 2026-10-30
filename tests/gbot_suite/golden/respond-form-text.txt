@@ -1,0 +1,21 @@
+Bot: Inbox (bot-inbox)  Type: user-form  REF: card0007-entry
+Summary: Report details
+Answer: SubmitGrokBotUserForm
+Answered.
+--- stderr ---
+--- exit 0 ---
+--- rpc ---
+[
+  {
+    "method": "SubmitGrokBotUserForm",
+    "payload": {
+      "agentId": "bot-inbox",
+      "entryId": "card0007-entry",
+      "values": {
+        "color": "blue"
+      },
+      "saveToVault": false,
+      "platform": 1
+    }
+  }
+]
