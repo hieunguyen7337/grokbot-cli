@@ -12,7 +12,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 |---|---:|---:|---:|---:|---|
 | roster | 5 | 1 | 0 | 2 | M1, M3 |
 | conversation | 15 | 11 | 0 | 16 | M1, M2 |
-| cards | 15 | 9 | 2 | 1 | M1, M2 |
+| cards | 3 | 10 | 3 | 11 | M1, M2 |
 | rooms | 1 | 4 | 2 | 5 | M2 |
 | tasks | 0 | 7 | 0 | 12 | M2 |
 | bots | 16 | 0 | 0 | 3 | M3 |
@@ -23,7 +23,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | automations | 22 | 0 | 0 | 0 | M4 |
 | channels | 23 | 0 | 1 | 16 | M4 |
 | email | 2 | 0 | 0 | 6 | M4 |
-| secrets-vault | 24 | 1 | 7 | 10 | M1, M4 |
+| secrets-vault | 22 | 1 | 9 | 10 | M1, M4 |
 | computer | 4 | 1 | 0 | 8 | M1, M4 |
 | sharing | 15 | 0 | 0 | 3 | M5 |
 | publishing | 27 | 0 | 0 | 6 | M5 |

@@ -1,5 +1,7 @@
 """Pure card planning and printing-free discovery and answering."""
 
+from collections.abc import Mapping
+
 from gbot.bots import record
 from gbot.pending import APP_ONLY, classify, one_line
 from groken.client import ConnectError
@@ -7,7 +9,8 @@ from groken.client import ConnectError
 from .models import Action, AnswerResult, Card
 from .transport import Transport
 
-COMMANDS = {"getAgentTranscriptTail": "object"}
+COMMANDS = {"getAgentTranscriptTail": "object", "resolveConnectorGrant": "object"}
+_GATEWAY_ANSWERS = {"resolveConnectorGrant"}
 RPCS = (
     "SendGrokBotDraft",
     "DiscardGrokBotDraft",
@@ -22,6 +25,11 @@ RPCS = (
 
 
 def plan(card: Card, action: Action) -> tuple[str, dict[str, object]]:
+    if action.all_bots and (card.type != "connector-grant" or not action.always):
+        raise ValueError(
+            "--all-bots requires a connector grant and --always. "
+            "Use: gbot approve REF --always --all-bots"
+        )
     if not card.allowed_actions:
         raise ValueError(f"{card.type}: {APP_ONLY}.")
     kind = action.kind
@@ -31,6 +39,21 @@ def plan(card: Card, action: Action) -> tuple[str, dict[str, object]]:
     payload: dict[str, object] = {"agentId": card.bot_id, "entryId": card.entry_id}
     if card.session_id:
         payload["sessionId"] = card.session_id
+    if card.type == "connector-grant":
+        if action.never or (kind == "deny" and action.always):
+            raise ValueError(
+                "Connector grants use: gbot approve REF [--always [--all-bots]] "
+                "or gbot deny REF; --never does not apply."
+            )
+        if not card.request_id:
+            raise ValueError("Pending approval is missing its requestId.")
+        resolution = "skipped" if kind == "deny" else "allowed"
+        if kind == "approve" and action.always:
+            resolution = (
+                "always_all_team_bots" if action.all_bots else "always_this_bot"
+            )
+        payload.update(requestId=card.request_id, resolution=resolution)
+        return "resolveConnectorGrant", payload
     if card.type in {"email-draft", "slack-draft", "meeting-chat-draft"}:
         if action.always or action.never:
             raise ValueError("--always and --never do not apply to drafts.")
@@ -142,6 +165,8 @@ def plan(card: Card, action: Action) -> tuple[str, dict[str, object]]:
 def effect(
     card: Card, action: Action, method: str, payload: dict[str, object]
 ) -> str | None:
+    if card.type == "connector-grant":
+        return str(payload["resolution"])
     draft_effect = {
         "SendGrokBotDraft": "sends it now",
         "DiscardGrokBotDraft": "discards it",
@@ -177,7 +202,12 @@ def answer(transport: Transport, card: Card, action: Action) -> AnswerResult:
         return AnswerResult("SubmitGrokBotSecret", "secret stored")
     else:
         method, payload = plan(card, action)
-        check_reply(transport.rpc(method, payload), method)
+        reply = (
+            transport.command(method, payload)
+            if method in _GATEWAY_ANSWERS
+            else transport.rpc(method, payload)
+        )
+        check_reply(reply, method)
     word = effect(card, action, method, payload)
     return AnswerResult(
         method,
@@ -190,7 +220,13 @@ def answer(transport: Transport, card: Card, action: Action) -> AnswerResult:
     )
 
 
-def check_reply(reply: dict[str, object], method: str, *, secret: bool = False) -> None:
+def check_reply(reply: object, method: str, *, secret: bool = False) -> None:
+    if method in _GATEWAY_ANSWERS and (
+        reply is None or isinstance(reply, Mapping) and "refusal" not in reply
+    ):
+        return
+    if not isinstance(reply, Mapping):
+        reply = {}
     refusal = reply.get("refusal")
     if isinstance(refusal, dict):
         code = refusal.get("failureCode", "unknown")
@@ -200,7 +236,7 @@ def check_reply(reply: dict[str, object], method: str, *, secret: bool = False) 
             detail += f": {message}"
         raise ValueError(detail)  # noqa: TRY004 - refusal is a service error
     flag = "dispatched" if method.startswith("ResolveGrokBot") else "accepted"
-    if reply.get(flag) is not True:
+    if method in _GATEWAY_ANSWERS or reply.get(flag) is not True:
         raise ValueError(
             "Answer was not accepted; the item may already be answered. Run: gbot approvals"
         )

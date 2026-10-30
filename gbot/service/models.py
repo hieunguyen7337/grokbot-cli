@@ -248,6 +248,7 @@ class Action:
     fields: tuple[tuple[str, str], ...] = ()
     secret: str | None = field(default=None, repr=False)
     draft: Mapping[str, object] | None = None
+    all_bots: bool = False
 
 
 @dataclass(frozen=True)
