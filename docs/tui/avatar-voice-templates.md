@@ -20,3 +20,16 @@ planned for the publishing milestone.
 
 `load_fake` supplies all declared command and RPC replies, including imports with
 the caller's reserved identity, for offline use.
+
+## In the TUI
+
+In a session, `/voice` edits voice, speed and language; Ctrl+S reviews the changed
+values. Voice previews play in the Grok Bot app. `/avatar` shows image metadata
+without drawing an image: `f` uploads a PNG, `g` generates an image, `s` saves the
+current or last generated image to Downloads without overwriting, `c` clears the
+image, and `k` changes shape and color.
+
+From any screen, `/templates [category]` browses featured templates and categories.
+Enter opens details and `u` reviews creating a bot. Failed imports keep their
+reserved identity for retry; any remaining setup is explained after creation.
+Changes require a cancel-focused confirmation and are disabled in read-only mode.
