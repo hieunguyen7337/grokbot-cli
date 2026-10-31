@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 from textual.widgets import Input, Static
 from tui_snapshots import assert_snapshot
@@ -121,6 +122,79 @@ def test_vault(tmp_path, monkeypatch):
                 assert notices[-1][0] == "Read-only mode"
             assert len(service.transport.calls) == before
             assert password not in str(notices)
+
+    asyncio.run(exercise())
+
+
+def test_card_rows_never_show_card_numbers(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    full = "4929123456785678"
+    long_digits = "5500005555555559"
+
+    async def exercise():
+        service = load_fake()
+        # The models have no full-number field, so plant digits in every field a
+        # row could render, including ones no row shows today.
+        card = {
+            "brand": "Visa",
+            "last4": "5678",
+            "expMonth": 3,
+            "expYear": 2032,
+            "holderName": full,
+            "nickname": full,
+            "number": full,
+            "cardNumber": full,
+            "pan": full,
+        }
+        service.transport.rpcs[v.RPCS[0]] = {
+            "credentials": [
+                {
+                    "id": "secret-card",
+                    "kind": 2,
+                    "title": "Work card",
+                    "notes": full,
+                    "card": card,
+                }
+            ]
+        }
+        service.transport.rpcs[v.RPCS[3]] = {
+            "outcome": 1,
+            "paymentMethods": [
+                {
+                    "id": "pm",
+                    "name": "Spend card",
+                    "kind": 1,
+                    "brand": "Mastercard",
+                    "last4": "9559",
+                    "expMonth": 1,
+                    "expYear": 2033,
+                    "number": long_digits,
+                    "cardNumber": long_digits,
+                }
+            ],
+        }
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await session(app, pilot)
+            assert run(ctx, "/vault") is None
+            await settle(app, pilot)
+            panel = app.screen
+            assert isinstance(panel, ListPanel)
+            rows = {r.key: r for r in panel.rows}
+            assert rows["secret-card"].detail == "Visa ··5678 · 03/32"
+            assert rows["payment:pm"].detail == "Mastercard ··9559 · 01/33"
+            texts = [
+                text
+                for r in panel.rows
+                for text in (r.key, r.label, r.detail, r.status)
+            ]
+            shown = str(panel.query_one("#panel-rows", Static).render())
+            assert "5678" in shown and "9559" in shown
+            for text in [*texts, shown]:
+                # Join digits split by a space or dash, so "4929 1234 5678" still counts.
+                joined = re.sub(r"(?<=\d)[ -](?=\d)", "", text)
+                assert not re.search(r"\d{8,}", joined), text
+                assert full not in text and long_digits not in text
 
     asyncio.run(exercise())
 

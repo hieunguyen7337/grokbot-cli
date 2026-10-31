@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from threading import Event
 from typing import Literal
 
+# Each Event.wait is this short, so cancellation is seen without helper threads.
+_WAIT_CAP_S = 0.05
+
 
 @dataclass(frozen=True)
 class HandoffResult:
@@ -39,7 +42,7 @@ def wait_until(
         next_check = min(deadline, clock() + intervals[min(index, len(intervals) - 1)])
         index += 1
         while not cancel.is_set() and clock() < next_check:
-            remaining = next_check - clock()
+            remaining = min(_WAIT_CAP_S, next_check - clock())
             if wake is None:
                 cancel.wait(remaining)
             # Event has no wait-any operation, so callers that pass `wake` set it

@@ -1,4 +1,5 @@
 import asyncio
+import webbrowser
 
 import pytest
 from textual.widgets import Input, Static
@@ -117,7 +118,7 @@ def test_inboxes(tmp_path, monkeypatch):
 def test_computer(tmp_path, monkeypatch, temporal):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
     opened = []
-    monkeypatch.setattr("webbrowser.open", opened.append)
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.append(url) or True)
 
     async def exercise():
         service = load_fake()
@@ -193,5 +194,52 @@ def test_computer(tmp_path, monkeypatch, temporal):
             specs = {c.name: c for c in commands()}
             assert specs["computer"].scope == "session" and specs["computer"].needs_bot
             assert specs["inboxes"].scope == "any"
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("failure", ["false", "raises", "true"])
+def test_computer_open_result(tmp_path, monkeypatch, failure):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    opened = []
+
+    def browser(url):
+        opened.append(url)
+        if failure == "raises":
+            raise webbrowser.Error(url)
+        return failure == "true"
+
+    monkeypatch.setattr("webbrowser.open", browser)
+
+    async def exercise():
+        service = load_fake()
+        service.transport.commands["getForeverBoxStatus"] = {
+            "state": "running",
+            "vncUrl": URL,
+        }
+        app = GbotApp(service, animate=False)
+        notices = []
+        monkeypatch.setattr(
+            app, "notify", lambda text, **kw: notices.append((text, kw))
+        )
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await session(app, pilot)
+            assert run(ctx, "/computer") is None
+            await settle(app, pilot)
+            panel = app.screen
+            assert isinstance(panel, DetailPanel)
+            await pilot.press("o")
+            await settle(app, pilot)
+            assert opened == [URL]
+            text, kw = notices[-1]
+            if failure == "true":
+                assert text == "Opened the live view."
+            else:
+                assert text == "Could not open a browser for the live view."
+                assert kw == {"severity": "error", "markup": False}
+            assert not any("Opened" in text for text, _ in notices[:-1])
+            assert URL not in str(notices)
+            assert "private" not in str(notices)
+            assert URL not in str(panel.query_one("#detail-content", Static).render())
 
     asyncio.run(exercise())

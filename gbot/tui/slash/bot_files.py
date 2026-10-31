@@ -379,9 +379,11 @@ class LibraryPanel(_KeyedPanel):
 
         def opened() -> object:
             try:
-                webbrowser.open(url)
+                launched = webbrowser.open(url)
             except Exception:  # noqa: BLE001 - browser errors may embed the link
-                raise ValueError("Could not open the document.") from None
+                launched = False
+            if not launched:
+                raise ValueError("Could not open a browser for the document.")
             return None
 
         _worker(

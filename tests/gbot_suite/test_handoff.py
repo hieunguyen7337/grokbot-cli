@@ -76,12 +76,35 @@ def test_wait_backoff_and_timeout():
     assert wait_until(check, cancel=cancel, wake=None, clock=clock) == (
         HandoffResult("done", "complete")
     )
-    assert cancel.waits == [1, 2, 3, 5, 5, 5]
+    assert max(cancel.waits) <= 0.05
+    assert sum(cancel.waits) == pytest.approx(1 + 2 + 3 + 5 + 5 + 5)
     cancel.waits.clear()
     assert wait_until(
         lambda: None, cancel=cancel, wake=None, timeout_s=2.5, clock=clock
     ) == HandoffResult("timeout")
-    assert cancel.waits == [1, 1.5]
+    assert max(cancel.waits) <= 0.05
+    assert sum(cancel.waits) == pytest.approx(2.5)
+
+
+@pytest.mark.parametrize("with_wake", [False, True])
+def test_wait_slices_are_capped(with_wake):
+    clock = FakeClock()
+    cancel = FakeEvent(clock)
+    wake = FakeEvent(clock) if with_wake else None
+    times = []
+
+    def check():
+        times.append(clock())
+        return "ready" if len(times) == 4 else None
+
+    assert wait_until(check, cancel=cancel, wake=wake, clock=clock) == (
+        HandoffResult("done", "ready")
+    )
+    waits = (wake or cancel).waits
+    assert waits
+    assert max(waits) <= 0.05
+    assert sum(waits) == pytest.approx(1 + 2 + 3)
+    assert times == pytest.approx([0, 1, 3, 6])
 
 
 def test_wait_cancel_and_wake():
