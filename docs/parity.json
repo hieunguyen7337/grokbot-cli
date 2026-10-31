@@ -313,8 +313,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.publishing through its backend twin"
     },
     {
       "name": "discardDraft",
@@ -1153,8 +1153,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.publishing through its backend twin"
     },
     {
       "name": "publishSkill",
@@ -2216,8 +2216,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.publishing"
     },
     {
       "name": "AddGrokBotAgentAccessPrincipal",
@@ -3766,8 +3766,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.publishing"
     },
     {
       "name": "DeleteGrokBotUserFormVaultEntry",
@@ -5622,8 +5622,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.publishing"
     },
     {
       "name": "PublishGrokBotUserSkillsSnapshot",
@@ -6626,8 +6626,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.publishing"
     },
     {
       "name": "SetGrokBotUserMcpSettings",
@@ -6933,8 +6933,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.publishing"
     },
     {
       "name": "UpdateGrokBotAgent",
