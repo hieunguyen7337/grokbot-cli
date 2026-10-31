@@ -747,6 +747,34 @@ enrollment and connecting 1Password stay in the Grok Bot app.
 updated_at_ms, card, contact and managed_by; the other options return their
 objects. No output contains a password.
 
+## account
+
+```text
+gbot account egress [--json]
+gbot account analytics BOT [--json]
+gbot account payment [--json]
+gbot account address QUERY [--pick N] [--json]
+```
+
+Read-only views of your account; nothing here changes state, so none asks for a
+confirmation. `egress` shows whether the cloud computer's outbound network is open
+or restricted, with the allowed domains and TCP destinations. `analytics` shows a
+bot's weekly active users, its minutes saved (or `Not measured`), the last 14 days
+with the latest first, and the top users per window; a bot with no analytics yet
+says so. `payment` shows the default payment method: a card's brand and last four
+digits from your vault, or a wallet's name. It says that the default is changed in
+the Grok Bot app. `address` lists suggestions for QUERY. `--pick N` resolves
+suggestion N from that same lookup and prints the formatted address and its parts.
+A refusal from the server is printed as its message, and the command exits 1.
+
+`--json`: `egress` has restricted, allowed_domains and allowed_tcp (cidr and
+port). `analytics` has the analytics object (weekly_active_users, days,
+top_users and top_users_by_window), or null when the bot has none. `payment` has
+kind, wallet and label. `address` has outcome and suggestions (index, title and
+subtitle); with `--pick` it has the address parts (street, city, state,
+postal_code, country, country_code and formatted). The vault card id and the
+lookup token are never printed.
+
 ## teams
 
 ```text
