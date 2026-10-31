@@ -80,8 +80,34 @@ def _change(work: Callable[[], object]) -> object:
 
 def _write_result(ctx: Context, result: object, done: str) -> int:
     assert isinstance(result, cloud_agents.AppResult)
-    ctx.out.write(asdict(result), result.message or (done if result.ok else "Refused."))
-    return 0 if result.ok else 1
+    if not result.ok:
+        raise ValueError(result.message or "Refused.")
+    ctx.out.write(asdict(result), result.message or done)
+    return 0
+
+
+def _tell_secrets_set(
+    transport: ContextTransport,
+    bc_id: str,
+    project_dir: str,
+    saved: cloud_agents.SetResult,
+) -> str:
+    """The tell call is a notice of its own: a refusal is shown as its sentence, not raised."""
+    try:
+        cloud_agents.tell_secrets_set(
+            transport,
+            bc_id,
+            project_dir,
+            saved.saved,
+            saved.refused,
+            saved.apply_needed,
+        )
+    except ConnectError as error:
+        found = refusal(error)
+        if found is None:
+            raise
+        return found.message
+    return ""
 
 
 def _app_row(app: cloud_agents.PublishedApp) -> dict[str, object]:
@@ -236,14 +262,7 @@ def run_cloud_agent(args: argparse.Namespace, ctx: Context) -> int:
         finally:
             values.clear()
         assert isinstance(saved, cloud_agents.SetResult)
-        cloud_agents.tell_secrets_set(
-            transport,
-            bc_id,
-            args.project_dir,
-            saved.saved,
-            saved.refused,
-            saved.apply_needed,
-        )
+        told = _tell_secrets_set(transport, bc_id, args.project_dir, saved)
         ctx.out.write(
             asdict(saved),
             "\n".join(
@@ -258,11 +277,12 @@ def run_cloud_agent(args: argparse.Namespace, ctx: Context) -> int:
                         if saved.apply_needed
                         else ()
                     ),
+                    *((told,) if told else ()),
                 )
             )
             or "Nothing saved.",
         )
-        return 1 if saved.refused else 0
+        return 1 if saved.refused or told else 0
     if args.secrets:
         names = _read(
             ctx, lambda: cloud_agents.app_secret_names(transport, bc_id, args.secrets)

@@ -32,6 +32,7 @@ APPS_OFF = "Cloud-agent apps are off for this account."
 APPS_UNKNOWN = "Cloud-agent apps returned an unknown state."
 NO_APPS = "No published apps."
 _URL = re.compile(r"\b[a-z][a-z0-9+.-]*://\S+", re.IGNORECASE)
+_ENV_NAME = re.compile(r"[A-Z_][A-Z0-9_]*")
 
 
 def _enum(value: object, names: Sequence[str]) -> str:
@@ -119,11 +120,10 @@ class CloudAgentInfo:
 
     @property
     def fields(self) -> tuple[tuple[str, str], ...]:
+        stamp = self.created_at
         created = (
-            datetime.fromtimestamp(self.created_at / 1000, UTC).strftime(
-                "%Y-%m-%d %H:%M UTC"
-            )
-            if self.created_at and self.created_at < 10**14
+            datetime.fromtimestamp(stamp / 1000, UTC).strftime("%Y-%m-%d %H:%M UTC")
+            if stamp is not None and 0 < stamp < 10**14
             else "unknown"
         )
         return (
@@ -213,12 +213,10 @@ def _message_text(value: object) -> str:
 def _messages(row: Mapping[str, object]) -> tuple[Message, ...]:
     for key in ("messages", "conversation", "turns"):
         value = row.get(key)
-        if isinstance(value, Mapping):
-            return _messages(value)
         if isinstance(value, list):
             return tuple(
                 Message(
-                    _text(_first(item, ("role", "type"), str)) or "unknown",
+                    _safe(_text(_first(item, ("role", "type"), str)) or "unknown"),
                     _safe(
                         _message_text(
                             item.get("text")
@@ -267,9 +265,9 @@ class AppsState:
 
 def _app(row: Mapping[str, object]) -> PublishedApp:
     return PublishedApp(
-        _text(_first(row, ("bcId", "bc_id"), str)),
-        _text(row.get("slug")),
-        _text(row.get("apex")),
+        _safe(_text(_first(row, ("bcId", "bc_id"), str))),
+        _safe(_text(row.get("slug"))),
+        _safe(_text(row.get("apex"))),
         _enum(row.get("visibility"), VISIBILITIES),
         _text(row.get("url")),
     )
@@ -295,18 +293,21 @@ class AppResult:
     message: str
 
 
+_FAILED_WORDS = frozenset({"failed", "error", "rejected"})
+
+
 def _result(reply: object) -> AppResult:
     row = _record(reply)
     error = row.get("error")
     if isinstance(error, Mapping):
         error = error.get("message")
     message = _text(row.get("message")) or _text(error)
+    state = _text(_first(row, ("state", "status", "outcome", "kind"), str)).lower()
+    # A state word that says the change failed wins over a missing or true `ok`.
+    failed = state.rsplit("_", 1)[-1] in _FAILED_WORDS
     ok = row.get("ok")
-    ok = ok if isinstance(ok, bool) else not error
-    state = _text(_first(row, ("state", "status", "outcome", "kind"), str))
-    return AppResult(
-        ok, state.lower() or ("ok" if ok else "error"), _safe(message)[:300]
-    )
+    ok = (ok if isinstance(ok, bool) else not error) and not failed
+    return AppResult(ok, state or ("ok" if ok else "error"), _safe(message)[:300])
 
 
 def _visibility(value: str) -> str:
@@ -376,10 +377,11 @@ def app_secret_names(
     elif "names" in reply:
         found = _names(reply.get("names"))
     elif reply and all(isinstance(value, str | type(None)) for value in reply.values()):
-        found = tuple(str(key) for key in reply)
+        # A bare map is taken as names only when every key looks like an env var name.
+        found = tuple(str(key) for key in reply if _ENV_NAME.fullmatch(str(key)))
     else:
         found = ()
-    return tuple(dict.fromkeys(name for name in found if name))
+    return tuple(dict.fromkeys(_safe(name) for name in found if name))
 
 
 @dataclass(frozen=True)
@@ -426,11 +428,9 @@ def set_app_secrets(
             else "App secrets were not saved; no value is displayed."
         )
         raise ValueError(_redact(message, values)) from None
-    finally:
-        secrets.clear()
     refused = tuple(
         SecretRefusal(
-            _text(row.get("name")),
+            _redact(_text(row.get("name")), values),
             _enum(row.get("kind"), REFUSAL_KINDS),
             _redact(_text(row.get("message")), values)[:300],
             row.get("permanent") is True,
@@ -480,8 +480,8 @@ def proposals(transport: Transport, bc_id: str) -> tuple[Proposal, ...]:
     rows = _first(reply, ("proposals", "items"), list)
     return tuple(
         Proposal(
-            _text(_first(row, ("proposalId", "id"), str)),
-            _text(row.get("slug")),
+            _safe(_text(_first(row, ("proposalId", "id"), str))),
+            _safe(_text(row.get("slug"))),
             _enum(row.get("visibility"), VISIBILITIES),
             _safe(_text(_first(row, ("summary", "description", "title"), str))),
         )

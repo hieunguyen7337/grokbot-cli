@@ -201,7 +201,8 @@ def test_refusals(monkeypatch, capsys):
     fake.commands["unpublishCloudAgentPublishApp"] = {"ok": False, "message": "Busy"}
     argv = ["apps", "--unpublish", "bc", "--slug", "s", "--apex", "a", "--yes"]
     assert cli.main(argv) == 1
-    assert capsys.readouterr().out.strip() == "Busy"
+    result = capsys.readouterr()
+    assert result.err.strip() == "Busy" and result.out == ""
 
 
 def test_set_secrets_hidden_with_refusals(monkeypatch, capsys):
@@ -271,3 +272,14 @@ def test_option_errors_send_nothing(monkeypatch, capsys, argv):
     assert cli.main(argv) == 1
     assert capsys.readouterr().err.strip()
     assert not [call for call in fake.calls if call[1] != "listAgents"]
+
+
+def test_refused_tell_is_a_notice(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    fake.commands["tellCloudAgentAppSecretsSet"] = REFUSED
+    monkeypatch.setattr("sys.stdin", io.StringIO(SECRET + "\n"))
+    argv = ["cloud-agent", "bc", "--set-secret", "A", "--project-dir", "/app", "--yes"]
+    assert cli.main(argv) == 1
+    output = capsys.readouterr()
+    assert "Saved A." in output.out and "Apps are off for you." in output.out
+    assert "Traceback" not in output.err and SECRET not in output.out + output.err

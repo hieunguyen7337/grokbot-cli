@@ -83,7 +83,8 @@ def test_info_shapes_and_null():
             [("assistant", "ab")],
         ),
         ({"turns": [{"text": "see https://x.invalid/t?k=1 now"}, "odd"]}, [("unknown", "see [link hidden] now")]),
-        ({"conversation": {"messages": [{"role": "user", "text": "nested"}]}}, [("user", "nested")]),
+        ({"conversation": {"messages": [{"role": "user", "text": "nested"}]}}, []),
+        ({"messages": {"x": 1}, "turns": [{"text": "hi"}]}, [("unknown", "hi")]),
         ({"turns": "odd", "messages": None}, []),
         ({}, []),
         (None, []),
@@ -213,6 +214,9 @@ def test_update_and_unpublish_payloads_and_results():
         ({"A": SECRET, "B": SECRET}, ("A", "B")),
         ({"secrets": None}, ()),
         ({"count": 2, "nested": {"A": SECRET}}, ()),
+        ({"status": "ok"}, ()),
+        ({"status": SECRET, "DEMO_KEY": SECRET}, ("DEMO_KEY",)),
+        ({"secrets": [{"name": "https://x.invalid/?ticket=t"}]}, ("[link hidden]",)),
         ({}, ()),
         (None, ()),
     ],
@@ -309,8 +313,8 @@ def test_set_payload_and_redaction():
             "secrets": [{"name": "A", "value": SECRET}],
         }
     ]
-    # The recorded request list is cleared after the call.
-    assert fake.calls[0][2]["secrets"] == []
+    # The transport keeps the request it was given; the service does not edit it after the call.
+    assert fake.calls[0][2]["secrets"] == [{"name": "A", "value": SECRET}]
     for error in (
         ConnectError(500, "boom " + SECRET),
         RuntimeError("echo " + SECRET),
@@ -366,3 +370,39 @@ def test_proposals_confirm_and_dismiss():
         {"bcId": "bc", "proposalId": "p1"},
         {"bcId": "bc", "proposalId": "p1", "agentId": "gw"},
     ]
+
+
+@pytest.mark.parametrize(
+    "reply,ok",
+    [
+        ({"state": "FAILED", "message": "Slug taken"}, False),
+        ({"state": "GROK_BOT_CLOUD_APP_UPDATE_STATE_REJECTED"}, False),
+        ({"ok": True, "state": "error"}, False),
+        ({"ok": True, "state": "UPDATED"}, True),
+        ({"state": "updated"}, True),
+        ({"error": {"message": "No"}}, False),
+    ],
+)  # fmt: skip
+def test_failed_state_is_not_success(reply, ok):
+    fake = FakeTransport({"updateCloudAgentPublishApp": reply})
+    assert service.update_app(fake, "bc", "s", "a", "team").ok is ok
+
+
+def test_created_at_out_of_range_is_unknown():
+    fake = FakeTransport({"getCloudAgentInfo": {"bcId": "b", "createdAt": -(10**14)}})
+    found = service.info(fake, "b")
+    assert found is not None
+    assert ("Created", "unknown") in found.fields
+
+
+def test_app_identity_fields_hide_links():
+    reply = {
+        "kind": "on",
+        "apps": [
+            {"slug": "https://x.invalid/?ticket=t", "apex": "a", "visibility": "team"}
+        ],
+    }
+    fake = FakeTransport({"listCloudAgentPublishedApps": reply})
+    app = service.apps(fake).apps[0]
+    assert app.slug == "[link hidden]"
+    assert "ticket" not in repr(app)

@@ -340,9 +340,13 @@ def test_app_secrets_masked_set_then_tell(tmp_path, monkeypatch):
             shown = " ".join(str(call.args) for call in notice.call_args_list)
             assert "Could not save [redacted]" in shown
             assert SECRET not in shown
-            assert all(
-                SECRET not in str(row) for row in secrets.rows
-            ) and SECRET not in repr(service.transport.calls)
+            assert all(SECRET not in str(row) for row in secrets.rows)
+            # Only the set request carries the value; no other request or notice repeats it.
+            assert [
+                name
+                for _, name, _args in service.transport.calls
+                if SECRET in repr(_args)
+            ] == ["setCloudAgentAppSecrets"]
 
     asyncio.run(exercise())
 
@@ -391,5 +395,88 @@ def test_read_only_refuses_every_change(tmp_path, monkeypatch):
                 for call in service.transport.calls[before:]
                 if call[1] != "getCloudAgentAppSecrets"
             ] == []
+
+    asyncio.run(exercise())
+
+
+def test_refused_tell_after_set_is_a_notice(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = load_fake()
+        service.transport.commands["getCloudAgentAppSecrets"] = {"secrets": []}
+        service.transport.commands["setCloudAgentAppSecrets"] = {"applyNeeded": True}
+        service.transport.commands["tellCloudAgentAppSecretsSet"] = REFUSED
+        app = GbotApp(service, animate=False)
+        notice = Mock()
+        monkeypatch.setattr(app, "notify", notice)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            run(ctx, "/cloud-agent bc-1")
+            await settle(app, pilot)
+            await pilot.press("k")
+            await settle(app, pilot)
+            app.screen.query_one("#form-0", Input).value = "/workspace/app"
+            await pilot.press("ctrl+s")
+            await settle(app, pilot)
+            await pilot.press("n")
+            await settle(app, pilot)
+            form = app.screen
+            form.query_one("#form-0", Input).value = "API_KEY"
+            form.query_one("#form-1", Input).value = SECRET
+            await pilot.press("ctrl+s")
+            await accept(app, pilot)
+            shown = " ".join(str(call.args) for call in notice.call_args_list)
+            assert "Not on this account." in shown
+            assert "permission_denied" not in shown and "Saved secret" in shown
+            assert SECRET not in shown
+
+    asyncio.run(exercise())
+
+
+def test_unknown_visibility_app_is_not_edited_silently(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = load_fake()
+        service.transport.commands["listCloudAgentPublishedApps"] = {
+            "kind": "on",
+            "apps": [
+                {"bcId": "bc-1", "slug": "landing", "apex": "a", "visibility": "x"}
+            ],
+        }
+        app = GbotApp(service, animate=False)
+        notice = Mock()
+        monkeypatch.setattr(app, "notify", notice)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            run(ctx, "/apps")
+            await settle(app, pilot)
+            await pilot.press("e")
+            await settle(app, pilot)
+            assert isinstance(app.screen, AppsPanel)
+            assert "unknown" in " ".join(str(c.args) for c in notice.call_args_list)
+            assert not calls(service, "updateCloudAgentPublishApp")
+
+    asyncio.run(exercise())
+
+
+def test_empty_conversation_and_proposals_say_so(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = load_fake()
+        service.transport.commands["getCloudAgentConversation"] = {"messages": []}
+        service.transport.commands["getCloudAgentPublishProposals"] = {"proposals": []}
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            run(ctx, "/cloud-agent bc-1")
+            await settle(app, pilot)
+            panel = app.screen
+            assert isinstance(panel, CloudAgentPanel)
+            assert "No messages." in panel.detail.body
+            assert "No publish proposals." in panel.detail.body
+            assert "[]" not in panel.detail.body
 
     asyncio.run(exercise())

@@ -110,7 +110,7 @@ class _AppForm(FormPanel):
                     "visibility",
                     "Visibility",
                     "choice",
-                    app.visibility if app.visibility in _CHOICES else "private",
+                    app.visibility,
                     _CHOICES,
                     required=True,
                 ),
@@ -233,8 +233,17 @@ class AppsPanel(ListPanel):
 
     def edit(self, row: PanelRow) -> None:
         app = self._app(row)
-        if app is not None and _writable(self.ctx):
-            self.ctx.app.push_screen(_AppForm(self, app))
+        if app is None or not _writable(self.ctx):
+            return
+        if app.visibility not in _CHOICES:
+            # The form cannot show an unknown visibility; saving would change it silently.
+            self.ctx.app.notify(
+                "This app's visibility is unknown; change it in the Grok Bot app.",
+                severity="warning",
+                markup=False,
+            )
+            return
+        self.ctx.app.push_screen(_AppForm(self, app))
 
     def unpublish(self, row: PanelRow) -> None:
         app = self._app(row)
@@ -311,14 +320,21 @@ class _AppSecretForm(FormPanel):
             )
         finally:
             values.clear()
-        service.tell_secrets_set(
-            self.ctx.service.transport,
-            self.panel.bc_id,
-            self.panel.project_dir,
-            result.saved,
-            result.refused,
-            result.apply_needed,
-        )
+        told = ""
+        try:
+            service.tell_secrets_set(
+                self.ctx.service.transport,
+                self.panel.bc_id,
+                self.panel.project_dir,
+                result.saved,
+                result.refused,
+                result.apply_needed,
+            )
+        except Exception as error:
+            found = refusal(error)
+            if found is None:
+                raise
+            told = found.message
         return "\n".join(
             (
                 *(f"Saved secret {item}." for item in result.saved),
@@ -331,6 +347,7 @@ class _AppSecretForm(FormPanel):
                     if result.apply_needed
                     else ()
                 ),
+                *((told,) if told else ()),
             )
         )
 
@@ -428,6 +445,8 @@ class CloudAgentPanel(_Detail):
         if self.messages:
             lines.extend(("", "Conversation"))
             lines.extend(f"{m.role}: {m.text}" for m in self.messages[-20:])
+        elif not self.notes:
+            lines.append("No messages.")
         if self.proposals:
             lines.extend(("", "Publish proposals"))
             lines.extend(
@@ -435,6 +454,8 @@ class CloudAgentPanel(_Detail):
                 + (f" · {p.summary}" if p.summary else "")
                 for i, p in enumerate(self.proposals)
             )
+        elif not self.notes:
+            lines.append("No publish proposals.")
         return Detail(
             self.info.fields if self.info else (("Cloud agent", self.bc_id),),
             body="\n".join(lines).strip("\n"),
