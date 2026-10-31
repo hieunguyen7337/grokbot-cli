@@ -13,6 +13,10 @@ conflict with this section, this section wins.
   notes in `docs/` describe interfaces in our own words.
 - Gates (Windows): `.venv/Scripts/python -m pytest -q <files>`, `.venv/Scripts/ruff check groken gbot tests`,
   `.venv/Scripts/basedpyright --level error`.
+- Branches: `main` takes reviewed work. The main cloud session (started by `lane main`) may merge its own reviewed
+  branch into `main` and push it, with a merge commit, after every gate passes on the merge result; see CLAUDE.md.
+  `gbot-windows` and `gbot-tui` are integration branches that only the owner's local session merges into. Nobody
+  force-pushes, and nobody pushes a tag, a release branch or a pull request.
 
 ## OVERVIEW
 macOS-only Python bridge that lets agents (omo/Hermes) chat with Grok Bot cloud agents in real time: Cursor OAuth PKCE login → `EnsureSandBox` (Connect-RPC) → per-pod gateway (`POST /api/<command>` + `/events` SSE). Ships as `groken` CLI + `groken-mcp` MCP server.
