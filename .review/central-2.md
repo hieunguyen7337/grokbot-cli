@@ -86,4 +86,12 @@ Unresolved (low risk, not changed):
 
 ## Gates (final tree, Linux VM, Python 3.13)
 
-GATES_PLACEHOLDER
+Run on the merge of `d18e9d5` into `364c827` (merge commit `5c41339`), with
+`tests/gbot_suite` split into 4 parallel shards (110 modules):
+- pytest: 734 + 501 + 528 + 434 = 2,197 passed, 0 failed.
+- `ruff check groken gbot tests`: all checks passed.
+- `ruff format --check gbot tests/gbot_suite`: 261 files already formatted.
+- `basedpyright --level error`: 0 errors, 0 warnings, 0 notes.
+
+The commit that adds these lines changes only this file, so the gates were not
+run again for it.
