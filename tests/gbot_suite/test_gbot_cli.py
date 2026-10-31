@@ -1,6 +1,7 @@
 import argparse
 import io
 import json
+import webbrowser
 from collections.abc import Callable, Iterator
 from queue import SimpleQueue
 
@@ -725,3 +726,43 @@ def test_interrupt_cli(fake, monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", io.StringIO())
     assert cli.main(["interrupt", "--bot", "Alpha"]) == 1
     assert "Re-run with --yes to confirm" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("outcome", ["false", "raises", "raises-other", "opens"])
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_login_reports_browser_failure(fake, monkeypatch, capsys, outcome, json_mode):
+    saved = []
+    url = "https://example.invalid/login"
+    monkeypatch.setattr(
+        auth,
+        "start_login",
+        lambda: {"login_url": url, "uuid": "uid", "verifier": "proof"},
+    )
+    monkeypatch.setattr(
+        auth, "poll_for_tokens", lambda *a, **kw: {"accessToken": "TOP_SECRET"}
+    )
+    monkeypatch.setattr(auth, "save_tokens", saved.append)
+
+    def fail(target):
+        if outcome == "raises":
+            raise webbrowser.Error(f"no browser for {target}")
+        if outcome == "raises-other":
+            raise ValueError(f"no browser for {target}")
+        return outcome == "opens"
+
+    monkeypatch.setattr("gbot.commands.login.webbrowser.open", fail)
+    assert (
+        cli.main(["login", "--timeout", "42"] + (["--json"] if json_mode else [])) == 0
+    )
+    captured = capsys.readouterr()
+    note = "Could not open a browser. Open the link shown above to sign in."
+    if outcome == "opens":
+        assert note not in captured.err
+    else:
+        assert note in captured.err
+    # A note, not an error object: login still succeeds and exits 0.
+    assert '"error"' not in captured.err
+    assert url not in captured.err and "no browser" not in captured.err
+    assert "TOP_SECRET" not in captured.out + captured.err
+    assert ('"signed_in": true' if json_mode else "Signed in.") in captured.out
+    assert saved == [{"accessToken": "TOP_SECRET"}]

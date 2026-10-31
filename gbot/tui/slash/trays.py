@@ -168,9 +168,14 @@ def show_trays(ctx: SlashContext, args: str) -> None:
             def opened(ok: bool | None) -> None:
                 if ok:
                     try:
-                        webbrowser.open(url)
-                    except Exception as error:  # noqa: BLE001 - browser boundary
-                        app.bot_error(tray.agent_id, error)
+                        launched = webbrowser.open(url)
+                    except Exception:  # noqa: BLE001 - browser errors may embed the link
+                        launched = False
+                    if not launched:
+                        app.bot_error(
+                            tray.agent_id,
+                            ValueError("Could not open a browser for the link."),
+                        )
 
             app.push_screen(
                 ConfirmScreen(
