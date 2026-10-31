@@ -491,6 +491,43 @@ or `--yes` when running without one.
 
 `--json`: Object with id, shape, color, has_image, mime_type and saved_to.
 
+## plugins
+
+```text
+gbot plugins BOT [--json]
+gbot plugins BOT --add ENTRY [--yes] [--json]
+gbot plugins BOT --remove PLUGIN [--yes] [--json]
+gbot plugins BOT --set-var PLUGIN NAME [--yes] [--json]
+```
+
+List visible plugins with skills, servers and `needs setup` for unconfigured
+settings. `--add` selects a catalog entry by ID, name or unique display name;
+`--remove` selects a plugin by ID or unique display name. Existing hidden
+bot-skills plugins are preserved. Add plugins with nonnumeric IDs in the app.
+
+`--set-var` reads one setting from `Value for NAME (hidden): ` in a terminal,
+or one line from stdin otherwise. No option takes a setting value. Stored values
+are never shown; empty inputs are refused and filled inputs merge with stored
+settings. Mutations require terminal confirmation or `--yes`. After adding a
+plugin needing setup, the command prints a settings command to run next.
+
+`--json`: Lists safe plugin metadata; a settings save returns plugin_id and saved.
+
+## catalog
+
+```text
+gbot catalog [--category KEY] [--search TEXT] [--json]
+gbot catalog show ENTRY [--json]
+```
+
+Browse connector plugins by popularity rank, then display name (missing ranks
+last). Lists show display name, category, publisher and connector count.
+`--category` matches a category or category key; `--search` filters name and
+description. `show` selects by ID, name or unique display name and includes setup
+field labels, required status and secret status.
+
+`--json`: An array of catalog metadata, or one entry object for `show`.
+
 ## voice
 
 ```text
