@@ -25,7 +25,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | email | 0 | 2 | 0 | 6 | M4 |
 | secrets-vault | 9 | 14 | 9 | 10 | M1, M4 |
 | computer | 0 | 5 | 0 | 8 | M1, M4 |
-| sharing | 15 | 0 | 0 | 3 | M5 |
+| sharing | 0 | 15 | 0 | 3 | M5 |
 | publishing | 0 | 25 | 1 | 6 | M5 |
 | teams | 0 | 7 | 0 | 14 | M5 |
 | memory-files | 0 | 11 | 0 | 0 | M5 |
