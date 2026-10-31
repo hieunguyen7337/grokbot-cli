@@ -13,7 +13,14 @@ from textual.screen import Screen
 from textual.widgets import Input, Select, Static, Switch, TextArea
 
 from gbot.output import terminal_safe
+from gbot.service.errors import refusal
 from gbot.tui.screens.confirm import ConfirmScreen
+
+
+def _error_text(error: BaseException) -> str:
+    # A server refusal reads as its own sentence, not as the transport's error text.
+    notice = refusal(error)
+    return notice.message if notice else str(error)
 
 
 @dataclass(frozen=True)
@@ -157,7 +164,7 @@ class ListPanel(_Panel):
             rows = list(self.load())
         except Exception as error:  # noqa: BLE001 - panel boundary
             self.app.call_from_thread(
-                self._loaded, [], terminal_safe(str(error)).split("\n", 1)[0]
+                self._loaded, [], terminal_safe(_error_text(error)).split("\n", 1)[0]
             )
         else:
             self.app.call_from_thread(self._loaded, rows, "")
@@ -263,7 +270,7 @@ class DetailPanel(_Panel):
             self._draw()
         except Exception as error:  # noqa: BLE001 - panel boundary
             self.query_one("#detail-content", Static).update(
-                Text(terminal_safe(str(error)))
+                Text(terminal_safe(_error_text(error)))
             )
 
     def _draw(self) -> None:
@@ -429,7 +436,7 @@ class FormPanel(_Panel):
         try:
             result = self.submit(values)
         except Exception as error:  # noqa: BLE001 - panel boundary
-            message = str(error)
+            message = _error_text(error)
             for secret in secrets:
                 if secret:
                     message = message.replace(secret, "[redacted]")

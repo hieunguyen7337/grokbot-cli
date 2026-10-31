@@ -1,4 +1,5 @@
 import asyncio
+import json
 from threading import Event
 
 from textual.widgets import Input, Static
@@ -16,6 +17,7 @@ from gbot.tui.panels import (
     PanelRow,
 )
 from gbot.tui.screens.confirm import ConfirmScreen
+from groken.client import ConnectError
 
 
 def test_form_validation_and_snapshot(tmp_path, monkeypatch):
@@ -86,6 +88,28 @@ def test_list_loading_selection_and_confirmation(tmp_path, monkeypatch):
             assert calls == ["one"]
             await pilot.press("d", "tab", "enter")
             assert calls == ["one", "deleted"]
+
+    asyncio.run(exercise())
+
+
+def test_list_load_refusal_shows_server_sentence(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    def load():
+        raise ConnectError(
+            403, json.dumps({"code": "permission_denied", "message": "Teams only."})
+        )
+
+    async def exercise():
+        app = GbotApp(load_fake(), animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await pilot.pause()
+            panel = ListPanel("List", load)
+            app.push_screen(panel)
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert panel.error == "Teams only."
+            assert "permission_denied" not in app.export_screenshot()
 
     asyncio.run(exercise())
 
