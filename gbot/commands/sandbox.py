@@ -103,10 +103,14 @@ def _show(ctx: Context, transport: ContextTransport) -> int:
     run = value.run
     ctx.out.write(
         {
-            "state": run.state,
-            "image_tag": run.image_tag,
-            "image_update_available": run.image_update_available,
-            "egress_tunnel_ownership": run.egress_tunnel_ownership,
+            "state": None if value.run_refused else run.state,
+            "image_tag": None if value.run_refused else run.image_tag,
+            "image_update_available": None
+            if value.run_refused
+            else run.image_update_available,
+            "egress_tunnel_ownership": None
+            if value.run_refused
+            else run.egress_tunnel_ownership,
             "upgrade_schedule": asdict(value.schedule) if value.schedule else None,
             "notice": value.notice,
         },
@@ -160,7 +164,7 @@ def _schedule(
     local_time = (
         args.reschedule_upgrade if reschedule else args.schedule_upgrade
     ) or ""
-    timezone = args.timezone or "UTC"
+    timezone = "UTC" if args.timezone is None else args.timezone
     service.check_schedule(timezone, local_time)
     _confirm_change(args.yes, typed=False, json_mode=args.json)
     change = service.reschedule_upgrade if reschedule else service.schedule_upgrade

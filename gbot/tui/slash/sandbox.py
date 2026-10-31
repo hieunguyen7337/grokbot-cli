@@ -329,8 +329,9 @@ class SettingsPanel(_Live):
             )
         )
         actions.append(PanelAction("g", "Reload", self.reload))
+        # A refused read shows its sentence alone, not the defaults as if the server had sent them.
         return Detail(
-            service.settings_fields(value, self.names()),
+            () if self.notice else service.settings_fields(value, self.names()),
             body=self.notice,
             actions=tuple(actions),
         )

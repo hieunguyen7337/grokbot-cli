@@ -786,12 +786,13 @@ gbot sandbox --cancel-upgrade [--dismiss-outcome] --yes [--json]
 Show the cloud computer's run state (absent, hibernated, running, starting or
 unknown), its image tag, whether an image update is available, and its upgrade
 schedule. Recreate the cloud computer: data is kept unless `--discard-data` is
-given. `--acknowledge-schedule` lets a recreate proceed past a terminal upgrade
-schedule. `--force-recreate` has no keep-data choice. Schedules take a 24-hour
-`HH:MM` time and an IANA time zone (`--timezone`, UTC by default); `--recurring`
-repeats the upgrade every day. `--cancel-upgrade` cancels the scheduled upgrade,
-and `--dismiss-outcome` also dismisses the outcome of a finished one. Host settings
-and update-now stay in the Grok Bot app.
+given. `--acknowledge-schedule` is meant to let a recreate proceed past a terminal
+upgrade schedule; the protocol notes infer this, so it is unconfirmed.
+`--force-recreate` has no keep-data choice. Schedules take a 24-hour `HH:MM` time
+and an IANA time zone (`--timezone`, UTC by default); `--recurring` asks for the
+upgrade to repeat, but the protocol notes do not confirm how often. `--cancel-upgrade`
+cancels the scheduled upgrade, and `--dismiss-outcome` also dismisses the outcome of
+a finished one. Host settings and update-now stay in the Grok Bot app.
 
 Every change needs `--yes`. In a terminal, `--discard-data` and `--force-recreate`
 ask you to type `recreate` instead of confirming with `y`; the times and time zone

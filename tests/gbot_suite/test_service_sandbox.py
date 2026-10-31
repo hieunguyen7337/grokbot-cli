@@ -384,3 +384,52 @@ def test_demo_replies_and_parity_entries():
     assert index["setHostSettings"]["status"] == "declined"
     assert index["isEgressTunnelAvailable"]["status"] == "declined"
     assert index["updateHostNow"]["status"] == "handoff"
+
+
+def test_out_of_range_next_run_reads_as_unknown_time():
+    schedule = {
+        "schedule": {
+            "state": "SAND_BOX_UPGRADE_SCHEDULE_STATE_SCHEDULED",
+            "nextFireAtMs": "1000000000000000",
+        }
+    }
+    fake = FakeTransport(
+        rpcs={"GetSandBoxRunState": {}, "GetSandBoxUpgradeSchedule": schedule}
+    )
+    value = sandbox.overview(fake)
+    assert dict(sandbox.fields(value))["Next run"] == "unknown time"
+    assert value.schedule is not None
+    assert value.schedule.next_fire_at_ms == 1000000000000000
+
+
+def test_refused_schedule_read_leaves_its_rows_out():
+    fake = FakeTransport(
+        rpcs={
+            "GetSandBoxRunState": {"state": "SAND_BOX_RUN_STATE_RUNNING"},
+            "GetSandBoxUpgradeSchedule": ConnectError(
+                400,
+                '{"code":"invalid_argument","message":"Pick a schedule first."}',
+            ),
+        }
+    )
+    value = sandbox.overview(fake)
+    rows = dict(sandbox.fields(value))
+    assert "Upgrade" not in rows
+    assert rows["State"] == "running"
+    assert value.notice == "Pick a schedule first."
+
+
+def test_refused_run_read_leaves_its_rows_out():
+    fake = FakeTransport(
+        rpcs={
+            "GetSandBoxRunState": ConnectError(
+                403, '{"code":"permission_denied","message":"Not for you."}'
+            ),
+            "GetSandBoxUpgradeSchedule": {},
+        }
+    )
+    value = sandbox.overview(fake)
+    rows = dict(sandbox.fields(value))
+    assert "State" not in rows
+    assert rows["Upgrade"] == "none scheduled"
+    assert value.notice == "Not for you."

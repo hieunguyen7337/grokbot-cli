@@ -35,7 +35,7 @@ confirmation has Cancel focused and names the change. Calls run in a thread
 worker, and the panel reloads after a change. Errors show as notices with markup
 off, and refusals show the server's message.
 
-Host settings (the desktop computer) and update-now stay in the Grok Bot app.
+Host settings (the desktop computer) and update-now stay in the desktop app.
 Those actions are not available from gbot.
 
 Fake-service demo replies are discovered automatically from `DEMO_RPCS`; no

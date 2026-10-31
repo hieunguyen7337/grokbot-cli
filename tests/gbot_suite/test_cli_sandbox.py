@@ -362,3 +362,27 @@ def test_settings_read_refusal_exits_one(monkeypatch, capsys):
     )
     assert cli.main(["settings"]) == 1
     assert "Team only." in capsys.readouterr().err
+
+
+def test_refused_schedule_read_prints_no_default_row(monkeypatch, capsys):
+    setup_cli(
+        monkeypatch,
+        {
+            "GetSandBoxUpgradeSchedule": ConnectError(
+                400,
+                '{"code":"invalid_argument","message":"Pick a schedule first."}',
+            )
+        },
+    )
+    assert cli.main(["sandbox"]) == 0
+    output = capsys.readouterr().out
+    assert "Upgrade: none scheduled" not in output
+    assert "Pick a schedule first." in output
+
+
+def test_empty_timezone_is_rejected_not_replaced_with_utc(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    argv = ["sandbox", "--schedule-upgrade", "03:30", "--timezone", "", "--yes"]
+    assert cli.main([*argv, "--json"]) == 1
+    assert "Time zone" in capsys.readouterr().err
+    assert changes(fake) == []

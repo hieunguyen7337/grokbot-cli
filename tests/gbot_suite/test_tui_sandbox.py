@@ -384,3 +384,34 @@ def test_commands_are_discovered_for_any_scope():
     specs = {c.name: c for c in commands()}
     assert specs["sandbox"].scope == "any" and not specs["sandbox"].needs_bot
     assert specs["runtime"].scope == "any" and not specs["runtime"].needs_bot
+
+
+def test_refused_reads_show_no_default_rows(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        svc = load_fake()
+        svc.transport.rpcs["GetSandBoxUpgradeSchedule"] = ConnectError(
+            400, '{"code":"invalid_argument","message":"Pick a schedule first."}'
+        )
+        svc.transport.rpcs["GetGrokBotUserRuntimeSettings"] = ConnectError(
+            403, '{"code":"permission_denied","message":"Team bots only."}'
+        )
+        app = GbotApp(svc, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            run(ctx, "/sandbox")
+            await settle(app, pilot)
+            sandbox_panel = app.screen
+            assert isinstance(sandbox_panel, SandboxPanel)
+            assert ("Upgrade", "none scheduled") not in sandbox_panel.detail.fields
+            assert sandbox_panel.detail.body == "Pick a schedule first."
+            run(ctx, "/runtime")
+            await settle(app, pilot)
+            settings_panel = app.screen
+            assert isinstance(settings_panel, SettingsPanel)
+            assert ("Auto-review", "off") not in settings_panel.detail.fields
+            assert settings_panel.detail.fields == ()
+            assert settings_panel.detail.body == "Team bots only."
+
+    asyncio.run(exercise())

@@ -65,9 +65,12 @@ def _millis(value: object) -> int | None:
 
 
 def _when(milliseconds: int) -> str:
-    return datetime.fromtimestamp(milliseconds / 1000, UTC).strftime(
-        "%Y-%m-%d %H:%M UTC"
-    )
+    try:
+        moment = datetime.fromtimestamp(milliseconds / 1000, UTC)
+    except (OverflowError, OSError, ValueError):
+        # A time past the calendar's range is an odd reply, not a reason to fail the read.
+        return "unknown time"
+    return moment.strftime("%Y-%m-%d %H:%M UTC")
 
 
 @dataclass(frozen=True)
@@ -100,11 +103,16 @@ class UpgradeSchedule:
 
 @dataclass(frozen=True)
 class Overview:
-    """The run state and upgrade schedule, with a plain sentence for any part the server refused."""
+    """The run state and upgrade schedule, with a plain sentence for any part the server refused.
+
+    A refused part is left out of the rows; its sentence is in notice.
+    """
 
     run: RunState = field(default_factory=RunState)
     schedule: UpgradeSchedule | None = None
     notice: str = ""
+    run_refused: bool = False
+    schedule_refused: bool = False
 
 
 @dataclass(frozen=True)
@@ -271,16 +279,25 @@ def cancel_upgrade(
 def overview(transport: Transport) -> Overview:
     notices: list[str] = []
     run = RunState()
+    run_refused = schedule_refused = False
     schedule: UpgradeSchedule | None = None
     try:
         run = run_state(transport)
     except ConnectError as error:
         notices.append(_refused(error))
+        run_refused = True
     try:
         schedule = upgrade_schedule(transport)
     except ConnectError as error:
         notices.append(_refused(error))
-    return Overview(run, schedule, " ".join(notices))
+        schedule_refused = True
+    return Overview(
+        run,
+        schedule,
+        " ".join(notices),
+        run_refused=run_refused,
+        schedule_refused=schedule_refused,
+    )
 
 
 def runtime_settings(transport: Transport) -> RuntimeSettings:
@@ -334,13 +351,17 @@ def schedule_fields(schedule: UpgradeSchedule | None) -> tuple[tuple[str, str], 
 
 
 def fields(value: Overview) -> tuple[tuple[str, str], ...]:
-    run = value.run
-    return (
-        ("State", run.state),
-        ("Image", run.image_tag or "unknown"),
-        ("Update available", "yes" if run.image_update_available else "no"),
-        *schedule_fields(value.schedule),
-    )
+    rows: tuple[tuple[str, str], ...] = ()
+    if not value.run_refused:
+        run = value.run
+        rows += (
+            ("State", run.state),
+            ("Image", run.image_tag or "unknown"),
+            ("Update available", "yes" if run.image_update_available else "no"),
+        )
+    if not value.schedule_refused:
+        rows += schedule_fields(value.schedule)
+    return rows
 
 
 def settings_fields(
