@@ -473,7 +473,8 @@ def test_failed_roster_gives_one_notice_and_no_card_check(home_env, monkeypatch)
 
 
 def limit_thread_starts(monkeypatch, allowed: int) -> None:
-    # Only the card-check threads fail to start; Textual's own threads are untouched.
+    # Replaces threading.Thread for the whole test, but only threads named gbot-card-check can fail to start,
+    # so Textual's own threads start as usual.
     real = threading.Thread
     starts = {"count": 0}
 
@@ -518,11 +519,18 @@ def test_sweep_ends_when_a_later_thread_fails_to_start(home_env, monkeypatch):
         lock = threading.Lock()
         checked: list[str] = []
         notices: list[str] = []
+        # The first check is held open, so the test proves the sweep waits for the thread that did start.
+        first_check = threading.Event()
+        release = threading.Event()
 
         def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bot_ids is not None:
                 with lock:
                     checked.extend(bot_ids)
+                    first = len(checked) == 1
+                if first:
+                    first_check.set()
+                    release.wait(10)
             return call_original(original, bot_ids, bots, recent_pages)
 
         def notify(self, message, *, severity="information", **kwargs):
@@ -534,6 +542,13 @@ def test_sweep_ends_when_a_later_thread_fails_to_start(home_env, monkeypatch):
         service.pending = pending
         app = GbotApp(service, animate=False)
         async with app.run_test() as pilot:
+            try:
+                await wait_until(pilot, first_check.is_set, "the first check to start")
+                await pilot.pause()
+                assert not app.settled
+                assert app.load_stage == "sweeping"
+            finally:
+                release.set()
             await wait_until(pilot, lambda: app.settled, "the sweep to settle")
             await pilot.pause()
             assert app.load_stage is None
