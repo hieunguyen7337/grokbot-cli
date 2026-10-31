@@ -403,10 +403,30 @@ def test_tail_max_pages_still_checks_advance():
     assert len(transport.calls) == 2
 
 
+@pytest.mark.parametrize(
+    "row,expected",
+    [
+        ({}, False),
+        ({"awaitingUserResponse": None}, False),
+        ({"awaitingUserResponse": False}, False),
+        ({"awaitingSessionIds": []}, False),
+        ({"awaitingSessionIds": [1]}, False),
+        ({"awaitingUserResponse": {}}, True),
+        ({"awaitingUserResponse": {"reason": "approval"}}, True),
+        ({"awaitingUserResponse": True}, True),
+        ({"awaitingSessionIds": ["s1"]}, True),
+    ],
+)
+def test_waiting(row, expected):
+    assert cards.waiting(row) is expected
+
+
 def test_discover_recent_pages():
     rows: list[dict[str, object]] = [
-        {"id": "idle", "name": "Idle", "awaitingSessionIds": ["s1"]},
+        {"id": "idle", "name": "Idle"},
         {"id": "falsy", "name": "Falsy", "awaitingUserResponse": False},
+        {"id": "empty", "name": "Empty", "awaitingUserResponse": {}},
+        {"id": "session", "name": "Session", "awaitingSessionIds": ["s1"]},
         {
             "id": "wait",
             "name": "Wait",
@@ -417,21 +437,33 @@ def test_discover_recent_pages():
     transport = FakeTransport(commands={"getAgentTranscriptTail": two_pages})
     found, warnings = cards.discover(transport, rows, all_bots=True, recent_pages=1)
     assert warnings == []
-    # A non-waiting bot is read once per session; a waiting bot is read to the end.
+    # A bot the roster does not show as waiting is read once; a waiting bot, flagged even by an empty mapping
+    # or by a listed waiting session alone, is read to the end in every session.
     assert reads(transport) == [
         ("idle", None),
-        ("idle", "s1"),
         ("falsy", None),
+        ("empty", None),
+        ("empty", None),
+        ("session", None),
+        ("session", None),
+        ("session", "s1"),
+        ("session", "s1"),
         ("wait", None),
         ("wait", None),
         ("wait", "s1"),
         ("wait", "s1"),
     ]
-    assert [item.bot_id for item in found] == ["wait"]
+    assert [item.bot_id for item in found] == ["empty", "session", "wait"]
     transport.calls.clear()
     found, _ = cards.discover(transport, rows, all_bots=True)
-    assert len(transport.calls) == 2 * (2 + 1 + 2)
-    assert {item.bot_id for item in found} == {"idle", "falsy", "wait"}
+    assert len(transport.calls) == 2 * (1 + 1 + 1 + 2 + 2)
+    assert {item.bot_id for item in found} == {
+        "idle",
+        "falsy",
+        "empty",
+        "session",
+        "wait",
+    }
 
 
 def test_discover_recent_pages_card_on_second_page():

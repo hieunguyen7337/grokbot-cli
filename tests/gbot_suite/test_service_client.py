@@ -60,7 +60,8 @@ def test_cards_and_background(monkeypatch):
     background = roster.call_args.args[0]
     assert background.background
     assert discover.call_args.args == (background, [dict(waiting.raw)])
-    assert discover.call_args.kwargs == {"all_bots": True}
+    # Without a cap every bot is read in full, as before the home sweep's recent_pages.
+    assert discover.call_args.kwargs == {"all_bots": True, "recent_pages": None}
     service.pending(["b"])
     assert discover.call_args.args == (background, [dict(idle.raw)])
     card = Mock()

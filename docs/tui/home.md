@@ -27,13 +27,14 @@ first, so their cards appear soonest.
 - The other bots are checked in the order the list shows them, so the bots
   at the top of the list get their cards first.
 - Each bot's cards appear as soon as its check finishes.
-- A bot that the list does not flag as waiting is read for its newest page of
-  each session only (`HOME_RECENT_PAGES` in `gbot/tui/app.py`). A bot that is
-  flagged as waiting is read in full. A card further back on a bot that is not
-  flagged shows once that bot's cards are read in full. That happens when the
-  bot adds a card, when an entry arrives while it is flagged, after a resync,
-  or at the next start if it is flagged then. `gbot approvals --all` and
-  `gbot approvals --bot <name>` always read in full.
+- A bot that the roster does not show as waiting, with no waiting flag and no
+  waiting session, is read for its newest page only (`HOME_RECENT_PAGES` in
+  `gbot/tui/app.py`). A waiting bot is read in full. A card further back on a
+  bot that is not waiting shows once that bot's cards are read in full. That
+  happens when the bot adds a card, when an entry arrives while the bot is
+  flagged as waiting, after a resync, or at the next start if the bot is
+  waiting then. `gbot approvals --all` and `gbot approvals --bot <name>` always
+  read in full.
 - The sweep reuses the bot list that was already loaded. It does not list the
   roster again for each bot.
 - A 401 from the gateway stops the sweep from starting new checks. The user

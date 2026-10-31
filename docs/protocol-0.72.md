@@ -107,9 +107,11 @@ awaiting-session transcript tails. It follows nextBeforeSeq until exhausted and
 deduplicates by bot and entry ID. An explicit answer re-fetches all bots' pending
 cards even if their roster waiting flag has not yet updated.
 
-The TUI home sweep reads only the newest page (100 entries) of each session for a
-bot whose roster row has no waiting flag, so a card further back on such a bot is
-not found there. A bot the roster flags as waiting, and every other caller, follow
+The TUI home sweep reads only the newest page (100 entries) for a bot whose
+roster row neither sets awaitingUserResponse (absent, null or false) nor lists an
+awaiting session, so a card further back on such a bot is not found there. Any
+other awaitingUserResponse value, even an empty object, or a listed awaiting
+session counts as waiting. A waiting bot, and every other caller, follow
 nextBeforeSeq until exhausted.
 
 | message.type | Pending indicator | gbot action / wire answer |

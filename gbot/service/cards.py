@@ -242,6 +242,19 @@ def check_reply(reply: object, method: str, *, secret: bool = False) -> None:
         )
 
 
+def waiting(row: Mapping[str, object]) -> bool:
+    """Whether a roster row says the bot waits on the user, so a capped read must still read it in full.
+
+    Any `awaitingUserResponse` but absent, None or False counts (the model treats every mapping, even an empty
+    one, as waiting), and so does a listed waiting session.
+    """
+    flag = row.get("awaitingUserResponse")
+    sessions = row.get("awaitingSessionIds")
+    return (flag is not None and flag is not False) or (
+        isinstance(sessions, list) and any(isinstance(s, str) for s in sessions)
+    )
+
+
 def tail(
     transport: Transport,
     bot_id: str,
@@ -298,8 +311,8 @@ def discover(
         awaiting = bot.get("awaitingSessionIds")
         if isinstance(awaiting, list):
             sessions.extend(dict.fromkeys(s for s in awaiting if isinstance(s, str)))
-        # A bot the roster flags as waiting is always read in full; the cap only spares the others.
-        cap = None if bot.get("awaitingUserResponse") else recent_pages
+        # A bot the roster shows as waiting is always read in full; the cap only spares the others.
+        cap = None if waiting(bot) else recent_pages
         try:
             scanned = [
                 (session_id, tail(transport, bot_id, session_id, max_pages=cap))

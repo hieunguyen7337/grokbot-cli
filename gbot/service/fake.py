@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping, Sequence
 from gbot.pending import classify, is_pending
 
 from .attachments import Attachment
+from .cards import waiting
 from .demo import DemoState, demo_state
 from .events import (
     BotChanged,
@@ -173,7 +174,7 @@ class FakeService:
                     continue
                 entries = self.state.transcripts.get(bot_id, [])
                 # Transcripts run oldest to newest, as `_page` reads them; a waiting bot is read in full.
-                if recent_pages is not None and not row.get("awaitingUserResponse"):
+                if recent_pages is not None and not waiting(row):
                     # Like `cards.tail`, a cap below one still reads the newest page.
                     entries = entries[-max(recent_pages, 1) * 100 :]
                 for entry in entries:
