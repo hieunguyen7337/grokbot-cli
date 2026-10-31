@@ -470,3 +470,74 @@ def test_failed_roster_gives_one_notice_and_no_card_check(home_env, monkeypatch)
         assert "loading" not in stages
 
     asyncio.run(exercise())
+
+
+def limit_thread_starts(monkeypatch, allowed: int) -> None:
+    # Only the card-check threads fail to start; Textual's own threads are untouched.
+    real = threading.Thread
+    starts = {"count": 0}
+
+    class FlakyThread(real):
+        def start(self):
+            if self.name == "gbot-card-check":
+                starts["count"] += 1
+                if starts["count"] > allowed:
+                    raise RuntimeError("can't start new thread")
+            super().start()
+
+    monkeypatch.setattr(app_module.threading, "Thread", FlakyThread)
+
+
+def test_sweep_ends_with_one_notice_when_no_thread_starts(home_env, monkeypatch):
+    async def exercise():
+        service = sweep_service(6)
+        notices: list[tuple[str, str]] = []
+
+        def notify(self, message, *, severity="information", **kwargs):
+            notices.append((str(message), severity))
+
+        monkeypatch.setattr(GbotApp, "notify", notify)
+        limit_thread_starts(monkeypatch, 0)
+        app = GbotApp(service, animate=False)
+        async with app.run_test() as pilot:
+            await wait_until(pilot, lambda: app.settled, "the sweep to settle")
+            await pilot.pause()
+            assert app.load_stage is None
+            assert home_progress(app) == ""
+        assert [n for n in notices if n[1] == "error"] == [
+            ("Could not start the card check.", "error")
+        ]
+
+    asyncio.run(exercise())
+
+
+def test_sweep_ends_when_a_later_thread_fails_to_start(home_env, monkeypatch):
+    async def exercise():
+        service = sweep_service(12)
+        original = service.pending
+        lock = threading.Lock()
+        checked: list[str] = []
+        notices: list[str] = []
+
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
+            if bot_ids is not None:
+                with lock:
+                    checked.extend(bot_ids)
+            return call_original(original, bot_ids, bots, recent_pages)
+
+        def notify(self, message, *, severity="information", **kwargs):
+            if severity == "error":
+                notices.append(str(message))
+
+        monkeypatch.setattr(GbotApp, "notify", notify)
+        limit_thread_starts(monkeypatch, 1)
+        service.pending = pending
+        app = GbotApp(service, animate=False)
+        async with app.run_test() as pilot:
+            await wait_until(pilot, lambda: app.settled, "the sweep to settle")
+            await pilot.pause()
+            assert app.load_stage is None
+        assert sorted(checked) == [f"idle-{i:02}" for i in range(12)]
+        assert notices == []
+
+    asyncio.run(exercise())
