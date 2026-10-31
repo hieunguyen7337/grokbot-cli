@@ -193,8 +193,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "createAgentFromTemplate",
@@ -279,8 +279,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "deleteAgentWorkflow",
@@ -470,8 +470,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "getAgentAvatar",
@@ -997,8 +997,8 @@
       "args": [],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "listBotTemplates",
@@ -1492,8 +1492,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "runAgentWorkflowNow",
@@ -1630,8 +1630,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "setAgentAvatarBytes",
@@ -2060,8 +2060,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "updateAgentWorkflow",
@@ -3709,8 +3709,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "DeleteGrokBotAgentFile",
@@ -4824,8 +4824,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "ListGrokBotAgentAccessInvites",
@@ -4858,8 +4858,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "ListGrokBotAgentFiles",
@@ -6396,8 +6396,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.automations"
     },
     {
       "name": "SetGrokBotAgentClientState",
