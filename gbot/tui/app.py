@@ -85,6 +85,12 @@ class _CardSweep:
             self._running -= 1
             return self._running == 0
 
+    def abandon(self, threads: int) -> bool:
+        # Threads counted by start() that never ran. True when no running thread is left to finish the sweep.
+        with self._lock:
+            self._running -= threads
+            return self._running == 0
+
 
 class GbotApp(App[None]):
     TITLE = "gbot"
@@ -311,13 +317,27 @@ class GbotApp(App[None]):
             sweep.start(threads)
             # Daemon threads, not Textual thread workers: asyncio.run joins the default executor at exit,
             # so a check blocked on the network would hold up quitting. This coroutine only waits.
-            for _ in range(threads):
-                threading.Thread(
-                    target=self._run_card_checks,
-                    args=(sweep, loop, finished),
-                    name="gbot-card-check",
-                    daemon=True,
-                ).start()
+            started = 0
+            try:
+                for _ in range(threads):
+                    threading.Thread(
+                        target=self._run_card_checks,
+                        args=(sweep, loop, finished),
+                        name="gbot-card-check",
+                        daemon=True,
+                    ).start()
+                    started += 1
+            except Exception as error:  # noqa: BLE001 - the OS can refuse a thread
+                self.log.error(f"card check thread did not start: {error!r}")
+                # The threads that never started cannot leave; the last one out ends the sweep.
+                if sweep.abandon(threads - started):
+                    finished.set()
+                if not started:
+                    self.notify(
+                        "Could not start the card check.",
+                        severity="error",
+                        markup=False,
+                    )
             await finished.wait()
         self._sweep_finished = True
         self.refresh_home()
