@@ -836,6 +836,59 @@ pins between bots. Each change needs `--yes`.
 `--json`: `bot`, `docs` (each with `pinned`), `pins` and `notices`; a change prints
 the pin list after it.
 
+## sandbox
+
+```text
+gbot sandbox [--json]
+gbot sandbox --recreate [--discard-data] [--acknowledge-schedule] --yes [--json]
+gbot sandbox --force-recreate --yes [--json]
+gbot sandbox --schedule-upgrade HH:MM [--timezone TZ] [--recurring] --yes [--json]
+gbot sandbox --reschedule-upgrade HH:MM [--timezone TZ] [--recurring] --yes [--json]
+gbot sandbox --cancel-upgrade [--dismiss-outcome] --yes [--json]
+```
+
+Show the cloud computer's run state (absent, hibernated, running, starting or
+unknown), its image tag, whether an image update is available, and its upgrade
+schedule. Recreate the cloud computer: data is kept unless `--discard-data` is
+given. `--acknowledge-schedule` is meant to let a recreate proceed past a terminal
+upgrade schedule; the protocol notes infer this, so it is unconfirmed.
+`--force-recreate` has no keep-data choice. Schedules take a 24-hour `HH:MM` time
+and an IANA time zone (`--timezone`, UTC by default); `--recurring` asks for the
+upgrade to repeat, but the protocol notes do not confirm how often. `--cancel-upgrade`
+cancels the scheduled upgrade, and `--dismiss-outcome` also dismisses the outcome of
+a finished one. Host settings and update-now stay in the Grok Bot app.
+
+Every change needs `--yes`. In a terminal, `--discard-data` and `--force-recreate`
+ask you to type `recreate` instead of confirming with `y`; the times and time zone
+are checked before anything is sent. A recreate prints whether it started, the
+reason and the operation ID. If the server does not start it, the report is still
+printed and the exit code is 1. A refusal exits 1 with the server's message.
+
+`--json`: For a read, the state, image tag, update flag, egress tunnel ownership,
+the upgrade schedule (or null) and a notice for any part the server refused. For a
+recreate, `started`, `reason` and `operation_id`. For a schedule change, the
+schedule.
+
+## settings
+
+```text
+gbot settings [--json]
+gbot settings --pin BOT --yes [--json]
+gbot settings --unpin BOT --yes [--json]
+gbot settings --auto-review on|off --yes [--json]
+```
+
+Show your runtime settings: the pinned bots by name, whether auto-review is on,
+whether onboarding has been seen, the main bot and the email provider. `--pin` and
+`--unpin` take a bot by name or ID; `--unpin` also accepts the ID of a pinned bot
+that is no longer in your roster. `--auto-review` turns auto-review on or off and keeps
+its allow and block lists. Each change needs `--yes`; a change
+that is already in place sends nothing and prints the current settings.
+
+`--json`: `pinned_bots` (id and name for each), `auto_review_enabled`,
+`has_seen_onboarding`, `main_bot` (id and name, or null), `email_provider` and
+`updated_at_ms`.
+
 ## channels
 
 ```text
