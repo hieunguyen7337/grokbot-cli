@@ -193,6 +193,9 @@ def test_paste_detach_form_and_readonly(tmp_path, monkeypatch):
             field.post_message(Paste(str(path)))
             await settle(app, pilot)
             assert not screen.attachments and field.value == str(path)
+            # A POSIX path starts with "/" and Enter would parse it as a slash command,
+            # so send plain text to check the read-only guard on every platform.
+            field.value = "notes to send"
             await pilot.press("enter")
             await settle(app, pilot)
             assert not service.sent and notices[-1] == "Read-only mode"
