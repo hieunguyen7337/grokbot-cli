@@ -4454,8 +4454,8 @@
       ],
       "area": "teams",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "GetGrokBotTeamLinkPreview",
@@ -4465,8 +4465,8 @@
       ],
       "area": "teams",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "GetGrokBotTeamsInstallState",
@@ -5173,8 +5173,8 @@
       ],
       "area": "teams",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "ListGrokBotTeamReviewItems",
@@ -5186,8 +5186,8 @@
       ],
       "area": "teams",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "ListGrokBotTeamsJoinedTeams",
@@ -5234,8 +5234,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "ListGrokBotUserComputers",
@@ -5611,8 +5611,8 @@
       ],
       "area": "teams",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "PublishGrokBotAgent",
@@ -6138,8 +6138,8 @@
       ],
       "area": "teams",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "ResolveGrokBotVirtualCardApproval",
@@ -6602,8 +6602,8 @@
       ],
       "area": "teams",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.team_bots"
     },
     {
       "name": "SetGrokBotTemplateCreatorAttributionInternal",

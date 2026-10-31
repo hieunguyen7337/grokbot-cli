@@ -917,6 +917,46 @@ that is already in place sends nothing and prints the current settings.
 `has_seen_onboarding`, `main_bot` (id and name, or null), `email_provider` and
 `updated_at_ms`.
 
+## team
+
+```text
+gbot team [--role ROLE] [--json]
+gbot team BOT --summary [--json]
+gbot team BOT --review [--status pending|approved|rejected ...] [--limit N] [--json]
+gbot team BOT --memories [--json]
+gbot team BOT --approve ITEM --yes [--json]
+gbot team BOT --reject ITEM --yes [--json]
+gbot team BOT --promote FACT_ID ... --yes [--json]
+gbot team --link-preview TEAM_ID [--json]
+gbot team --link-preview TEAM_ID --set on|off --yes [--json]
+```
+
+List your team's bots with their turn counts, read a bot's shared summary, its
+review queue and the memories you can share with the team, approve or reject a
+review item, share memories with the team, and read or change a team's link
+previews. This needs a team account: on a personal account the server's refusal
+is the error message, with exit code 1. The TUI shows the same screens; see
+[tui/team.md](tui/team.md).
+
+`--role` lists only the team bots with that role; without it, every team bot is
+listed. `--status` may repeat; it defaults to pending. `--limit` defaults to 100. Use
+the IDs from `--review` and `--memories` with `--approve`, `--reject` and
+`--promote`. `--promote` takes one or more memory IDs. `--set` turns a team's
+link previews on or off; it is a team-wide switch, not a bot's public card.
+
+Every change needs `--yes`. Without it, a terminal asks for confirmation; without
+a terminal, nothing is sent. A change that the server refuses exits 1 with the
+server's message.
+
+`--json`: With no BOT, a list of team bots (agent_id, name, user_turns,
+teammate_turns, last_turn_at_ms). `--summary` gives prose, generated_at_ms,
+memory_version, summary_model, stale, skills, learned (fact_id, text,
+learned_at_ms) and memory_count. `--review` gives a list of items (item_id,
+status, proposed and reviewed user IDs, created and reviewed times, and change).
+`--memories` gives a list of facts. `--approve` and `--reject` give the item.
+`--promote` gives created, already_in_team and kept_private_count. The link
+preview gives team_id and enabled.
+
 ## channels
 
 ```text
