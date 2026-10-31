@@ -28,6 +28,8 @@ from groken.client import ConnectError
 
 # Card checks in flight at once during the startup sweep. Each check waits on the gateway, so a few overlap.
 CARD_SWEEP_PARALLEL = 4
+# Transcript pages the home sweep reads per session for a bot that is not waiting (speed); a waiting bot reads in full.
+HOME_RECENT_PAGES = 1
 
 SHELL_BINDINGS = [
     Binding("ctrl+p", "command_palette", "Command palette", priority=True),
@@ -345,7 +347,9 @@ class GbotApp(App[None]):
                 sweep.count()
                 continue
             try:
-                cards, warnings = self.service.pending([bot_id], bots=sweep.bots)
+                cards, warnings = self.service.pending(
+                    [bot_id], bots=sweep.bots, recent_pages=HOME_RECENT_PAGES
+                )
             except Exception as error:  # noqa: BLE001 - service/worker boundary
                 sweep.count()
                 if self._service_closing:
