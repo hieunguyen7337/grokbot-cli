@@ -80,11 +80,32 @@ def test_targets_odd_replies(reply):
             listings.ListingResult(False, "", "Refused"),
         ),
         ({"message": 5, "error": ""}, listings.ListingResult(True)),
+        (
+            {"status": "failed", "message": "No description."},
+            listings.ListingResult(False, "failed", "No description."),
+        ),
+        (
+            {"outcome": "PUBLISH_OUTCOME_REJECTED"},
+            listings.ListingResult(False, "PUBLISH_OUTCOME_REJECTED"),
+        ),
+        ({"error": {"code": 3}}, listings.ListingResult(False)),
+        ({"error": {}}, listings.ListingResult(True)),
     ],
 )
 def test_listing_result(reply, expected):
     fake = FakeTransport({"publishSkill": reply})
     assert listings.publish_skill(fake, "w") == expected
+
+
+def test_target_null_team_id_falls_back_to_id():
+    fake = FakeTransport(
+        {
+            "getSkillPublishTargets": {
+                "teams": [{"teamId": None, "id": "t9", "name": "X"}]
+            }
+        }
+    )
+    assert listings.publish_targets(fake).teams == (listings.Target("t9", "X"),)
 
 
 def test_error_object_message_is_read():

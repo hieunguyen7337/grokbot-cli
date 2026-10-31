@@ -27,6 +27,10 @@ DEMO_COMMANDS = {
     "unpublishPluginListing": {"status": "unpublished"},
 }
 _STATE_KEYS = ("status", "state", "outcome", "kind")
+# The reply shape is unknown, so a state word that says the change failed counts as a failure.
+_FAILED_STATES = frozenset(
+    {"failed", "failure", "error", "errored", "rejected", "denied"}
+)
 
 
 @dataclass(frozen=True)
@@ -53,7 +57,9 @@ def _target(value: object) -> Target | None:
     if isinstance(value, str):
         return Target(value, value) if value else None
     row = _record(value)
-    team_id = row.get("teamId", row.get("id"))
+    team_id = row.get("teamId")
+    if team_id is None or team_id == "":
+        team_id = row.get("id")
     if isinstance(team_id, int) and not isinstance(team_id, bool):
         team_id = str(team_id)
     if not isinstance(team_id, str) or not team_id:
@@ -80,11 +86,15 @@ def _result(reply: object) -> ListingResult:
     state = next(
         (value for key in _STATE_KEYS if isinstance(value := reply.get(key), str)), ""
     )
-    error = reply.get("error")
-    if isinstance(error, Mapping):
-        error = error.get("message")
+    raw_error = reply.get("error")
+    error = raw_error.get("message") if isinstance(raw_error, Mapping) else raw_error
     message = _text(reply.get("message")) or _text(error)
-    failed = bool(_text(error)) or reply.get("ok") is False
+    failed = (
+        bool(_text(error))
+        or (isinstance(raw_error, Mapping) and bool(raw_error))
+        or reply.get("ok") is False
+        or state.strip().casefold().rsplit("_", 1)[-1] in _FAILED_STATES
+    )
     return ListingResult(not failed, state.strip(), message.strip())
 
 

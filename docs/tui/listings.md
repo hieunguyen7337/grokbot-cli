@@ -27,7 +27,7 @@ With no skills of your own the panel says so in one sentence.
 
 ## `/plugin-listing`
 
-Lists the bot's plugins (name and plugin id).
+Lists the bot's plugins (name and plugin id). The bot's own skills plugin is not listed; publish skills with `/skill-publish`.
 
 - `u` takes the selected plugin's listing down. The panel first asks whether a
   private copy exists, then confirms `Remove the <plugin> listing? A private copy
