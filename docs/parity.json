@@ -2204,8 +2204,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "ActivateGrokBotTemplateVersion",
@@ -2240,8 +2240,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "AddGrokBotAgentSkill",
@@ -3392,8 +3392,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "CommitGrokBotTranscriptEntries",
@@ -3510,8 +3510,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "CreateGrokBotAgentFromTemplate",
@@ -4162,8 +4162,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "GetGrokBotAgentAnalytics",
@@ -4196,8 +4196,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "GetGrokBotAgentLinkAccess",
@@ -4207,8 +4207,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "GetGrokBotAgentPluginFile",
@@ -4835,8 +4835,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "ListGrokBotAgentAccessPrincipals",
@@ -4881,8 +4881,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "ListGrokBotAgentMeetings",
@@ -5574,8 +5574,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "PreviewGrokBotMarketplaceSourceInternal",
@@ -5905,8 +5905,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "RemoveGrokBotAgentSkill",
@@ -6192,8 +6192,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "RevokePasskey",
@@ -6491,8 +6491,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "SetGrokBotAgentVoice",
@@ -6649,8 +6649,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "StartBulkTeamMemberSandBoxOperation",
@@ -6964,8 +6964,8 @@
       ],
       "area": "sharing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.sharing"
     },
     {
       "name": "UpdateGrokBotAgentCustomMcp",

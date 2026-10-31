@@ -796,3 +796,61 @@ others) and connects one. Browser steps wait until the status changes;
 `--json`: The Slack state, the messaging link with its phones, or the listener
 integrations (platform, connected, state and the number of automations that need
 it).
+
+## share
+
+```text
+gbot share BOT [--json]
+gbot share BOT --share-status [--json]
+gbot share BOT [--grant KIND[:ID]=ROLE ...] [--revoke KIND[:ID] ...] --yes [--json]
+gbot share BOT --team-row on|off [--role user|manager] --yes [--json]
+gbot share BOT --team-visible [--carry-secret NAME ...] --yes [--json]
+gbot share BOT --share-in-place --yes [--json]
+gbot share BOT --clone-to-team [--carry-secret NAME ...] --yes [--json]
+gbot share BOT --invite EMAIL [--language TAG] --yes [--json]
+gbot share BOT --revoke-invite EMAIL --yes [--json]
+gbot share BOT --add-manager USER_ID --yes [--json]
+gbot share BOT --remove-manager USER_ID --yes [--json]
+gbot share --preview-invite [--json]
+gbot share --accept-invite --yes [--json]
+```
+
+Show who has a bot and with what role: the owner, each access row, the team row,
+link access, managers and the invites you sent. A part the server refuses (for
+example invites on an account without a team) shows the server's sentence and the
+rest still prints. Every change needs `--yes`; without it, and without a terminal
+to confirm in, nothing is sent. A change the server refuses exits 1 with its
+message. Only one kind of change runs per call, except that `--grant`, `--revoke`
+and `--team-row` together make one update.
+
+- `--grant KIND[:ID]=ROLE` and `--revoke KIND[:ID]` (repeatable): change access
+  rows. KIND is `user`, `group`, `other_team` or `organization` (the team row has
+  its own option); `user`, `group` and `other_team` need an id, as in
+  `user:12=manager`. ROLE is `user` or `manager`. The whole list is sent back with
+  the token read a moment before, so a change someone else made in between is
+  refused rather than overwritten. The owner is never part of the list.
+- `--team-row on|off` with `--role user|manager`: turn the row for everyone in the
+  team on or off. Turning it off is refused when no other row would remain and the
+  server does not allow it.
+- `--team-visible`: make the bot visible to the team. `--clone-to-team`: copy it
+  into the team. `--carry-secret NAME ...` (repeatable) names personal secrets to
+  carry over; values are never sent.
+- `--share-in-place`: start sharing the same bot with the team. The server keeps
+  working after the command returns; `--share-status` reads the state and step
+  once (not started, running, done or failed).
+- `--invite EMAIL`: the server emails the invite; the link is never shown.
+  `--language TAG` sets the email language (`en`, `pt-BR`). The result says whether
+  the invite was created, whether the email went out, when it expires and how many
+  invites the bot has used. `--revoke-invite EMAIL` cancels one.
+- `--add-manager USER_ID` and `--remove-manager USER_ID`: change the managers.
+- `--preview-invite` and `--accept-invite`: for an invite someone sent you. The code
+  or link is read from a hidden prompt, or from one line on stdin when there is no
+  terminal, and never from the command line. The preview shows the bot, the sender,
+  your role, the state and whether you can accept; accepting grants the access.
+- `--yes`: confirm a change. `--json`: print JSON.
+
+`--json`: the read has `bot`, `access` (owner, team row and rows with kind, id,
+name and role), `link_access`, `managers` and `invites` (with `cap_usage`); a
+refused part is `{"refused": "<message>"}`. Changes print their result (outcome and
+message, created and email_sent for invites). No output contains an invite link or
+code.
