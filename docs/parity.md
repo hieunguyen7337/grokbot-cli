@@ -20,7 +20,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | templates | 2 | 8 | 0 | 4 | M3 |
 | connectors | 16 | 4 | 4 | 6 | M1, M4 |
 | plugins-skills | 12 | 0 | 0 | 2 | M4 |
-| automations | 22 | 0 | 0 | 0 | M4 |
+| automations | 11 | 11 | 0 | 0 | M4 |
 | channels | 23 | 0 | 1 | 16 | M4 |
 | email | 0 | 2 | 0 | 6 | M4 |
 | secrets-vault | 18 | 5 | 9 | 10 | M1, M4 |

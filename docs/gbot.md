@@ -491,6 +491,40 @@ or `--yes` when running without one.
 
 `--json`: Object with id, shape, color, has_image, mime_type and saved_to.
 
+## automations
+
+```sh
+gbot automations [BOT] [--json]
+gbot automations BOT --show ID [--json]
+gbot automations BOT --new --name N --prompt P --schedule S [--off] [--yes] [--json]
+gbot automations BOT --edit ID [--name N] [--prompt P] [--schedule S] [--yes] [--json]
+gbot automations BOT --on ID [--yes] [--json]
+gbot automations BOT --off ID [--yes] [--json]
+gbot automations BOT --delete ID [--yes] [--json]
+gbot automations BOT --run ID [--no-wait] [--yes] [--json]
+```
+
+Omit BOT to list the account. `--show` includes prompt and recent runs.
+ID is a record ID, a unique prefix of at least six characters, or an exact
+name. `--new` requires `--name`, `--prompt` and `--schedule`; bare `--off`
+creates it disabled. `--edit` preserves unspecified fields. `--prompt -`
+reads stdin. `--on ID` and `--off ID` enable or disable; `--delete` removes.
+`--run` waits up to 120 seconds for a new run and prints its status;
+`--no-wait` returns after the request. Every mutation requires terminal
+confirmation or `--yes`. `--help` shows command help.
+
+Schedules support numeric five-field cron, lists/ranges/steps, macros
+`@hourly`, `@daily`, `@midnight`, `@weekly`, `@monthly`, `@yearly`, `@annually`,
+and `@every` durations (ms/s/m/h/d, including combined/decimal durations and
+an optional `/phase` shorter than the interval). Prefix `TZ=Zone` or
+`CRON_TZ=Zone` for a validated timezone. Non-cron triggers retain their fields
+on edit; change their trigger in the Grok Bot app.
+
+`--json`: listing returns record objects including bot_id, server_id and
+allowed actions. Show returns one record; create/edit/toggle/delete return
+an automations object; run returns id, status and the new run (or null).
+Exit 0 on success, 1 on error, cancellation or run-start timeout.
+
 ## voice
 
 ```text
