@@ -40,13 +40,32 @@ def test_pin_round_trip_all_kinds():
     ],
 )
 def test_media_kind_forms(kind, expected):
-    pin = library.pin_from_wire({"media": {"kind": kind}})
+    pin = library.pin_from_wire({"media": {"kind": kind, "source": "s"}})
     assert pin is not None and pin.media_kind == expected
 
 
-@pytest.mark.parametrize("row", [{}, {"pinnedAtMs": "1"}, "x", None, {"page": 3}])
+@pytest.mark.parametrize(
+    "row",
+    [{}, {"pinnedAtMs": "1"}, "x", None, {"page": 3}, {"page": {}}, {"media": {}}],
+)
 def test_unknown_targets_dropped(row):
     assert library.pin_from_wire(row) is None
+
+
+def test_unknown_media_kind_is_not_sent_as_a_full_name():
+    pin = library.pin_from_wire({"media": {"kind": 99, "source": "s"}})
+    assert pin is not None and pin.media_kind == "unknown"
+    media = pin.to_wire()["media"]
+    assert isinstance(media, dict) and "kind" not in media
+
+
+def test_created_by_bot_string_false_is_false():
+    fake = FakeTransport(
+        rpcs={
+            "ListGrokBotLibraryDocs": {"docs": [{"key": "k", "createdByBot": "false"}]}
+        }
+    )
+    assert library.library_docs(fake, "bot")[0].created_by_bot is False
 
 
 def test_docs_defaults_and_payload():

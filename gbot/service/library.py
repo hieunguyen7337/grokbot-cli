@@ -57,11 +57,9 @@ class Pin:
                 page["documentId"] = self.document_id
             wire["page"] = page
         elif self.kind == "media":
-            media: dict[str, object] = {
-                "kind": MEDIA_PREFIX + self.media_kind.upper(),
-                "source": self.source,
-                "name": self.name,
-            }
+            media: dict[str, object] = {"source": self.source, "name": self.name}
+            if self.media_kind in MEDIA_KINDS:
+                media["kind"] = MEDIA_PREFIX + self.media_kind.upper()
             if self.posted_at_ms:
                 media["postedAtMs"] = str(self.posted_at_ms)
             wire["media"] = media
@@ -104,6 +102,10 @@ def _media_kind(value: object) -> str:
     return name if name in MEDIA_KINDS else "unknown"
 
 
+def _flag(value: object) -> bool:
+    return value is True or (isinstance(value, str) and value.strip().lower() == "true")
+
+
 def pin_from_wire(row: object) -> Pin | None:
     """A pin, or None when it names no known target (the app drops those)."""
     if not isinstance(row, dict):
@@ -111,19 +113,29 @@ def pin_from_wire(row: object) -> Pin | None:
     pinned = _int(row.get("pinnedAtMs"))
     page, media = row.get("page"), row.get("media")
     if isinstance(page, dict):
-        return Pin(
-            "page",
+        store, canvas, document = (
             _text(page, "storeId"),
             _text(page, "canvasId"),
             _text(page, "documentId"),
+        )
+        if not (store or canvas or document):
+            return None
+        return Pin(
+            "page",
+            store,
+            canvas,
+            document,
             pinned_at_ms=pinned,
         )
     if isinstance(media, dict):
+        source, name = _text(media, "source"), _text(media, "name")
+        if not (source or name):
+            return None
         return Pin(
             "media",
             media_kind=_media_kind(media.get("kind", 0)),
-            source=_text(media, "source"),
-            name=_text(media, "name"),
+            source=source,
+            name=name,
             posted_at_ms=_int(media.get("postedAtMs")),
             pinned_at_ms=pinned,
         )
@@ -149,7 +161,7 @@ def library_docs(transport: Transport, bot_id: str) -> tuple[LibraryDoc, ...]:
             _text(row, "externalId"),
             _text(row, "url"),
             _text(row, "title"),
-            bool(row.get("createdByBot")),
+            _flag(row.get("createdByBot")),
             _text(row, "lastAction"),
             _int(row.get("firstTouchedAtMs")),
             _int(row.get("lastTouchedAtMs")),
@@ -175,8 +187,13 @@ def set_pin(
 
 
 def merge_pins(
-    transport: Transport, bot_id: str, pins: tuple[Pin, ...] | list[Pin]
+    transport: Transport,
+    bot_id: str,
+    pins: tuple[Pin, ...] | list[Pin],
+    *,
+    raise_refusal: bool = False,
 ) -> tuple[Pin, ...]:
+    """The pins after the merge; a not_found refusal gives () unless raise_refusal."""
     try:
         reply = transport.rpc(
             "MergeGrokBotLibraryPins",
@@ -184,7 +201,7 @@ def merge_pins(
         )
     except ConnectError as error:
         refused = refusal(error)
-        if refused is not None and refused.code == "not_found":
+        if not raise_refusal and refused is not None and refused.code == "not_found":
             return ()
         raise
     return _pins(reply)

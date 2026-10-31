@@ -180,12 +180,18 @@ class BotFilesPanel(_KeyedPanel):
         rows = self.visible_rows
         return rows[self.index] if rows else None
 
+    def can_delete(self, row: PanelRow | None) -> bool:
+        if row is None:
+            return False
+        if row.key.startswith("store:"):
+            return True
+        return row.key.startswith("file:") and self.listing.can_edit
+
     def hints(self) -> tuple[tuple[str, str], ...]:
         row = self.selected()
-        deletable = row is not None and row.key.startswith(("file:", "store:"))
         return (
             *((("u", "upload"),) if self.listing.can_edit else ()),
-            *((("x", "delete"),) if deletable else ()),
+            *((("x", "delete"),) if self.can_delete(row) else ()),
             ("g", "reload"),
         )
 
@@ -194,7 +200,7 @@ class BotFilesPanel(_KeyedPanel):
             self.reload()
         elif key == "u" and self.listing.can_edit:
             self.upload()
-        elif key == "x" and self.selected() is not None:
+        elif key == "x" and self.can_delete(self.selected()):
             self.delete(self.selected())
         else:
             return False
@@ -241,7 +247,7 @@ class BotFilesPanel(_KeyedPanel):
         transport = self.ctx.service.transport
         _mutate(
             self.ctx,
-            f"Delete {row.label} from {self.bot.name}?",
+            f"Delete {target} from {self.bot.name}?",
             "Delete",
             (
                 (

@@ -84,7 +84,7 @@ def begin_fake(finish):
     )
 
 
-def test_upload_hash_size_type_and_put(tmp_path, monkeypatch):
+def test_upload_hash_size_type_and_put(tmp_path):
     path = tmp_path / "n.txt"
     path.write_bytes(b"hello world\n")
     fake = begin_fake({"file": file_row("n.txt")})
@@ -94,14 +94,12 @@ def test_upload_hash_size_type_and_put(tmp_path, monkeypatch):
         seen.append(request)
         return httpx.Response(200)
 
-    real = httpx.put
     transport = httpx.MockTransport(handler)
 
     def put(url, headers, body):
         with httpx.Client(transport=transport) as client:
             return client.put(url, headers=headers, content=body).status_code
 
-    assert real is httpx.put
     result = bot_files.upload_file(fake, "bot", path, put=put)
     assert result.name == "n.txt"
     begin, finish = fake.calls[0][2], fake.calls[1][2]
@@ -134,6 +132,10 @@ def test_default_put_uses_httpx_with_long_timeout(tmp_path, monkeypatch):
     assert fake.calls[0][2]["contentType"] == "application/octet-stream"
     assert calls[0][1]["timeout"] == 300
     assert calls[0][1]["content"] == b"x"
+    assert calls[0][1]["headers"] == {
+        "x-amz-meta": HEADER,
+        "Content-Type": "text/plain",
+    }
 
 
 def test_put_refusal_hides_secrets(tmp_path):

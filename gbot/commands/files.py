@@ -153,11 +153,10 @@ def run_files(args: argparse.Namespace, ctx: Context) -> int:
 def _pin_from_json(row: object) -> library.Pin:
     if not isinstance(row, dict):
         raise TypeError("Each pin must be an object.")
-    names = {f.name for f in fields(library.Pin)}
-    pin = library.Pin(**{k: v for k, v in row.items() if k in names})
-    if pin.kind not in library.KINDS:
+    if row.get("kind") not in library.KINDS:
         raise ValueError("Each pin needs a kind of page, media, doc or app.")
-    return pin
+    names = {f.name for f in fields(library.Pin)}
+    return library.Pin(**{k: v for k, v in row.items() if k in names})
 
 
 def run_library(args: argparse.Namespace, ctx: Context) -> int:
@@ -188,7 +187,9 @@ def run_library(args: argparse.Namespace, ctx: Context) -> int:
             raise ValueError("The file must hold a JSON list of pins.")
         wanted = [_pin_from_json(row) for row in data]
         _confirm(args.yes, json_mode=ctx.out.json_mode)
-        pins = _change(lambda: library.merge_pins(transport, bot_id, wanted))
+        pins = _change(
+            lambda: library.merge_pins(transport, bot_id, wanted, raise_refusal=True)
+        )
         ctx.out.write(
             {"merged": len(wanted), "pins": [asdict(p) for p in pins]},
             f"Merged {len(wanted)} pins. {len(pins)} pins now.",

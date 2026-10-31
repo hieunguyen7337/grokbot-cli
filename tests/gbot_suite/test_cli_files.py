@@ -204,6 +204,10 @@ def test_merge_pins_bad_file_and_refusal(monkeypatch, capsys, tmp_path):
     bad.write_text('[{"kind": "nope"}]')
     assert cli.main(["library", "Alpha", "--merge-pins", str(bad), "--yes"]) == 1
     assert not sent(fake, "MergeGrokBotLibraryPins")
+    bad.write_text('[{"key": "k1"}]')
+    assert cli.main(["library", "Alpha", "--merge-pins", str(bad), "--yes"]) == 1
+    assert "each pin needs a kind" in capsys.readouterr().err.lower()
+    assert not sent(fake, "MergeGrokBotLibraryPins")
     bad.write_text("[]")
     fake.rpcs["MergeGrokBotLibraryPins"] = REFUSED
     assert cli.main(["library", "Alpha", "--merge-pins", str(bad), "--yes"]) == 1
@@ -211,4 +215,5 @@ def test_merge_pins_bad_file_and_refusal(monkeypatch, capsys, tmp_path):
     fake.rpcs["MergeGrokBotLibraryPins"] = ConnectError(
         404, json.dumps({"code": "not_found"})
     )
-    assert cli.main(["library", "Alpha", "--merge-pins", str(bad), "--yes"]) == 0
+    assert cli.main(["library", "Alpha", "--merge-pins", str(bad), "--yes"]) == 1
+    assert "Merged" not in capsys.readouterr().out

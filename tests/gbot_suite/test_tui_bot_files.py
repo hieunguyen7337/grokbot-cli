@@ -347,3 +347,52 @@ def test_library_empty_and_refused(tmp_path, monkeypatch):
             assert top(app).rows == [] and "no library" in top(app).empty
 
     asyncio.run(exercise())
+
+
+def test_delete_hides_bot_file_keys_when_cannot_edit(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = fake_files(can_edit=False)
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            run(ctx, "/bot-files")
+            await settle(app, pilot)
+            panel = top(app)
+            assert "x delete" not in footer(panel)
+            await pilot.press("x")
+            assert top(app) is panel
+            assert not calls(service, "DeleteGrokBotAgentFile")
+            for _ in range(3):
+                await pilot.press("down")
+            assert "x delete" in footer(panel)
+            await pilot.press("x")
+            assert top(app).heading == "Delete /store/prefs.json from Helper?"
+
+    asyncio.run(exercise())
+
+
+def test_delete_user_store_confirm_names_the_path(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    store = {
+        "files": [
+            {"name": "prefs.json", "path": "/a/prefs.json", "sizeBytes": "1"},
+            {"name": "prefs.json", "path": "/b/prefs.json", "sizeBytes": "2"},
+        ]
+    }
+
+    async def exercise():
+        service = fake_files()
+        service.transport.rpcs["ListGrokBotUserStoreFiles"] = store
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            run(ctx, "/bot-files")
+            await settle(app, pilot)
+            for _ in range(4):
+                await pilot.press("down")
+            await pilot.press("x")
+            assert top(app).heading == "Delete /b/prefs.json from Helper?"
+
+    asyncio.run(exercise())
