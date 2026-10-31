@@ -1,5 +1,6 @@
 import asyncio
 
+import pytest
 from textual.widgets import Input, Static
 from tui_snapshots import assert_snapshot
 
@@ -276,5 +277,46 @@ def test_actions(tmp_path, monkeypatch):
             await settle(app, pilot)
             indicator = str(screen.query_one("#session-alert", Static).render())
             assert "[link=x]Title" in indicator and "\x1b" not in indicator
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("outcome", ["false", "raises"])
+def test_open_link_reports_browser_failure(tmp_path, monkeypatch, outcome):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    url = "https://example.com"
+
+    def fail(target):
+        if outcome == "raises":
+            raise OSError(f"no browser for {target}")
+        return False
+
+    monkeypatch.setattr("gbot.tui.slash.trays.webbrowser.open", fail)
+
+    async def exercise():
+        service = load_fake()
+        service.transport.commands["getTrays"] = fixture_trays()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await settle(app, pilot)
+            screen = SessionScreen("demo-helper", session_id="sub")
+            await app.push_screen(screen)
+            await settle(app, pilot)
+            notices = []
+            monkeypatch.setattr(
+                app, "notify", lambda message, **kw: notices.append(message)
+            )
+            ctx = SlashContext(app, screen, screen.bot_id, "sub")
+            run(ctx, "/trays")
+            await settle(app, pilot)
+            await pilot.press("o")
+            await pilot.pause()
+            assert isinstance(app.screen, ConfirmScreen)
+            await pilot.click("#confirm")
+            await settle(app, pilot)
+            message = "Could not open a browser for the link."
+            assert app.state.errors["demo-helper"] == message
+            assert notices[-1] == message
+            assert url not in " ".join(notices + [app.state.errors["demo-helper"]])
 
     asyncio.run(exercise())

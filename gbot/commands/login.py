@@ -19,9 +19,15 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
     ctx.out.write({"login_url": login["login_url"]}, login["login_url"])
     if not args.no_browser:
         try:
-            webbrowser.open(login["login_url"])
-        except (OSError, webbrowser.Error) as exc:
-            ctx.out.error(exc)
+            opened = webbrowser.open(login["login_url"])
+        except (OSError, webbrowser.Error):
+            opened = False
+        if not opened:
+            ctx.out.error(
+                RuntimeError(
+                    "Could not open a browser. Open the link shown above to sign in."
+                )
+            )
     tokens = auth.poll_for_tokens(
         login["uuid"], login["verifier"], timeout_s=args.timeout
     )

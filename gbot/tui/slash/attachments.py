@@ -177,9 +177,14 @@ def show_files(ctx: SlashContext, args: str) -> None:
         def confirmed(ok: bool | None) -> None:
             if ok:
                 try:
-                    webbrowser.open(url)
-                except Exception as error:  # noqa: BLE001 - browser boundary
-                    app.bot_error(bot_id, error)
+                    launched = webbrowser.open(url)
+                except Exception:  # noqa: BLE001 - browser errors may embed the link
+                    launched = False
+                if not launched:
+                    app.bot_error(
+                        bot_id,
+                        ValueError("Could not open a browser for the file."),
+                    )
 
         app.push_screen(
             ConfirmScreen(
