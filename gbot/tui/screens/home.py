@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from threading import Lock
-from time import time
+from time import monotonic, time
 from typing import TYPE_CHECKING, ClassVar, cast
 from uuid import uuid4
 
@@ -11,12 +11,14 @@ from textual.app import ComposeResult
 from textual.binding import Binding, BindingType
 from textual.containers import Horizontal
 from textual.screen import Screen
+from textual.timer import Timer
 from textual.widgets import Input, Static, TextArea
 
 from gbot.output import terminal_safe
 from gbot.service.models import Bot, ConnectionStatus
 from gbot.tui import model, prefs
 from gbot.tui.answering import answer_card
+from gbot.tui.glyphs import glyphs
 from gbot.tui.slash import SlashContext, run
 from gbot.tui.widgets.botlist import BotList
 from gbot.tui.widgets.peek import Peek
@@ -25,6 +27,45 @@ from gbot.tui.widgets.slashmenu import SlashMenu
 
 if TYPE_CHECKING:
     from gbot.tui.app import GbotApp
+
+# Seconds before the connecting line also says that a cloud computer can take a while to start.
+CONNECT_HINT_AFTER = 5
+PROGRESS_CELLS = 30
+PROGRESS_TICK = 0.2
+
+
+def progress_text(
+    stage: str | None,
+    *,
+    elapsed: int,
+    done: int,
+    total: int,
+    ascii_only: bool,
+    animate: bool,
+    frame: int,
+) -> str:
+    """The home loading line for a stage, or "" when home has nothing to show."""
+    if stage is None:
+        return ""
+    symbols = glyphs(ascii_only)
+    # The spinner holds still with animations off and in ASCII mode.
+    spinner = (
+        symbols.working[frame % len(symbols.working)]
+        if animate and not ascii_only
+        else symbols.working[0]
+    )
+    if stage == "connecting":
+        text = f"{spinner} Connecting to Grok Bot... {elapsed} s"
+        if elapsed >= CONNECT_HINT_AFTER:
+            text += "\n  starting your cloud computer can take about 30 s"
+        return text
+    if stage == "loading":
+        return f"{spinner} Loading bots..."
+    filled = round(PROGRESS_CELLS * done / total) if total else 0
+    fill, empty = ("#", "-") if ascii_only else ("█", "░")
+    bar = fill * filled + empty * (PROGRESS_CELLS - filled)
+    return f"{spinner} Checking for cards {done}/{total} [{bar}]"
+
 
 HOME_BINDINGS = [
     Binding(
@@ -68,6 +109,9 @@ HOME_BINDINGS = [
 
 class HomeScreen(Screen):
     BINDINGS: ClassVar[list[BindingType]] = [*HOME_BINDINGS]
+    DEFAULT_CSS = """
+    HomeScreen #home-progress { height: auto; color: $text-muted; }
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -76,6 +120,9 @@ class HomeScreen(Screen):
         self._expanded: set[str] = set()
         self._filter = ""
         self._save_lock = Lock()
+        self._progress_text = ""
+        self._progress_frame = 0
+        self._progress_timer: Timer | None = None
 
     @property
     def gbot(self) -> "GbotApp":
@@ -89,6 +136,7 @@ class HomeScreen(Screen):
         with Horizontal(id="header"):
             yield Static("Grok Bot", id="heading", markup=False)
             yield Static("connecting", id="connection", markup=False)
+        yield Static("", id="home-progress", markup=False)
         yield BotList(
             ascii_only=self.gbot.ascii_only, animate=self.gbot.animations_enabled
         )
@@ -210,6 +258,36 @@ class HomeScreen(Screen):
             ]
         self.bot_list.set_sections(sections, force=force)
         self.sync_peek()
+        self.refresh_progress()
+
+    def refresh_progress(self) -> None:
+        if not self.is_mounted:
+            return
+        done, total = self.gbot.sweep_progress
+        text = progress_text(
+            self.gbot.load_stage,
+            elapsed=int(monotonic() - self.gbot.started_at),
+            done=done,
+            total=total,
+            ascii_only=self.gbot.ascii_only,
+            animate=self.gbot.animations_enabled,
+            frame=self._progress_frame,
+        )
+        line = self.query_one("#home-progress", Static)
+        line.display = bool(text)
+        if text != self._progress_text:
+            self._progress_text = text
+            line.update(text)
+        # The ticker runs only while the line shows: the elapsed seconds and the spinner need it.
+        if text and self._progress_timer is None:
+            self._progress_timer = self.set_interval(PROGRESS_TICK, self._tick_progress)
+        elif not text and self._progress_timer is not None:
+            self._progress_timer.stop()
+            self._progress_timer = None
+
+    def _tick_progress(self) -> None:
+        self._progress_frame += 1
+        self.refresh_progress()
 
     @property
     def peek(self) -> Peek:

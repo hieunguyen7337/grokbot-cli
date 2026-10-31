@@ -1,4 +1,7 @@
-from collections.abc import Callable
+import asyncio
+import threading
+from collections import deque
+from collections.abc import Callable, Sequence
 from time import monotonic
 from typing import ClassVar
 
@@ -23,6 +26,9 @@ from gbot.tui.state import AppState
 from gbot.tui.theme import GBOT_THEME, STYLES
 from groken.client import ConnectError
 
+# Card checks in flight at once during the startup sweep. Each check waits on the gateway, so a few overlap.
+CARD_SWEEP_PARALLEL = 4
+
 SHELL_BINDINGS = [
     Binding("ctrl+p", "command_palette", "Command palette", priority=True),
     Binding("escape", "escape", "Close or clear"),
@@ -36,6 +42,46 @@ class ServiceEvent(Message):
     def __init__(self, event: events.Event) -> None:
         super().__init__()
         self.event = event
+
+
+class _CardSweep:
+    """The checks of one card sweep. Check threads share it; every field is read or written under the lock."""
+
+    def __init__(self, bot_ids: Sequence[str], bots: Sequence[Bot]) -> None:
+        self.bots = list(bots)
+        self.total = len(bot_ids)
+        self.done = 0
+        self._queue: deque[str] = deque(bot_ids)
+        self._stopped = False
+        self._running = 0
+        self._lock = threading.Lock()
+
+    def start(self, threads: int) -> None:
+        with self._lock:
+            self._running = threads
+
+    def take(self) -> str | None:
+        with self._lock:
+            if self._stopped or not self._queue:
+                return None
+            return self._queue.popleft()
+
+    def count(self) -> None:
+        with self._lock:
+            self.done += 1
+
+    def stop_for_auth(self) -> bool:
+        # True only for the first caller, which owns the one notice.
+        with self._lock:
+            first = not self._stopped
+            self._stopped = True
+            return first
+
+    def leave(self) -> bool:
+        # True for the last thread to leave, which tells the sweep that every check has finished.
+        with self._lock:
+            self._running -= 1
+            return self._running == 0
 
 
 class GbotApp(App[None]):
@@ -75,10 +121,13 @@ class GbotApp(App[None]):
         self._followed: set[tuple[str, str | None]] = set()
         self._service_closing = False
         self._loaded = False
+        self._roster_returned = False
+        self._sweep: _CardSweep | None = None
         self._sweep_finished = False
         self._cards_refreshed: set[str] = set()
         self._queued: list[events.Event] = []
         self._exit_requested_at: float | None = None
+        self.started_at = monotonic()
         self.register_theme(GBOT_THEME)
         self.theme = "gbot"
         if not animate:
@@ -92,7 +141,22 @@ class GbotApp(App[None]):
     def settled(self) -> bool:
         return self.loaded and self._sweep_finished
 
+    @property
+    def load_stage(self) -> str | None:
+        """What home shows while loading: connecting, loading, sweeping, or None once there is nothing to show."""
+        if self._sweep_finished:
+            return None
+        if not self._loaded:
+            return "loading" if self._roster_returned else "connecting"
+        return "sweeping" if self._sweep is not None and self._sweep.total else None
+
+    @property
+    def sweep_progress(self) -> tuple[int, int]:
+        sweep = self._sweep
+        return (sweep.done, sweep.total) if sweep is not None else (0, 0)
+
     async def on_mount(self) -> None:
+        self.started_at = monotonic()
         await self.push_screen(self.home)
         self.load_service()
 
@@ -170,16 +234,28 @@ class GbotApp(App[None]):
         bots: list[Bot] = []
         cards: list[Card] = []
         warnings: list[str] = []
+        roster_loaded = False
         try:
             bots = self.service.roster()
+            roster_loaded = True
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
             self.call_from_thread(self.service_error, error)
+        if not self._service_closing:
+            self.call_from_thread(self._roster_arrived)
         try:
-            cards, warnings = self.service.pending()
+            # The roster just loaded is handed over so the initial check does not list it again.
+            if roster_loaded:
+                cards, warnings = self.service.pending(bots=bots)
+            else:
+                cards, warnings = self.service.pending()
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
             self.call_from_thread(self.service_error, error)
         if not self._service_closing:
             self.call_from_thread(self._install, bots, cards, warnings)
+
+    def _roster_arrived(self) -> None:
+        self._roster_returned = True
+        self.home.refresh_progress()
 
     def _follow_source(self) -> None:
         for bot_id, session_id in self._followed.copy():
@@ -199,7 +275,13 @@ class GbotApp(App[None]):
         for event in self._queued:
             self.on_service_event(ServiceEvent(event))
         self._queued.clear()
-        self.sweep_cards([bot.id for bot in bots if bot.awaiting is None])
+        # The home list must hold this roster before the sweep can follow its display order.
+        self.refresh_home()
+        self._sweep = _CardSweep(
+            self._display_order([bot.id for bot in bots if bot.awaiting is None]),
+            bots,
+        )
+        self.sweep_cards(self._sweep)
         self.refresh_home()
         for warning in warnings:
             self.notify(terminal_safe(warning), markup=False)
@@ -218,29 +300,81 @@ class GbotApp(App[None]):
                     markup=False,
                 )
 
-    @work(thread=True, exit_on_error=False, group="card-sweep")
-    def sweep_cards(self, bot_ids: list[str]) -> None:
+    def _display_order(self, bot_ids: list[str]) -> list[str]:
+        # Bots in the order the home list shows them (pinned first, then by state), then the rest.
+        wanted = set(bot_ids)
+        shown = [
+            bot_id for bot_id in self.home.bot_list.visible_ids if bot_id in wanted
+        ]
+        listed = set(shown)
+        return [*shown, *(bot_id for bot_id in bot_ids if bot_id not in listed)]
+
+    @work(exit_on_error=False, group="card-sweep")
+    async def sweep_cards(self, sweep: _CardSweep) -> None:
+        if sweep.total:
+            loop = asyncio.get_running_loop()
+            finished = asyncio.Event()
+            threads = min(CARD_SWEEP_PARALLEL, sweep.total)
+            sweep.start(threads)
+            # Daemon threads, not Textual thread workers: asyncio.run joins the default executor at exit,
+            # so a check blocked on the network would hold up quitting. This coroutine only waits.
+            for _ in range(threads):
+                threading.Thread(
+                    target=self._run_card_checks,
+                    args=(sweep, loop, finished),
+                    name="gbot-card-check",
+                    daemon=True,
+                ).start()
+            await finished.wait()
+        self._sweep_finished = True
+        self.refresh_home()
+
+    def _run_card_checks(
+        self,
+        sweep: _CardSweep,
+        loop: asyncio.AbstractEventLoop,
+        finished: asyncio.Event,
+    ) -> None:
         try:
-            for bot_id in bot_ids:
+            self._check_bots(sweep)
+        except Exception as error:  # noqa: BLE001 - thread boundary: a UI callback can fail while screens close
+            self.log.error(f"card check thread stopped: {error!r}")
+        finally:
+            try:
+                if sweep.leave():
+                    loop.call_soon_threadsafe(finished.set)
+            except RuntimeError:  # the app loop has already closed
+                pass
+
+    def _check_bots(self, sweep: _CardSweep) -> None:
+        while (bot_id := sweep.take()) is not None:
+            if self._service_closing:
+                break
+            if bot_id in self._cards_refreshed:
+                sweep.count()
+                continue
+            try:
+                cards, warnings = self.service.pending([bot_id], bots=sweep.bots)
+            except Exception as error:  # noqa: BLE001 - service/worker boundary
+                sweep.count()
                 if self._service_closing:
                     break
-                if bot_id in self._cards_refreshed:
-                    continue
-                try:
-                    cards, warnings = self.service.pending([bot_id])
-                    if not self._service_closing:
-                        self.call_from_thread(
-                            self._install_sweep_cards, bot_id, cards, warnings
-                        )
-                except Exception as error:  # noqa: BLE001 - service/worker boundary
-                    if self._service_closing:
-                        break
-                    if isinstance(error, ConnectError) and error.status == 401:
+                if isinstance(error, ConnectError) and error.status == 401:
+                    # One notice for the whole sweep; the other checks in flight end quietly.
+                    if sweep.stop_for_auth():
                         self.call_from_thread(self.service_error, error)
-                        break
+                else:
                     self.call_from_thread(self.bot_error, bot_id, error, notify=False)
-        finally:
-            self._sweep_finished = True
+                continue
+            sweep.count()
+            if self._service_closing:
+                break
+            try:
+                self.call_from_thread(
+                    self._install_sweep_cards, bot_id, cards, warnings
+                )
+            except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
+                self.call_from_thread(self.bot_error, bot_id, error, notify=False)
 
     def _install_sweep_cards(
         self, bot_id: str, cards: list[Card], warnings: list[str]

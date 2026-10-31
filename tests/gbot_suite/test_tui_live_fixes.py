@@ -9,6 +9,7 @@ from gbot.commands import tui
 from gbot.service import events
 from gbot.service.fake import load_fake
 from gbot.service.models import Bot
+from gbot.tui import app as app_module
 from gbot.tui.app import GbotApp, ServiceEvent
 from gbot.tui.model import RowState, build_rows
 from gbot.tui.widgets.botlist import MoreLine
@@ -27,7 +28,7 @@ def sweep_service():
     service.state.rows[0]["awaitingUserResponse"] = None
     calls = []
 
-    def pending(bot_ids=None):
+    def pending(bot_ids=None, *, bots=None):
         ids = bot_ids
         calls.append(ids)
         if ids is None:
@@ -41,16 +42,28 @@ def sweep_service():
 @pytest.mark.parametrize(
     "failure", [None, OSError("offline"), ConnectError(401, "expired")]
 )
-def test_sweep(home_env, failure):
+def test_sweep(home_env, monkeypatch, failure):
     async def exercise():
         service, calls = sweep_service()
         ids = [b.id for b in service.roster() if b.awaiting is None]
         original = service.pending
+        first_check: list[list[str]] = []
+        if isinstance(failure, ConnectError):
+            # One check at a time, so the 401 cut-off is exact; the parallel order is checked below.
+            monkeypatch.setattr(app_module, "CARD_SWEEP_PARALLEL", 1)
 
-        def pending(bot_ids=None):
+        def pending(bot_ids=None, *, bots=None):
             selected = bot_ids
             result = original(selected)
-            if failure and selected == [ids[1]]:
+            # The first check to start fails; the sweep must start no other check.
+            if (
+                isinstance(failure, ConnectError)
+                and selected is not None
+                and not first_check
+            ):
+                first_check.append(selected)
+                raise failure
+            if isinstance(failure, OSError) and selected == [ids[1]]:
                 raise failure
             return result
 
@@ -60,12 +73,16 @@ def test_sweep(home_env, failure):
             await app.workers.wait_for_complete()
             await pilot.pause()
             assert app.settled
-            assert (
-                next(r for r in app.home.rows if r.bot_id == ids[0]).state
-                == RowState.NEEDS_INPUT
-            )
-            expected = ids[:2] if isinstance(failure, ConnectError) else ids
-            assert calls == [None, *[[i] for i in expected]]
+            if isinstance(failure, ConnectError):
+                assert calls == [None, *first_check]
+            else:
+                # Checks run in parallel, so only the set of checks is fixed: each bot once.
+                assert calls[0] is None
+                assert sorted(calls[1:]) == sorted([i] for i in ids)
+                assert (
+                    next(r for r in app.home.rows if r.bot_id == ids[0]).state
+                    == RowState.NEEDS_INPUT
+                )
             if isinstance(failure, OSError):
                 assert app.state.errors[ids[1]] == "offline"
                 assert (
@@ -83,7 +100,7 @@ def test_event_refresh_wins(home_env):
         entered, release = threading.Event(), threading.Event()
         stale = original(["demo-inbox"])
 
-        def pending(bot_ids=None):
+        def pending(bot_ids=None, *, bots=None):
             ids = bot_ids
             if ids == ["demo-inbox"] and not entered.is_set():
                 entered.set()
@@ -116,7 +133,7 @@ def test_screenshot_sweep(home_env, monkeypatch, capsys, slow):
     release = threading.Event()
     close = service.close
 
-    def pending(bot_ids=None):
+    def pending(bot_ids=None, *, bots=None):
         ids = bot_ids
         if slow and ids == ["demo-inbox"]:
             release.wait()

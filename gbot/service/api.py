@@ -78,9 +78,16 @@ class Service(Protocol):
         ...
 
     def pending(
-        self, bot_ids: Sequence[str] | None = None
+        self,
+        bot_ids: Sequence[str] | None = None,
+        *,
+        bots: Sequence[Bot] | None = None,
     ) -> tuple[list[Card], list[str]]:
-        """Cards waiting on the user (all bots when `bot_ids` is None) and per-bot warnings, never printed."""
+        """Cards waiting on the user (all bots when `bot_ids` is None) and per-bot warnings, never printed.
+
+        `bots` is a roster the caller already loaded. When it is given, the rows come from it and the gateway
+        roster is not listed again; `bot_ids` still filters them. Without it, each call lists the roster.
+        """
         ...
 
     def still_pending(self, card: Card) -> bool:

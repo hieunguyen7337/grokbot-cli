@@ -154,12 +154,18 @@ class FakeService:
         return self._page(bot_id, before_seq, limit)
 
     def pending(
-        self, bot_ids: Sequence[str] | None = None
+        self,
+        bot_ids: Sequence[str] | None = None,
+        *,
+        bots: Sequence[Bot] | None = None,
     ) -> tuple[list[Card], list[str]]:
         with self._lock:
+            if bots is None:
+                listed = [(str(row["id"]), str(row["name"])) for row in self.state.rows]
+            else:
+                listed = [(bot.id, bot.name) for bot in bots]
             cards: list[Card] = []
-            for row in self.state.rows:
-                bot_id, name = str(row["id"]), str(row["name"])
+            for bot_id, name in listed:
                 if bot_ids is not None and bot_id not in bot_ids:
                     continue
                 for entry in self.state.transcripts.get(bot_id, []):

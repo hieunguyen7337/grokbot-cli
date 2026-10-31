@@ -304,7 +304,8 @@ class SessionScreen(Screen):
             return
         self._loading_page = True
         self.failed = False
-        self.query_one(Transcript).marker.update("Loading…")
+        # The loading line shows for the first page and for older pages alike.
+        self.query_one(Transcript).marker.update(f"Loading{self.gbot.symbols.ellipsis}")
         self.load_page(
             self.next_before_seq if self.loaded else None, self._page_generation
         )

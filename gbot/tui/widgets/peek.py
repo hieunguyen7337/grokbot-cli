@@ -12,6 +12,7 @@ from textual.widgets import Input, Static
 
 from gbot.output import terminal_safe
 from gbot.service.models import Bot, Card, TranscriptPage
+from gbot.tui.glyphs import glyphs
 from gbot.tui.widgets.prompt import CardPrompt
 from gbot.tui.widgets.transcript import entry_widget
 
@@ -96,7 +97,16 @@ class Peek(Vertical):
                 holder.mount(_PeekPrompt(card, ascii_only=self.gbot.ascii_only))
         if changed:
             self.reply.value = ""
-            self.query_one("#peek-entries", VerticalScroll).remove_children()
+            holder = self.query_one("#peek-entries", VerticalScroll)
+            holder.remove_children()
+            # The first page for a bot is still loading until it arrives.
+            holder.mount(
+                Static(
+                    f"Loading{glyphs(self.gbot.ascii_only).ellipsis}",
+                    classes="peek-loading",
+                    markup=False,
+                )
+            )
             self._activity = bot.last_activity_at
             self.reload_entries()
         elif self._activity != bot.last_activity_at:
@@ -127,7 +137,13 @@ class Peek(Vertical):
             self.app.call_from_thread(self._install_entries, bot_id, generation, page)
         except Exception as error:  # noqa: BLE001 - service boundary
             if generation == self._generation:
-                self.app.call_from_thread(self.gbot.service_error, error)
+                self.app.call_from_thread(self._load_failed, error)
+
+    def _load_failed(self, error: Exception) -> None:
+        # A failed first page ends the loading line; the error notice stays as before.
+        for line in self.query(".peek-loading"):
+            line.remove()
+        self.gbot.service_error(error)
 
     async def _install_entries(
         self, bot_id: str, generation: int, page: TranscriptPage

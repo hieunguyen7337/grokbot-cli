@@ -111,9 +111,13 @@ class GbotService:
         )
 
     def pending(
-        self, bot_ids: Sequence[str] | None = None
+        self,
+        bot_ids: Sequence[str] | None = None,
+        *,
+        bots: Sequence[Bot] | None = None,
     ) -> tuple[list[Card], list[str]]:
-        bots = conversation.roster(self._background_transport)
+        if bots is None:
+            bots = conversation.roster(self._background_transport)
         rows = [
             dict(bot.raw)
             for bot in bots
