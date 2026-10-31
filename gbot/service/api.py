@@ -89,9 +89,9 @@ class Service(Protocol):
         `bots` is a roster the caller already loaded. When it is given, the rows come from it and the gateway
         roster is not listed again; `bot_ids` still filters them. Without it, each call lists the roster.
 
-        `recent_pages` caps the transcript pages read per session for a bot whose roster row has no waiting
-        flag; a bot the roster flags as waiting is always read in full. A card older than the cap on a
-        non-waiting bot is not returned. None (the default) reads every bot in full.
+        `recent_pages` caps the transcript pages read for a bot the roster does not show as waiting (see
+        `cards.waiting`); a waiting bot is always read in full. A card older than the cap on a non-waiting
+        bot is not returned. None (the default) reads every bot in full.
         """
         ...
 
