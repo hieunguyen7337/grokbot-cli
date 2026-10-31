@@ -15,6 +15,7 @@ conflict with this section, this section wins.
   `.venv/Scripts/basedpyright --level error`.
 - Branches: `main` takes reviewed work. The main cloud session (started by `lane main`) may merge its own reviewed
   branch into `main` and push it, with a merge commit, after every gate passes on the merge result; see CLAUDE.md.
+  It runs until the owner retires it: a compaction does not end it.
   `gbot-windows` and `gbot-tui` are integration branches that only the owner's local session merges into. Nobody
   force-pushes, and nobody pushes a tag, a release branch or a pull request.
 
