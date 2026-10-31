@@ -2,6 +2,7 @@ import asyncio
 import json
 from threading import Event
 
+from textual import events
 from textual.widgets import Input, Static
 from tui_snapshots import assert_snapshot
 
@@ -112,6 +113,12 @@ def test_slash_key_focuses_the_filter(tmp_path, monkeypatch):
             await pilot.pause()
             assert not panel.query_one("#panel-filter", Input).has_focus
             await pilot.press("slash")
+            await pilot.pause()
+            assert panel.query_one("#panel-filter", Input).has_focus
+            # Some layouts report another key name for the "/" character.
+            app.set_focus(None)
+            await pilot.pause()
+            panel.post_message(events.Key("shift+7", "/"))
             await pilot.pause()
             assert panel.query_one("#panel-filter", Input).has_focus
 
