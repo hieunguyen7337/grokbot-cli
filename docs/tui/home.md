@@ -9,21 +9,23 @@ keep working while it shows. It goes away when loading has settled.
 | Stage | Line | When |
 |---|---|---|
 | Connecting | `Connecting to Grok Bot... 12 s` | From start until the bot list arrives. The count goes up once a second. After 5 seconds a second line says starting your cloud computer can take about 30 s. |
-| Loading | `Loading bots...` | After the bot list arrives, while the first card check runs. |
+| Loading | `Loading bots...` | After the bot list arrives, until home lists it. |
 | Checking | `Checking for cards 5/16` with a bar | While the card sweep runs. The count is the bots checked so far out of all bots in the sweep. |
 
 The spinner holds still when animations are off and in `--ascii` mode.
-In `--ascii` mode every symbol is plain ASCII, so the dots are `...`.
+In `--ascii` mode every symbol is plain ASCII: the dots are `...` and the bar
+uses `#` and `-`.
 
 ## Card sweep
 
-After the bot list arrives, gbot checks each idle bot for cards that need an
-answer. Bots that already need input are not checked again.
+Home lists the bots as soon as the bot list arrives. gbot then checks every
+bot for cards that need an answer. Bots that already need input are checked
+first, so their cards appear soonest.
 
 - Up to 4 checks run at once. The constant is `CARD_SWEEP_PARALLEL` in
   `gbot/tui/app.py`, and its default is 4.
-- Bots are checked in the order the list shows them, so the bots at the top
-  of the list get their cards first.
+- The other bots are checked in the order the list shows them, so the bots
+  at the top of the list get their cards first.
 - Each bot's cards appear as soon as its check finishes.
 - The sweep reuses the bot list that was already loaded. It does not list the
   roster again for each bot.

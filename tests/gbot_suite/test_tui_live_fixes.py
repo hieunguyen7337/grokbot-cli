@@ -46,6 +46,7 @@ def test_sweep(home_env, monkeypatch, failure):
     async def exercise():
         service, calls = sweep_service()
         ids = [b.id for b in service.roster() if b.awaiting is None]
+        every = [b.id for b in service.roster()]
         original = service.pending
         first_check: list[list[str]] = []
         if isinstance(failure, ConnectError):
@@ -74,11 +75,12 @@ def test_sweep(home_env, monkeypatch, failure):
             await pilot.pause()
             assert app.settled
             if isinstance(failure, ConnectError):
-                assert calls == [None, *first_check]
+                assert calls == first_check
             else:
-                # Checks run in parallel, so only the set of checks is fixed: each bot once.
-                assert calls[0] is None
-                assert sorted(calls[1:]) == sorted([i] for i in ids)
+                # Checks run in parallel, so only the set of checks is fixed: each bot once,
+                # waiting bots included, and never one call for every bot.
+                assert None not in calls
+                assert sorted(calls) == sorted([i] for i in every)
                 assert (
                     next(r for r in app.home.rows if r.bot_id == ids[0]).state
                     == RowState.NEEDS_INPUT

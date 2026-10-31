@@ -232,26 +232,16 @@ class GbotApp(App[None]):
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
             self.call_from_thread(self.service_error, error)
         bots: list[Bot] = []
-        cards: list[Card] = []
-        warnings: list[str] = []
-        roster_loaded = False
         try:
             bots = self.service.roster()
-            roster_loaded = True
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
             self.call_from_thread(self.service_error, error)
+        else:
+            if not self._service_closing:
+                self.call_from_thread(self._roster_arrived)
+        # Home lists the roster at once; every bot's cards, waiting bots first, come from the parallel sweep.
         if not self._service_closing:
-            self.call_from_thread(self._roster_arrived)
-        try:
-            # The roster just loaded is handed over so the initial check does not list it again.
-            if roster_loaded:
-                cards, warnings = self.service.pending(bots=bots)
-            else:
-                cards, warnings = self.service.pending()
-        except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
-            self.call_from_thread(self.service_error, error)
-        if not self._service_closing:
-            self.call_from_thread(self._install, bots, cards, warnings)
+            self.call_from_thread(self._install, bots)
 
     def _roster_arrived(self) -> None:
         self._roster_returned = True
@@ -261,12 +251,10 @@ class GbotApp(App[None]):
         for bot_id, session_id in self._followed.copy():
             self.follow(bot_id, session_id)
 
-    def _install(self, bots: list[Bot], cards: list[Card], warnings: list[str]) -> None:
+    def _install(self, bots: list[Bot]) -> None:
         self._cards_refreshed.clear()
         self.state.apply(events.RosterReplaced(tuple(bots)))
-        self.state.cards = {
-            bot.id: [c for c in cards if c.bot_id == bot.id] for bot in bots
-        }
+        self.state.cards = {bot.id: [] for bot in bots}
         self.home.initialize_preferences(bots)
         self.notify_roster()
         self._loaded = True
@@ -277,14 +265,17 @@ class GbotApp(App[None]):
         self._queued.clear()
         # The home list must hold this roster before the sweep can follow its display order.
         self.refresh_home()
+        shown = self._display_order([bot.id for bot in bots])
+        waiting = {bot.id for bot in bots if bot.awaiting is not None}
         self._sweep = _CardSweep(
-            self._display_order([bot.id for bot in bots if bot.awaiting is None]),
+            [
+                *(bot_id for bot_id in shown if bot_id in waiting),
+                *(bot_id for bot_id in shown if bot_id not in waiting),
+            ],
             bots,
         )
         self.sweep_cards(self._sweep)
         self.refresh_home()
-        for warning in warnings:
-            self.notify(terminal_safe(warning), markup=False)
         if self.initial_bot:
             matches = [
                 bot

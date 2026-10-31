@@ -114,32 +114,23 @@ def test_connecting_line_until_roster(home_env, ascii_only):
     asyncio.run(exercise())
 
 
-def test_loading_bots_line_while_initial_checks_run(home_env):
+def test_loading_bots_line_until_home_lists_the_roster(home_env, monkeypatch):
     async def exercise():
-        service = load_fake()
-        original = service.pending
-        release = threading.Event()
+        seen: list[str] = []
+        install = GbotApp._install
 
-        def pending(bot_ids=None, *, bots=None):
-            if bot_ids is None:
-                release.wait(5)
-            return original(bot_ids) if bots is None else original(bot_ids, bots=bots)
+        def recording(self, bots):
+            # What home shows at the moment the roster is handed to the list.
+            seen.append(home_progress(self))
+            install(self, bots)
 
-        service.pending = pending
-        app = GbotApp(service, animate=False)
-        try:
-            async with app.run_test() as pilot:
-                await wait_until(
-                    pilot,
-                    lambda: "Loading bots..." in home_progress(app),
-                    "the loading line",
-                )
-                release.set()
-                await wait_until(pilot, lambda: app.settled, "the load to settle")
-                await pilot.pause()
-                assert home_progress(app) == ""
-        finally:
-            release.set()
+        monkeypatch.setattr(GbotApp, "_install", recording)
+        app = GbotApp(load_fake(), animate=False)
+        async with app.run_test() as pilot:
+            await wait_until(pilot, lambda: app.settled, "the load to settle")
+            await pilot.pause()
+            assert home_progress(app) == ""
+        assert seen and "Loading bots..." in seen[0]
 
     asyncio.run(exercise())
 

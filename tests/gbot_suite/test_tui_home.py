@@ -231,16 +231,19 @@ def test_service_errors_are_not_fatal(home_env, monkeypatch):
             app, "notify", lambda message, **kwargs: notices.append(message)
         )
         async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
             await pilot.pause()
             assert len(app.home.rows) == 8
-            assert "Offline for this test" in notices
+            # A failed card check is a badge on each bot, not a notice.
+            assert set(app.state.errors.values()) == {"Offline for this test"}
+            assert "Offline for this test" not in notices
             monkeypatch.setattr(service, "send", fail)
             field = app.home.query_one(Input)
             field.focus()
             field.value = "try sending"
             await pilot.press("enter")
             await app.workers.wait_for_complete()
-            assert notices.count("Offline for this test") == 2
+            assert notices.count("Offline for this test") == 1
             assert app.is_running
             service.reply("demo-research", "Still receiving events")
             await pilot.pause()

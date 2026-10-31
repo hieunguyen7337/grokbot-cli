@@ -318,3 +318,81 @@ def test_pending_with_bots_skips_the_listing(monkeypatch):
     service.pending(bots=[waiting, idle])
     assert discover.call_args.args[1] == [dict(waiting.raw)]
     roster.assert_not_called()
+
+
+def test_roster_shows_before_waiting_bots_are_checked(home_env, monkeypatch):
+    # One check at a time, so the call order is the sweep's order.
+    monkeypatch.setattr(app_module, "CARD_SWEEP_PARALLEL", 1)
+
+    async def exercise():
+        service = sweep_service(6)
+        service.state.rows[5]["awaitingUserResponse"] = {"reason": "approval"}
+        original = service.pending
+        entered, release = threading.Event(), threading.Event()
+        requested: list[object] = []
+
+        def pending(bot_ids=None, *, bots=None):
+            requested.append(None if bot_ids is None else list(bot_ids))
+            if bot_ids is None or "idle-05" in bot_ids:
+                entered.set()
+                release.wait(5)
+            return call_original(original, bot_ids, bots)
+
+        service.pending = pending
+        app = GbotApp(service, animate=False)
+        try:
+            async with app.run_test() as pilot:
+                await wait_until(pilot, entered.is_set, "the waiting bot's check")
+                # Home lists every bot while the waiting bot's cards are still being read.
+                await wait_until(pilot, lambda: app.loaded, "the roster on home")
+                assert {row.bot_id for row in app.home.rows} >= {
+                    f"idle-{i:02}" for i in range(6)
+                }
+                assert "Checking for cards" in home_progress(app)
+                release.set()
+                await wait_until(pilot, lambda: app.settled, "the sweep to settle")
+        finally:
+            release.set()
+        # The waiting bot is checked by the sweep, first, and nothing asks for every bot at once.
+        assert None not in requested
+        assert requested[0] == ["idle-05"]
+        assert sorted(r[0] for r in requested if isinstance(r, list)) == [
+            f"idle-{i:02}" for i in range(6)
+        ]
+
+    asyncio.run(exercise())
+
+
+def test_failed_roster_gives_one_notice_and_no_card_check(home_env, monkeypatch):
+    async def exercise():
+        service = sweep_service(4)
+        notices: list[Exception] = []
+        stages: list[str | None] = []
+        requested: list[object] = []
+
+        def roster():
+            raise ConnectError(401, "expired")
+
+        def pending(bot_ids=None, *, bots=None):
+            requested.append(bot_ids)
+            # Without a roster the client would list it again and fail the same way.
+            raise ConnectError(401, "expired")
+
+        def record_error(self, error):
+            notices.append(error)
+
+        monkeypatch.setattr(GbotApp, "service_error", record_error)
+        service.roster = roster
+        service.pending = pending
+        app = GbotApp(service, animate=False)
+        async with app.run_test() as pilot:
+            await wait_until(
+                pilot,
+                lambda: stages.append(app.load_stage) is None and app.settled,
+                "the app to settle",
+            )
+        assert len(notices) == 1
+        assert requested == []
+        assert "loading" not in stages
+
+    asyncio.run(exercise())
