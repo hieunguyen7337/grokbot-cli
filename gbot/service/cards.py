@@ -243,12 +243,17 @@ def check_reply(reply: object, method: str, *, secret: bool = False) -> None:
 
 
 def tail(
-    transport: Transport, bot_id: str, session_id: str | None
+    transport: Transport,
+    bot_id: str,
+    session_id: str | None,
+    *,
+    max_pages: int | None = None,
 ) -> list[dict[str, object]]:
     args: dict[str, object] = {"id": bot_id, "limit": 100}
     if session_id is not None:
         args["sessionId"] = session_id
     entries: dict[str, dict[str, object]] = {}
+    pages = 0
     while True:
         page = record(transport.command("getAgentTranscriptTail", args.copy()))
         rows = page.get("entries")
@@ -258,12 +263,15 @@ def tail(
             entry = record(row)
             if isinstance(entry.get("id"), str):
                 entries.setdefault(str(entry["id"]), entry)
+        pages += 1
         cursor = page.get("nextBeforeSeq")
         if not isinstance(cursor, (int, float)):
             break
         previous = args.get("beforeSeq")
         if isinstance(previous, (int, float)) and cursor >= previous:
             raise ValueError("Transcript pagination did not advance.")
+        if max_pages is not None and pages >= max_pages:
+            break
         args["beforeSeq"] = cursor
     return list(entries.values())
 
@@ -275,6 +283,7 @@ def discover(
     selected: str | None = None,
     all_bots: bool = False,
     awaiting_only: bool = True,
+    recent_pages: int | None = None,
 ) -> tuple[list[Card], list[str]]:
     warnings: list[str] = []
     found: dict[tuple[str, str], Card] = {}
@@ -289,9 +298,11 @@ def discover(
         awaiting = bot.get("awaitingSessionIds")
         if isinstance(awaiting, list):
             sessions.extend(dict.fromkeys(s for s in awaiting if isinstance(s, str)))
+        # A bot the roster flags as waiting is always read in full; the cap only spares the others.
+        cap = None if bot.get("awaitingUserResponse") else recent_pages
         try:
             scanned = [
-                (session_id, tail(transport, bot_id, session_id))
+                (session_id, tail(transport, bot_id, session_id, max_pages=cap))
                 for session_id in sessions
             ]
         except Exception as exc:

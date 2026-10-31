@@ -158,17 +158,24 @@ class FakeService:
         bot_ids: Sequence[str] | None = None,
         *,
         bots: Sequence[Bot] | None = None,
+        recent_pages: int | None = None,
     ) -> tuple[list[Card], list[str]]:
         with self._lock:
             if bots is None:
-                listed = [(str(row["id"]), str(row["name"])) for row in self.state.rows]
+                listed = [
+                    (str(row["id"]), str(row["name"]), row) for row in self.state.rows
+                ]
             else:
-                listed = [(bot.id, bot.name) for bot in bots]
+                listed = [(bot.id, bot.name, bot.raw) for bot in bots]
             cards: list[Card] = []
-            for bot_id, name in listed:
+            for bot_id, name, row in listed:
                 if bot_ids is not None and bot_id not in bot_ids:
                     continue
-                for entry in self.state.transcripts.get(bot_id, []):
+                entries = self.state.transcripts.get(bot_id, [])
+                # Transcripts run oldest to newest, as `_page` reads them; a waiting bot is read in full.
+                if recent_pages is not None and not row.get("awaitingUserResponse"):
+                    entries = entries[-recent_pages * 100 :] if recent_pages > 0 else []
+                for entry in entries:
                     card = classify(copy.deepcopy(entry), bot_id, name)
                     if card is not None:
                         cards.append(card)

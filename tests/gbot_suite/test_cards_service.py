@@ -358,6 +358,103 @@ def test_paging():
     assert len(transport.calls) == 5
 
 
+WIDGET = {
+    "id": "entry",
+    "kind": "send-message",
+    "message": {"type": "widget", "widget": {}},
+}
+
+
+def two_pages(args):
+    # The newest page has no card and points at an older page that holds one.
+    if "beforeSeq" in args:
+        return {"entries": [WIDGET]}
+    return {"entries": [], "nextBeforeSeq": 10}
+
+
+def reads(transport):
+    return [(args["id"], args.get("sessionId")) for _, _, args in transport.calls]
+
+
+def test_tail_max_pages():
+    transport = FakeTransport(commands={"getAgentTranscriptTail": two_pages})
+    assert cards.tail(transport, "bot", "session", max_pages=1) == []
+    assert len(transport.calls) == 1
+    assert "beforeSeq" not in transport.calls[0][2]
+    transport.calls.clear()
+    assert cards.tail(transport, "bot", "session", max_pages=2) == [WIDGET]
+    assert len(transport.calls) == 2
+    transport.calls.clear()
+    assert cards.tail(transport, "bot", "session") == [WIDGET]
+    assert len(transport.calls) == 2
+
+
+def test_tail_max_pages_still_checks_advance():
+    transport = FakeTransport(
+        commands={
+            "getAgentTranscriptTail": lambda args: {
+                "entries": [],
+                "nextBeforeSeq": 10,
+            }
+        }
+    )
+    with pytest.raises(ValueError, match="did not advance"):
+        cards.tail(transport, "bot", None, max_pages=3)
+    assert len(transport.calls) == 2
+
+
+def test_discover_recent_pages():
+    rows: list[dict[str, object]] = [
+        {"id": "idle", "name": "Idle", "awaitingSessionIds": ["s1"]},
+        {"id": "falsy", "name": "Falsy", "awaitingUserResponse": False},
+        {
+            "id": "wait",
+            "name": "Wait",
+            "awaitingUserResponse": {"reason": "approval"},
+            "awaitingSessionIds": ["s1"],
+        },
+    ]
+    transport = FakeTransport(commands={"getAgentTranscriptTail": two_pages})
+    found, warnings = cards.discover(transport, rows, all_bots=True, recent_pages=1)
+    assert warnings == []
+    # A non-waiting bot is read once per session; a waiting bot is read to the end.
+    assert reads(transport) == [
+        ("idle", None),
+        ("idle", "s1"),
+        ("falsy", None),
+        ("wait", None),
+        ("wait", None),
+        ("wait", "s1"),
+        ("wait", "s1"),
+    ]
+    assert [item.bot_id for item in found] == ["wait"]
+    transport.calls.clear()
+    found, _ = cards.discover(transport, rows, all_bots=True)
+    assert len(transport.calls) == 2 * (2 + 1 + 2)
+    assert {item.bot_id for item in found} == {"idle", "falsy", "wait"}
+
+
+def test_discover_recent_pages_card_on_second_page():
+    rows: list[dict[str, object]] = [{"id": "bot", "name": "Bot"}]
+    transport = FakeTransport(commands={"getAgentTranscriptTail": two_pages})
+    assert cards.discover(transport, rows, all_bots=True, recent_pages=1) == ([], [])
+    assert len(transport.calls) == 1
+    found, _ = cards.discover(transport, rows, all_bots=True, recent_pages=None)
+    assert found == [classify(WIDGET, "bot", "Bot")]
+    found, _ = cards.discover(transport, rows, selected="bot")
+    assert found == [classify(WIDGET, "bot", "Bot")]
+
+
+def test_discover_recent_pages_keeps_auth_failure():
+    transport = FakeTransport(
+        commands={"getAgentTranscriptTail": ConnectError(401, "expired")}
+    )
+    with pytest.raises(ConnectError):
+        cards.discover(
+            transport, [{"id": "bot", "name": "Bot"}], all_bots=True, recent_pages=1
+        )
+
+
 def test_fake_validates():
     service = FakeService()
     item = card("widget")

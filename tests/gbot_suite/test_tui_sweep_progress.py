@@ -31,9 +31,11 @@ def sweep_service(count: int = 12) -> FakeService:
     return service
 
 
-def call_original(original, bot_ids, bots):
+def call_original(original, bot_ids, bots, recent_pages=None):
     # The real client takes the roster as `bots`; the fake only sees it when the sweep passes it.
-    return original(bot_ids) if bots is None else original(bot_ids, bots=bots)
+    if bots is None:
+        return original(bot_ids)
+    return original(bot_ids, bots=bots, recent_pages=recent_pages)
 
 
 def home_progress(app: GbotApp) -> str:
@@ -56,9 +58,9 @@ def test_card_checks_run_in_parallel(home_env):
         lock = threading.Lock()
         state = {"checks": 0, "in_flight": 0, "peak": 0}
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bot_ids is None:
-                return call_original(original, bot_ids, bots)
+                return call_original(original, bot_ids, bots, recent_pages)
             with lock:
                 state["checks"] += 1
                 state["in_flight"] += 1
@@ -68,7 +70,7 @@ def test_card_checks_run_in_parallel(home_env):
                 # The first four checks must all be in flight at once to pass the barrier.
                 if first_four:
                     barrier.wait()
-                return call_original(original, bot_ids, bots)
+                return call_original(original, bot_ids, bots, recent_pages)
             finally:
                 with lock:
                     state["in_flight"] -= 1
@@ -97,11 +99,11 @@ def test_sweep_never_lists_the_roster(home_env):
             calls["roster"] += 1
             return roster()
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bots is None:
                 # The gateway client re-runs listAgents on every call that is not handed the roster.
                 counting_roster()
-            return call_original(original, bot_ids, bots)
+            return call_original(original, bot_ids, bots, recent_pages)
 
         service.roster = counting_roster
         service.pending = pending
@@ -122,10 +124,10 @@ def test_sweep_progress_shows_then_goes(home_env):
         original = service.pending
         release = threading.Event()
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bot_ids is not None:
                 release.wait(5)
-            return call_original(original, bot_ids, bots)
+            return call_original(original, bot_ids, bots, recent_pages)
 
         service.pending = pending
         app = GbotApp(service, animate=False)
@@ -161,11 +163,11 @@ def test_exit_is_prompt_while_checks_are_blocked(home_env):
         entered = threading.Event()
         release = threading.Event()
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bot_ids is not None:
                 entered.set()
                 release.wait(10)
-            return call_original(original, bot_ids, bots)
+            return call_original(original, bot_ids, bots, recent_pages)
 
         service.pending = pending
         app = GbotApp(service, animate=False)
@@ -190,12 +192,12 @@ def test_process_exit_does_not_wait_for_blocked_checks(home_env):
         original = service.pending
         entered = threading.Event()
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bot_ids is not None:
                 entered.set()
                 # Held for a bounded 3 s, so the check outlives the app and a bad exit shows up as a slow one.
                 hold.wait(3)
-            return call_original(original, bot_ids, bots)
+            return call_original(original, bot_ids, bots, recent_pages)
 
         service.pending = pending
         app = GbotApp(service, animate=False)
@@ -222,16 +224,16 @@ def test_auth_failure_stops_new_checks_with_one_notice(home_env, monkeypatch):
         requested: list[str] = []
         notices: list[Exception] = []
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bot_ids is None:
-                return call_original(original, bot_ids, bots)
+                return call_original(original, bot_ids, bots, recent_pages)
             with lock:
                 requested.append(bot_ids[0])
             if bot_ids == ["idle-00"]:
                 raise ConnectError(401, "expired")
             # Other checks are already in flight when the first 401 lands.
             gate.wait(5)
-            return call_original(original, bot_ids, bots)
+            return call_original(original, bot_ids, bots, recent_pages)
 
         def record_error(self, error):
             notices.append(error)
@@ -265,10 +267,10 @@ def test_sweep_checks_in_display_order(home_env, monkeypatch):
         original = service.pending
         checked: list[str] = []
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             if bot_ids is not None:
                 checked.extend(bot_ids)
-            return call_original(original, bot_ids, bots)
+            return call_original(original, bot_ids, bots, recent_pages)
 
         service.pending = pending
         monkeypatch.setattr(app_module, "CARD_SWEEP_PARALLEL", 1)
@@ -294,6 +296,78 @@ def test_fake_pending_honours_bots():
     assert scoped == service.pending(["demo-inbox"])[0]
     everything, _ = service.pending(bots=[bot])
     assert everything == scoped
+
+
+def test_sweep_passes_recent_pages_and_refresh_does_not(home_env):
+    async def exercise():
+        service = sweep_service(5)
+        original = service.pending
+        seen: list[tuple[list[str] | None, int | None]] = []
+
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
+            seen.append((bot_ids, recent_pages))
+            return call_original(original, bot_ids, bots, recent_pages)
+
+        service.pending = pending
+        app = GbotApp(service, animate=False)
+        async with app.run_test() as pilot:
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            assert app.settled
+            swept = [item for item in seen if item[0] is not None]
+            assert len(swept) == 5
+            assert {recent for _, recent in swept} == {app_module.HOME_RECENT_PAGES}
+            seen.clear()
+            app.refresh_cards("idle-00")
+            await app.workers.wait_for_complete()
+            assert seen == [(["idle-00"], None)]
+
+    asyncio.run(exercise())
+
+
+def test_fake_pending_honours_recent_pages():
+    service = sweep_service(2)
+    entries = [
+        {
+            "id": f"e{i}",
+            "seq": i,
+            "kind": "send-message",
+            "message": {"type": "widget", "widget": {}},
+        }
+        for i in range(1, 151)
+    ]
+    for bot_id in ("idle-00", "idle-01"):
+        service.state.transcripts[bot_id] = [dict(e) for e in entries]
+    service.state.rows[1]["awaitingUserResponse"] = {"reason": "approval"}
+    full, _ = service.pending()
+    assert len(full) == 300
+    capped, _ = service.pending(recent_pages=1)
+    # The idle bot keeps its newest 100 entries; the waiting bot is read in full.
+    assert [c.bot_id for c in capped].count("idle-00") == 100
+    assert [c.bot_id for c in capped].count("idle-01") == 150
+    assert {c.entry_id for c in capped if c.bot_id == "idle-00"} == {
+        f"e{i}" for i in range(51, 151)
+    }
+
+
+def test_client_pending_passes_recent_pages(monkeypatch):
+    def mint():
+        return {
+            "gatewayUrl": "https://offline.invalid",
+            "gatewayToken": "fake",
+            "networkToken": "fake",
+            "podId": "p",
+        }
+
+    service = client.GbotService(CredentialBroker(mint))
+    bot = Bot.from_row({"id": "a", "name": "Alpha"})
+    assert bot is not None
+    discover = Mock(return_value=([], []))
+    monkeypatch.setattr(cards, "discover", discover)
+    service.pending(["a"], bots=[bot], recent_pages=1)
+    assert discover.call_args.kwargs["recent_pages"] == 1
+    service.pending(["a"], bots=[bot])
+    assert discover.call_args.kwargs["recent_pages"] is None
 
 
 def test_pending_with_bots_skips_the_listing(monkeypatch):
@@ -331,12 +405,12 @@ def test_roster_shows_before_waiting_bots_are_checked(home_env, monkeypatch):
         entered, release = threading.Event(), threading.Event()
         requested: list[object] = []
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             requested.append(None if bot_ids is None else list(bot_ids))
             if bot_ids is None or "idle-05" in bot_ids:
                 entered.set()
                 release.wait(5)
-            return call_original(original, bot_ids, bots)
+            return call_original(original, bot_ids, bots, recent_pages)
 
         service.pending = pending
         app = GbotApp(service, animate=False)
@@ -373,7 +447,7 @@ def test_failed_roster_gives_one_notice_and_no_card_check(home_env, monkeypatch)
         def roster():
             raise ConnectError(401, "expired")
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             requested.append(bot_ids)
             # Without a roster the client would list it again and fail the same way.
             raise ConnectError(401, "expired")

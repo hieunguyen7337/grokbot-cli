@@ -28,7 +28,7 @@ def sweep_service():
     service.state.rows[0]["awaitingUserResponse"] = None
     calls = []
 
-    def pending(bot_ids=None, *, bots=None):
+    def pending(bot_ids=None, *, bots=None, recent_pages=None):
         ids = bot_ids
         calls.append(ids)
         if ids is None:
@@ -53,7 +53,7 @@ def test_sweep(home_env, monkeypatch, failure):
             # One check at a time, so the 401 cut-off is exact; the parallel order is checked below.
             monkeypatch.setattr(app_module, "CARD_SWEEP_PARALLEL", 1)
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             selected = bot_ids
             result = original(selected)
             # The first check to start fails; the sweep must start no other check.
@@ -102,7 +102,7 @@ def test_event_refresh_wins(home_env):
         entered, release = threading.Event(), threading.Event()
         stale = original(["demo-inbox"])
 
-        def pending(bot_ids=None, *, bots=None):
+        def pending(bot_ids=None, *, bots=None, recent_pages=None):
             ids = bot_ids
             if ids == ["demo-inbox"] and not entered.is_set():
                 entered.set()
@@ -135,7 +135,7 @@ def test_screenshot_sweep(home_env, monkeypatch, capsys, slow):
     release = threading.Event()
     close = service.close
 
-    def pending(bot_ids=None, *, bots=None):
+    def pending(bot_ids=None, *, bots=None, recent_pages=None):
         ids = bot_ids
         if slow and ids == ["demo-inbox"]:
             release.wait()
