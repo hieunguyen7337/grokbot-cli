@@ -11,8 +11,15 @@ def working(bot: Bot | None) -> bool:
     return bool(bot and (bot.running or bot.running_turn or bot.composing))
 
 
+def _refuse_read_only(ctx: SlashContext) -> bool:
+    if ctx.app.read_only:
+        ctx.app.notify("Read-only mode", markup=False)
+        return True
+    return False
+
+
 def stop(ctx: SlashContext, args: str = "") -> None:
-    if ctx.bot_id is None:
+    if ctx.bot_id is None or _refuse_read_only(ctx):
         return
     bot = ctx.app.state.bots[ctx.bot_id]
     from gbot.tui.screens.home import HomeScreen
@@ -42,7 +49,7 @@ def stop(ctx: SlashContext, args: str = "") -> None:
 
 
 def fresh(ctx: SlashContext, args: str) -> None:
-    if ctx.bot_id is None:
+    if ctx.bot_id is None or _refuse_read_only(ctx):
         return
     bot = ctx.app.state.bots[ctx.bot_id]
     name = terminal_safe(bot.name)
@@ -83,6 +90,8 @@ def rollback(ctx: SlashContext, args: str) -> None:
     from gbot.tui.screens.session import SessionScreen
 
     if ctx.bot_id is None or not isinstance(ctx.screen, SessionScreen):
+        return
+    if _refuse_read_only(ctx):
         return
     bot = ctx.app.state.bots[ctx.bot_id]
     name = terminal_safe(bot.name)

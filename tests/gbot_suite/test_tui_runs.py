@@ -70,6 +70,41 @@ def test_session_run_controls(tmp_path, monkeypatch):
     asyncio.run(exercise())
 
 
+def test_run_control_refuses_in_read_only_mode(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, read_only=True, animate=False)
+        notices = []
+        async with app.run_test(size=(100, 30)) as pilot:
+            await pilot.pause()
+            await app.workers.wait_for_complete()
+            monkeypatch.setattr(
+                app, "notify", lambda message, **kwargs: notices.append(message)
+            )
+            bot = replace(app.state.bots["demo-helper"], running=True)
+            app._receive_event(events.BotChanged(bot))
+            await pilot.pause()
+            screen = SessionScreen(bot.id)
+            await app.push_screen(screen)
+            await pilot.pause()
+            await app.workers.wait_for_complete()
+            before = len(service.transport.calls)
+            ctx = SlashContext(app, screen, bot.id, None)
+            for command in ("/fresh", "/rollback", "/interrupt"):
+                notices.clear()
+                run(ctx, command)
+                await pilot.pause()
+                await app.workers.wait_for_complete()
+                assert notices == ["Read-only mode"], command
+                assert app.screen is screen, command
+            assert len(service.transport.calls) == before
+            assert not actions(service.transport)
+
+    asyncio.run(exercise())
+
+
 def test_home_interrupt_sessions_and_idle(tmp_path, monkeypatch):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
 

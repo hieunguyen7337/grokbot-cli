@@ -231,7 +231,7 @@ class ListPanel(_Panel):
         }:
             return
         rows = self.visible_rows
-        if event.key == "/" and self.filterable:
+        if (event.key == "slash" or event.character == "/") and self.filterable:
             self.query_one("#panel-filter", Input).focus()
         elif event.key in {"up", "down"} and rows:
             self.index = (self.index + (1 if event.key == "down" else -1)) % len(rows)

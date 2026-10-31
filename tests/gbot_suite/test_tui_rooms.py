@@ -5,6 +5,7 @@ from fake_calls import actions
 from textual.widgets import Input, Static, Switch
 from tui_snapshots import assert_snapshot
 
+from gbot.service import rooms
 from gbot.service.fake import load_fake
 from gbot.tui.app import GbotApp
 from gbot.tui.panels import FormPanel, ListPanel
@@ -71,6 +72,61 @@ def test_newgroup(tmp_path, monkeypatch):
             assert isinstance(app.screen, SessionScreen)
             assert app.screen.bot_id == "new"
             assert "new" in app.state.bots
+
+    asyncio.run(exercise())
+
+
+def test_newgroup_retry_reuses_the_nonce(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    nonces = []
+    original = rooms.create_group
+
+    def recording(*args, **kwargs):
+        nonces.append(kwargs["nonce"])
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(rooms, "create_group", recording)
+
+    async def submit(app, pilot, form):
+        form.action_submit()
+        await pilot.pause()
+        await pilot.click("#confirm")
+        await settle(app, pilot)
+
+    async def open_form(app, pilot):
+        run(SlashContext(app, app.home, None, None), "/newgroup")
+        await settle(app, pilot)
+        form = app.screen
+        assert isinstance(form, FormPanel)
+        form.query_one("#form-0", Input).value = "Team"
+        switches = list(form.query(Switch))
+        switches[0].value = switches[1].value = True
+        return form
+
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await settle(app, pilot)
+            service.transport.commands["createGroup"] = OSError("Offline")
+            form = await open_form(app, pilot)
+            await submit(app, pilot, form)
+            assert app.screen is form
+            service.transport.commands["createGroup"] = OSError("Offline again")
+            await submit(app, pilot, form)
+            assert app.screen is form
+            assert len(nonces) == 2 and nonces[0] == nonces[1]
+            # Editing the request after a failure must not reuse its nonce.
+            form.query_one("#form-0", Input).value = "Team B"
+            await submit(app, pilot, form)
+            assert len(nonces) == 3 and nonces[2] != nonces[0]
+            service.transport.commands["createGroup"] = None
+            await submit(app, pilot, form)
+            assert len(nonces) == 4 and nonces[3] == nonces[2]
+            await settle(app, pilot)
+            other = await open_form(app, pilot)
+            await submit(app, pilot, other)
+            assert len(nonces) == 5 and nonces[4] not in nonces[:4]
 
     asyncio.run(exercise())
 
