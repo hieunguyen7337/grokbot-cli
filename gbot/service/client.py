@@ -115,6 +115,7 @@ class GbotService:
         bot_ids: Sequence[str] | None = None,
         *,
         bots: Sequence[Bot] | None = None,
+        recent_pages: int | None = None,
     ) -> tuple[list[Card], list[str]]:
         if bots is None:
             bots = conversation.roster(self._background_transport)
@@ -123,7 +124,12 @@ class GbotService:
             for bot in bots
             if (bot.awaiting is not None if bot_ids is None else bot.id in bot_ids)
         ]
-        return cards.discover(self._background_transport, rows, all_bots=True)
+        return cards.discover(
+            self._background_transport,
+            rows,
+            all_bots=True,
+            recent_pages=recent_pages,
+        )
 
     def still_pending(self, card: Card) -> bool:
         return cards.still_pending(self.transport, card)
