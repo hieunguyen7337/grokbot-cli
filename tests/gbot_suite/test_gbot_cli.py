@@ -2,6 +2,7 @@ import argparse
 import io
 import json
 from collections.abc import Callable, Iterator
+from queue import SimpleQueue
 
 import httpx
 import pytest
@@ -10,6 +11,9 @@ from gbot import cli, config, context
 from gbot.bots import resolve_bot
 from gbot.commands import tail
 from gbot.context import Context
+from gbot.service.errors import SignedOutError
+from gbot.service.events import ConnectionChanged, EntryAdded
+from gbot.service.models import ConnectionStatus, Entry, TranscriptPage
 from groken import auth
 from groken.client import ConnectError
 from groken.gateway import ReplyIncompleteError
@@ -25,11 +29,18 @@ class FakeManager:
         self.entries: list[dict[str, object]] = [
             {
                 "id": "1",
+                "seq": 1,
                 "timestampMs": 0,
                 "kind": "user",
                 "message": {"content": "hello"},
             },
-            {"id": "2", "timestampMs": 1000, "kind": "assistant", "content": "x" * 180},
+            {
+                "id": "2",
+                "seq": 2,
+                "timestampMs": 1000,
+                "kind": "assistant",
+                "content": "x" * 180,
+            },
         ]
         self.calls: list[object] = []
         self.failure: Exception | None = None
@@ -59,6 +70,8 @@ class FakeManager:
             raise self.failure
         return {
             "listAgents": self.bots,
+            "getAgentTranscriptTail": {"entries": self.entries},
+            "sendPrompt": {"ok": True},
             "getForeverBoxStatus": {"state": "running"},
             "getHostStatus": {
                 "hostVersion": "0.30",
@@ -238,7 +251,7 @@ def test_command_outputs(fake, capsys, command, json_mode):
             assert value == {
                 "accepted": False,
                 "bot": {"id": "a", "name": "Alpha"},
-                "last_seq": None,
+                "last_seq": 2,
             }
         elif command == "tail":
             assert [row["id"] for row in value] == ["1", "2"]
@@ -438,25 +451,6 @@ def test_tail_options(fake, capsys):
     assert cli.main(["tail", "-n", "-1"]) == 1
 
 
-@pytest.mark.parametrize("json_mode", [False, True])
-def test_follow_reconnect_interrupt(fake, monkeypatch, capsys, json_mode):
-    waits = []
-    monkeypatch.setattr(tail.Event, "wait", lambda self, delay: waits.append(delay))
-    assert cli.main(["tail", "--follow"] + (["--json"] if json_mode else [])) == 0
-    output = capsys.readouterr()
-    assert output.out.count("fresh") == 1
-    assert output.out.count("gap") == 1
-    assert output.out.count("hello") == 1
-    for noise in ("wrong bot", "wrong type", "wrong channel"):
-        assert noise not in output.out
-    if json_mode:
-        lines = output.out.splitlines()
-        assert [json.loads(line)["id"] for line in lines] == ["1", "2", "6", "5"]
-    assert "dropped" in output.err
-    assert waits == [0.25, 0.25]
-    assert fake.streams == 3
-
-
 def test_debug_and_interrupt(fake, monkeypatch):
     fake.failure = RuntimeError("broken")
     with pytest.raises(RuntimeError, match="broken"):
@@ -582,27 +576,89 @@ def test_new_command_is_discovered(monkeypatch, capsys):
     assert not capsys.readouterr().out
 
 
-def test_follow_backoff_is_bounded(fake, monkeypatch):
-    waits = []
+class FollowService:
+    """A scripted service for `tail --follow`: one page, then the given events."""
 
-    def wait(self, delay):
-        waits.append(delay)
-        if len(waits) == 8:
+    def __init__(self, events):
+        self.events = events
+        self.followed = []
+        self.closed = False
+
+    def transcript(self, bot_id, limit):
+        return TranscriptPage((added(bot_id, "1", "fresh").entry,))
+
+    def event_source(self):
+        return self
+
+    def follow(self, bot_id):
+        self.followed.append(bot_id)
+
+    def start(self, sink):
+        for event in self.events:
+            sink(event)
+
+    def close(self):
+        self.closed = True
+
+
+def added(bot_id, entry_id, content, session_id=None):
+    raw = {"id": entry_id, "seq": int(entry_id), "kind": "message", "content": content}
+    entry = Entry.from_raw(bot_id, raw, session_id)
+    assert entry is not None
+    return EntryAdded(entry)
+
+
+class Interrupting(SimpleQueue):
+    """Ends the follow loop with Ctrl+C once the scripted events are used up."""
+
+    def get(self, block=True, timeout=None):
+        if self.empty():
             raise KeyboardInterrupt
+        return super().get(block, timeout)
 
-    monkeypatch.setattr(fake, "events", lambda channels: iter([]))
-    monkeypatch.setattr(tail.Event, "wait", wait)
-    assert cli.main(["tail", "--follow"]) == 0
-    assert waits == [0.25, 0.5, 1.0, 2.0, 4.0, 5.0, 5.0, 5.0]
+
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_follow_stream(fake, monkeypatch, capsys, json_mode):
+    dropped = ConnectionChanged(ConnectionStatus.RECONNECTING, 1, "dropped")
+    service = FollowService(
+        [
+            added("a", "1", "fresh"),
+            dropped,
+            dropped,
+            added("b", "2", "wrong bot"),
+            added("a", "3", "other session", "s1"),
+            added("a", "4", "hello"),
+        ]
+    )
+    monkeypatch.setattr(context, "service_factory", lambda: service)
+    monkeypatch.setattr(tail, "SimpleQueue", Interrupting)
+    assert cli.main(["tail", "--follow"] + (["--json"] if json_mode else [])) == 0
+    output = capsys.readouterr()
+    assert output.out.count("fresh") == 1
+    assert output.out.count("hello") == 1
+    for noise in ("wrong bot", "other session"):
+        assert noise not in output.out
+    if json_mode:
+        lines = output.out.splitlines()
+        assert [json.loads(line)["id"] for line in lines] == ["1", "4"]
+    assert output.err.count("dropped") == 1
+    assert service.followed == ["a"]
+    assert service.closed
 
 
 def test_follow_auth_expired(fake, monkeypatch, capsys):
-    def events(channels):
-        raise ConnectError(401, "expired")
+    def signed_out():
+        raise SignedOutError()
 
-    monkeypatch.setattr(fake, "events", events)
+    monkeypatch.setattr(context, "service_factory", signed_out)
     assert cli.main(["tail", "--follow"]) == 3
     assert "gbot login" in capsys.readouterr().err
+    service = FollowService([ConnectionChanged(ConnectionStatus.SIGNED_OUT)])
+    monkeypatch.setattr(context, "service_factory", lambda: service)
+    monkeypatch.setattr(tail, "SimpleQueue", Interrupting)
+    assert cli.main(["tail", "--follow"]) == 3
+    assert "gbot login" in capsys.readouterr().err
+    assert service.closed
 
 
 def test_untrusted_text_cannot_drive_the_terminal(fake, monkeypatch, capsys):
@@ -630,3 +686,42 @@ def test_untrusted_text_cannot_drive_the_terminal(fake, monkeypatch, capsys):
     assert cli.main(["bots"]) == 1
     err = capsys.readouterr().err
     assert "\x1b" not in err and "\\u001b[31mboom" in err
+
+
+def test_send_session(fake, capsys):
+    assert cli.main(["send", "--session", "task-1", "hello"]) == 0
+    sent = [args for name, args in fake.calls if name == "sendPrompt"]
+    assert sent[0]["sessionId"] == "task-1"
+    assert sent[0]["clientNonce"]
+    assert (
+        "getAgentTranscriptTail",
+        {"id": "a", "limit": 1, "sessionId": "task-1"},
+    ) in fake.calls
+
+
+def test_bots_awaiting_priority(fake, capsys):
+    fake.bots[0]["awaitingUserResponse"] = {"reason": "approval"}
+    assert cli.main(["bots", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)[0]["state"] == "awaiting"
+
+
+def test_interrupt_cli(fake, monkeypatch, capsys):
+    original = fake.command
+
+    def command(method, args=None):
+        if method == "interruptAgentRun":
+            fake.calls.append((method, args))
+            return {"hadActiveRun": True}
+        return original(method, args)
+
+    monkeypatch.setattr(fake, "command", command)
+    assert cli.main(["interrupt", "--bot", "Alpha", "--yes", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "interrupted": True,
+        "bot": {"id": "a", "name": "Alpha"},
+        "session_id": None,
+    }
+    assert ("interruptAgentRun", {"id": "a"}) in fake.calls
+    monkeypatch.setattr("sys.stdin", io.StringIO())
+    assert cli.main(["interrupt", "--bot", "Alpha"]) == 1
+    assert "Re-run with --yes to confirm" in capsys.readouterr().err

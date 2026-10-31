@@ -7,6 +7,8 @@ import pytest
 from gbot.commands import tail
 from gbot.context import Context
 from gbot.output import Output
+from gbot.service.events import EntryAdded
+from gbot.service.models import Entry, TranscriptPage
 
 
 @pytest.mark.parametrize(
@@ -54,28 +56,51 @@ def test_after_backfill_and_follow(monkeypatch, capsys, follow):
     ] + [{"id": "missing", "kind": "message"}]
 
     class Manager:
-        def transcript_tail(self, bot_id):
-            return entries
+        def command(self, method, args=None):
+            assert (method, args) == (
+                "getAgentTranscriptTail",
+                {"id": "a", "limit": 100},
+            )
+            return {"entries": entries}
 
-        def events(self, channels):
-            for seq in (2, 5):
-                yield {
-                    "data": {
-                        "channel": "transcript",
-                        "payload": {
-                            "type": "appended",
-                            "agentId": "a",
-                            "entry": {"id": str(seq), "seq": seq},
-                        },
-                    }
-                }
-            raise KeyboardInterrupt
+        def transcript(self, bot_id, limit):
+            return TranscriptPage(
+                tuple(e for row in entries if (e := Entry.from_raw(bot_id, row)))
+            )
+
+        def event_source(self):
+            return self
+
+        def follow(self, bot_id):
+            assert bot_id == "a"
+
+        def start(self, sink):
+            for seq in (2, 4, 5, 5):
+                entry = Entry.from_raw("a", {"id": str(seq), "seq": seq})
+                assert entry is not None
+                sink(EntryAdded(entry))
 
     class Ctx:
         out = Output(json_mode=True)
 
         def manager(self):
             return Manager()
+
+        def service(self):
+            return Manager()
+
+        def close(self):
+            pass
+
+    from queue import SimpleQueue
+
+    class Queue(SimpleQueue):
+        def get(self, block=True, timeout=None):
+            if self.empty():
+                raise KeyboardInterrupt
+            return super().get(block, timeout)
+
+    monkeypatch.setattr(tail, "SimpleQueue", Queue)
 
     monkeypatch.setattr(tail, "resolve_bot", lambda ctx, requested: ("a", "Alpha"))
     args = argparse.Namespace(

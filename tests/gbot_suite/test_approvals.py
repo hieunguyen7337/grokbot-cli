@@ -212,6 +212,7 @@ class FakeManager:
         assert method in {
             "listAgents",
             "getAgentTranscriptTail",
+            "resolveConnectorGrant",
         }
         self.calls.append((method, copy.deepcopy(args)))
         if method == "listAgents":
@@ -585,7 +586,6 @@ def test_exact_answer_contract(fake, capsys, kind, argv, method, extra, session_
         "virtual-card-approval",
         "publish-approval",
         "cookie-origin-approval",
-        "connector-grant",
         "credential-request",
         "mobile-tool-permission",
         "permission-request",
@@ -1195,3 +1195,108 @@ def test_widget_step_options():
     body["steps"] = [{"options": [{"label": "First"}]}]
     item = classify(row, "a", "Alpha")
     assert item is not None and item.options == ["First"] and not item.validate_options
+
+
+def test_connector_cli(fake, capsys):
+    fake.tails[("a", None)] = [entry("connector-grant")]
+    assert (
+        cli.main(["approve", "abcdef01", "--always", "--all-bots", "--yes", "--json"])
+        == 0
+    )
+    result = json.loads(capsys.readouterr().out)
+    assert result["rpc"] == "resolveConnectorGrant"
+    assert result["effect"] == "always_all_team_bots"
+    assert mutations(fake) == [
+        (
+            "resolveConnectorGrant",
+            {
+                "agentId": "a",
+                "entryId": "abcdef01-entry",
+                "requestId": "connector-request",
+                "resolution": "always_all_team_bots",
+            },
+        )
+    ]
+
+
+def test_all_bots_widget_usage(fake, capsys):
+    fake.tails[("a", None)] = [entry("widget")]
+    assert cli.main(["approve", "abcdef01", "--always", "--all-bots", "--yes"]) == 1
+    assert "--all-bots requires a connector grant" in capsys.readouterr().err
+    assert mutations(fake) == []
+
+
+@pytest.mark.parametrize(
+    "kind,key,body,expected",
+    [
+        (
+            "virtual-card-approval",
+            "approval",
+            {
+                "status": "pending",
+                "amountCents": 1234,
+                "currency": "USD",
+                "merchantName": "Shop",
+                "merchantUrl": "https://example.invalid",
+                "context": "Buy supplies",
+                "lineItems": [
+                    {"label": "Pens", "amountCents": 1234, "quantity": 2},
+                    {"label": "bad", "amountCents": "bad"},
+                ],
+            },
+            "Pay 12.34 USD to Shop\nhttps://example.invalid\n  Pens x2  12.34\nBuy supplies",
+        ),
+        (
+            "credential-request",
+            "credentialRequest",
+            {
+                "kind": "brokered-login",
+                "goal": "Read reports",
+                "entries": [{"website": "example.invalid", "reason": "Reports"}],
+            },
+            "Sign in for: Read reports\n  example.invalid: Reports",
+        ),
+        (
+            "credential-request",
+            "credentialRequest",
+            {
+                "kind": "browser-login",
+                "targetSite": "example.invalid",
+                "purpose": "Read reports",
+            },
+            "Sign in to example.invalid: Read reports",
+        ),
+        (
+            "permission-request",
+            "permission",
+            {
+                "kind": "camera",
+                "title": "Scan",
+                "reason": "Read receipt",
+                "detail": "One photo",
+            },
+            "camera permission: Scan\nRead receipt\nOne photo",
+        ),
+    ],
+)
+def test_app_only_details(kind, key, body, expected):
+    raw = {"id": "detail", "kind": "send-message", "message": {"type": kind, key: body}}
+    item = classify(raw, "a", "Alpha")
+    assert item is not None and item.allowed_actions == ()
+    assert item.tool_text == expected
+    assert expected.splitlines()[0] in render([item])
+    assert "answer in the Grok Bot app" in render([item])
+
+
+def test_connector_details_and_hostile_text():
+    raw = entry("connector-grant")
+    ask = record(record(raw["message"])["ask"])
+    ask.update(serverName="[link=x] Calendar\x1b[31m", remembered="this_bot")
+    item = classify(raw, "a", "Alpha")
+    assert item is not None
+    assert item.allowed_actions == ("approve", "deny")
+    assert item.request_id == "connector-request"
+    assert (
+        item.tool_text
+        == "Connector: [link=x] Calendar\\u001b[31m\nRemembered: this_bot"
+    )

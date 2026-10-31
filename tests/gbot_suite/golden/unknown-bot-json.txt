@@ -1,0 +1,3 @@
+--- stderr ---
+{"error": {"type": "invalid", "message": "unknown bot: Nope (available: Inbox, Research, Ledger, Reports)", "exit_code": 1}}
+--- exit 1 ---

@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from gbot import config
 from gbot.bots import list_bots, record, resolve_bot
 from gbot.context import Context
-from groken.client import ConnectError
+from gbot.output import terminal_safe
 
 APP_ONLY = "answer in the Grok Bot app"
 _BODIES = {
@@ -136,7 +136,7 @@ def _classify(
         actions = ("approve", "deny")
     elif kind == "meeting-chat-draft":
         actions = ("deny",)
-    elif kind in {"auto-review-approval", "local-tool-permission"}:
+    elif kind in {"auto-review-approval", "local-tool-permission", "connector-grant"}:
         # meeting-join-consent stays app-only: the app has no verified backend RPC for it.
         actions = ("approve", "deny")
     elif kind == "widget":
@@ -189,6 +189,72 @@ def _classify(
         tool = command_text(f"{body.get('action', '')}: {body.get('target', '')}")
     elif kind == "auto-review-approval":
         tool = command_text(str(body.get("command") or ""))
+    elif kind in {
+        "connector-grant",
+        "virtual-card-approval",
+        "credential-request",
+        "permission-request",
+    }:
+
+        def text(value: object) -> str:
+            return one_line(terminal_safe(str(value or "")))
+
+        lines: list[str] = []
+        if kind == "connector-grant":
+            lines.append(f"Connector: {text(body.get('serverName'))}")
+            if body.get("remembered"):
+                lines.append(f"Remembered: {text(body['remembered'])}")
+        elif kind == "virtual-card-approval":
+            amount = body.get("amountCents")
+            money = (
+                f"{amount / 100:.2f}"
+                if isinstance(amount, (int, float)) and not isinstance(amount, bool)
+                else "?"
+            )
+            lines = [
+                f"Pay {money} {text(body.get('currency'))} to {text(body.get('merchantName'))}",
+                text(body.get("merchantUrl")),
+            ]
+            items = body.get("lineItems")
+            for item in items if isinstance(items, list) else []:
+                row = record(item)
+                label, cents = row.get("label"), row.get("amountCents")
+                if (
+                    not isinstance(label, str)
+                    or not isinstance(cents, (int, float))
+                    or isinstance(cents, bool)
+                ):
+                    continue
+                quantity = row.get("quantity")
+                count = (
+                    f" x{quantity}"
+                    if isinstance(quantity, (int, float)) and quantity > 1
+                    else ""
+                )
+                lines.append(f"  {text(label)}{count}  {cents / 100:.2f}")
+            if body.get("context"):
+                lines.append(text(body["context"]))
+        elif kind == "credential-request":
+            if body.get("kind") == "brokered-login":
+                lines.append(f"Sign in for: {text(body.get('goal'))}")
+                entries = body.get("entries")
+                for credential in entries if isinstance(entries, list) else []:
+                    row = record(credential)
+                    lines.append(
+                        f"  {text(row.get('website'))}: {text(row.get('reason'))}"
+                    )
+            elif body.get("kind") == "browser-login":
+                lines.append(
+                    f"Sign in to {text(body.get('targetSite'))}: {text(body.get('purpose'))}"
+                )
+        else:
+            lines = [
+                f"{text(body.get('kind'))} permission: {text(body.get('title'))}",
+                text(body.get("reason")),
+            ]
+            if body.get("detail"):
+                lines.append(text(body["detail"]))
+        tool = "\n".join(lines)
     elif kind in _DRAFT_TYPES:
 
         def addresses(key: str) -> str:
@@ -238,10 +304,11 @@ def _classify(
                 for option in raw_options
                 if isinstance(label := record(option).get("label"), str)
             ]
-    if kind == "user-form" and isinstance(body.get("fields"), list):
+    raw_fields = body.get("fields")
+    if kind == "user-form" and isinstance(raw_fields, list):
         fields = [
             {key: record(field).get(key) for key in ("id", "label", "type", "required")}
-            for field in body["fields"]
+            for field in raw_fields
             if isinstance(field, dict)
         ]
     return PendingItem(
@@ -291,30 +358,6 @@ def describe(entry: dict[str, object]) -> str:
     return f"{kind}: {item.summary} ({one_line(state)})"
 
 
-def _tail(ctx: Context, bot_id: str, session_id: str | None) -> list[dict[str, object]]:
-    args: dict[str, object] = {"id": bot_id, "limit": 100}
-    if session_id is not None:
-        args["sessionId"] = session_id
-    entries: dict[str, dict[str, object]] = {}
-    while True:
-        page = record(ctx.manager().command("getAgentTranscriptTail", args.copy()))
-        rows = page.get("entries")
-        if not isinstance(rows, list):
-            raise TypeError("Invalid transcript page from gateway.")
-        for row in rows:
-            entry = record(row)
-            if isinstance(entry.get("id"), str):
-                entries.setdefault(str(entry["id"]), entry)
-        cursor = page.get("nextBeforeSeq")
-        if not isinstance(cursor, (int, float)):
-            break
-        previous = args.get("beforeSeq")
-        if isinstance(previous, (int, float)) and cursor >= previous:
-            raise ValueError("Transcript pagination did not advance.")
-        args["beforeSeq"] = cursor
-    return list(entries.values())
-
-
 def discover(
     ctx: Context,
     requested: str | None = None,
@@ -322,41 +365,22 @@ def discover(
     all_bots: bool = False,
     awaiting_only: bool = True,
 ) -> list[PendingItem]:
+    from gbot.service import cards
+    from gbot.service.transport import ContextTransport
+
     selected = None
     if not all_bots and (requested is not None or config.default_bot() is not None):
         selected = resolve_bot(ctx, requested)[0]
-    bots = list_bots(ctx)
-    found: dict[tuple[str, str], PendingItem] = {}
-    for bot in bots:
-        bot_id, name = str(bot["id"]), str(bot["name"])
-        if selected is not None:
-            if selected != bot_id:
-                continue
-        elif not all_bots and awaiting_only and not bot.get("awaitingUserResponse"):
-            continue
-        sessions: list[str | None] = [None]
-        awaiting = bot.get("awaitingSessionIds")
-        if isinstance(awaiting, list):
-            sessions.extend(dict.fromkeys(s for s in awaiting if isinstance(s, str)))
-        try:
-            scanned = [
-                (session_id, _tail(ctx, bot_id, session_id)) for session_id in sessions
-            ]
-        except Exception as exc:
-            # Auth failures must fail the command, or an expired login reads as "nothing pending".
-            if not all_bots or (isinstance(exc, ConnectError) and exc.status == 401):
-                raise
-            print(f"warning: {one_line(name)}: {one_line(str(exc))}", file=sys.stderr)
-            continue
-        for session_id, entries in scanned:
-            for entry in entries:
-                key = (bot_id, str(entry["id"]))
-                item = classify(entry, bot_id, name, session_id)
-                if item is not None:
-                    found[key] = item
-                else:
-                    found.pop(key, None)
-    return list(found.values())
+    items, warnings = cards.discover(
+        ContextTransport(ctx),
+        list_bots(ctx),
+        selected=selected,
+        all_bots=all_bots,
+        awaiting_only=awaiting_only,
+    )
+    for warning in warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+    return items
 
 
 def resolve_ref(ctx: Context, ref: str, bot: str | None = None) -> PendingItem:
@@ -403,6 +427,8 @@ def render(items: list[PendingItem]) -> str:
             f"{item.entry_id[:8]}  {one_line(item.bot_name)}  {item.type}  {age}  "
             f"{item.summary}{suffix}"
         )
+        if not item.allowed_actions and item.tool_text:
+            lines.extend("  " + line for line in item.tool_text.splitlines())
         if item.options is not None:
             lines.append(
                 "  options: " + " | ".join(one_line(option) for option in item.options)

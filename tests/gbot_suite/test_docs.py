@@ -1,3 +1,4 @@
+import argparse
 import importlib
 import pkgutil
 import re
@@ -8,6 +9,16 @@ from gbot import cli, commands
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def _options(parser: argparse.ArgumentParser) -> set[str]:
+    # A command's flags include those of its subcommands (gbot channels slack ...).
+    found = set(parser._option_string_actions)
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            for child in action.choices.values():
+                found |= _options(child)
+    return found
+
+
 def command_options() -> dict[str, set[str]]:
     parser = cli.Parser(prog="gbot")
     subparsers = parser.add_subparsers(dest="command")
@@ -15,16 +26,13 @@ def command_options() -> dict[str, set[str]]:
         importlib.import_module(f"{commands.__name__}.{module.name}").register(
             subparsers
         )
-    return {
-        name: set(command._option_string_actions)
-        for name, command in subparsers.choices.items()
-    }
+    return {name: _options(command) for name, command in subparsers.choices.items()}
 
 
 def test_reference_flags_match_parser() -> None:
     options = command_options()
     reference = (ROOT / "docs/gbot.md").read_text(encoding="utf-8")
-    sections = re.split(r"^## (\w+)\s*$", reference, flags=re.MULTILINE)
+    sections = re.split(r"^## ([\w-]+)\s*$", reference, flags=re.MULTILINE)
     found = set()
     for name, section in zip(sections[1::2], sections[2::2]):
         if name not in options:
@@ -39,7 +47,7 @@ def test_guide_and_skill_example_flags_match_parser() -> None:
     options = command_options()
     for path in (ROOT / "docs/agents.md", ROOT / "skills/gbot/SKILL.md"):
         content = path.read_text(encoding="utf-8")
-        examples = re.findall(r"\bgbot (\w+)[^\n`]*", content)
+        examples = re.findall(r"\bgbot ([\w-]+)[^\n`]*", content)
         assert examples
         for example in examples:
             name = example.split()[0]

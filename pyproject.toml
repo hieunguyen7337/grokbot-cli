@@ -47,13 +47,14 @@ worker = [
   "fastapi>=0.116",
   "uvicorn>=0.35",
 ]
+tui = ["textual==8.2.8"]
 
 [build-system]
 requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [dependency-groups]
-dev = ["pytest>=8.3", "ruff==0.16.2", "basedpyright==1.39.8"]
+dev = ["pytest>=8.3", "ruff==0.16.2", "basedpyright==1.39.8", "textual==8.2.8"]
 
 [tool.setuptools.packages.find]
 include = ["groken*", "gbot*"]

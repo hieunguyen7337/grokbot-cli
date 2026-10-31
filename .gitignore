@@ -13,3 +13,5 @@ htmlcov/
 .omo/
 .fablize/
 .DS_Store
+# cloud-notify: marks this checkout's main cloud session; never commit it
+.claude/main-session

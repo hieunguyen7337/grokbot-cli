@@ -17,7 +17,10 @@ LIVE_COMMANDS = (
     ("bots", "--json"),
     ("connectors", "--json"),
     ("approvals", "--all", "--json"),
+    ("watch", "--once", "--json"),
+    ("tui", "--screenshot", "{screenshot}", "--size", "120x40"),
 )
+ATTENTION_COMMANDS = {"approvals", "watch"}
 Run = Callable[..., subprocess.CompletedProcess[str]]
 
 
@@ -87,10 +90,35 @@ def build(run: Run) -> bool:
         gbot = bindir / ("gbot.exe" if os.name == "nt" else "gbot")
         groken = bindir / ("groken.exe" if os.name == "nt" else "groken")
         if run(
-            ["uv", "pip", "install", "--python", str(python), str(wheels[0])], cwd=ROOT
+            ["uv", "pip", "install", "--python", str(python), f"{wheels[0]}[tui]"],
+            cwd=ROOT,
         ).returncode:
             return False
         if run([str(gbot), "--help"], cwd=base).returncode:
+            return False
+        tui_help = run(
+            [str(gbot), "tui", "--help"], cwd=base, capture_output=True, text=True
+        )
+        if tui_help.returncode or "--demo" not in (tui_help.stdout or ""):
+            return False
+        screenshot = base / "demo.svg"
+        if run(
+            [
+                str(gbot),
+                "tui",
+                "--demo",
+                "--screenshot",
+                str(screenshot),
+                "--size",
+                "100x30",
+            ],
+            cwd=base,
+        ).returncode:
+            return False
+        if not screenshot.is_file() or not any(
+            title in screenshot.read_text(encoding="utf-8")
+            for title in ("Grok&#160;Bot", "Grok Bot")
+        ):
             return False
         if WINDOWS:
             # The upstream groken CLI is POSIX-only (fcntl); gbot is the Windows entry point.
@@ -123,9 +151,21 @@ def execute(
                 passed = build(run)
             else:
                 for command in commands[stage]:
-                    code = run(command, cwd=ROOT).returncode
+                    if stage == "live" and command[4] == "tui":
+                        with tempfile.TemporaryDirectory(prefix="gbot-ci-tui-") as temp:
+                            command = [
+                                str(Path(temp) / "live.svg")
+                                if arg == "{screenshot}"
+                                else arg
+                                for arg in command
+                            ]
+                            code = run(command, cwd=ROOT).returncode
+                    else:
+                        code = run(command, cwd=ROOT).returncode
                     ok = code == 0 or (
-                        stage == "live" and command[4] == "approvals" and code == 2
+                        stage == "live"
+                        and command[4] in ATTENTION_COMMANDS
+                        and code == 2
                     )
                     if stage == "live":
                         print(

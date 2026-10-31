@@ -1,0 +1,10 @@
+Signed in.
+Client version: 0.77.0
+Default bot: Inbox (bot-inbox)
+Desktop computer: running
+Host: 0.77.0; update available=True; busy=False
+Secrets: applied=True
+MCP: user-calendar connected tools=2
+MCP: user-notes needsAuth tools=0
+--- stderr ---
+--- exit 0 ---

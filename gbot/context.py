@@ -1,12 +1,19 @@
+from __future__ import annotations
+
 import argparse
 import sys
 from collections.abc import Callable, Iterator
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from groken.client import ConnectError, SandClient
 from groken.gateway import GatewayManager
 
 from .output import Output
+from .service.errors import SignedOutError
+from .service.routing import Harness
+
+if TYPE_CHECKING:
+    from .service.client import GbotService
 
 
 class Manager(Protocol):
@@ -51,6 +58,15 @@ manager_factory: Callable[[], Manager] = GatewayManager
 backend_factory: Callable[[], Backend] = SandClient
 
 
+def _connect_service() -> GbotService:
+    from .service.client import connect
+
+    return connect()
+
+
+service_factory: Callable[[], GbotService] = _connect_service
+
+
 class Context:
     def __init__(
         self, args: argparse.Namespace, factory: Callable[[], Manager] | None = None
@@ -61,6 +77,21 @@ class Context:
         self._factory = factory or manager_factory
         self._manager: Manager | None = None
         self._backend: Backend | None = None
+        self._service: GbotService | None = None
+        self.harness = Harness()
+
+    def service(self) -> GbotService:
+        if self._service is None:
+            try:
+                self._service = service_factory()
+            except SignedOutError as exc:
+                raise ConnectError(401, "not signed in") from exc
+        return self._service
+
+    def close(self) -> None:
+        self.harness.drain()
+        if self._service is not None:
+            self._service.close()
 
     def manager(self) -> Manager:
         if self._manager is None:

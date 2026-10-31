@@ -12,6 +12,7 @@ import httpx
 from typing_extensions import override
 
 from . import winplat
+from .file_lock import file_lock
 from .private_files import write_private_text
 
 WEBSITE_URL = "https://cursor.com"
@@ -87,6 +88,26 @@ def poll_for_tokens(
 
 
 def refresh_tokens(refresh_token: str) -> dict[str, object] | None:
+    with file_lock(TOKEN_FILE.with_name(TOKEN_FILE.name + ".lock")):
+        stored = _rotated_tokens(refresh_token)
+        if stored is not None:
+            return stored
+        return _refresh_tokens_locked(refresh_token)
+
+
+def _rotated_tokens(refresh_token: str) -> dict[str, object] | None:
+    stored = load_tokens()
+    if (
+        stored
+        and stored.get("refreshToken")
+        and stored.get("refreshToken") != refresh_token
+        and stored.get("accessToken")
+    ):
+        return stored
+    return None
+
+
+def _refresh_tokens_locked(refresh_token: str) -> dict[str, object] | None:
     r = httpx.post(
         f"{API_BASE_URL}/oauth/token",
         json={
@@ -97,7 +118,7 @@ def refresh_tokens(refresh_token: str) -> dict[str, object] | None:
         timeout=15.0,
     )
     if r.status_code != 200:
-        return None
+        return _rotated_tokens(refresh_token)
     value = cast("object", r.json())
     data = _object_dict(value)
     if data is None:
@@ -151,7 +172,14 @@ def clear_tokens() -> bool:
 
 
 def get_access_token() -> str:
+    token = access_token_or_none()
+    if token is None:
+        raise SystemExit("No tokens. Run: groken login")
+    return token
+
+
+def access_token_or_none() -> str | None:
     tokens = load_tokens()
     if not tokens or "accessToken" not in tokens:
-        raise SystemExit("No tokens. Run: groken login")
+        return None
     return str(tokens["accessToken"])
