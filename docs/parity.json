@@ -854,8 +854,8 @@
       "args": [],
       "area": "settings",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "handoff",
+      "note": "Teach recording runs on the desktop; see it in the Grok Bot app."
     },
     {
       "name": "getTrays",
@@ -4173,8 +4173,8 @@
       ],
       "area": "settings",
       "milestone": "M5",
-      "status": "planned",
-      "note": "View bot usage analytics."
+      "status": "done",
+      "note": "Implemented in gbot.service.account"
     },
     {
       "name": "GetGrokBotAgentCustomMcp",
@@ -4272,8 +4272,8 @@
       "args": [],
       "area": "account-billing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.account"
     },
     {
       "name": "GetGrokBotEgressPolicy",
@@ -4281,8 +4281,8 @@
       "args": [],
       "area": "settings",
       "milestone": "M5",
-      "status": "planned",
-      "note": "Inspect outbound network policy."
+      "status": "done",
+      "note": "Implemented in gbot.service.account"
     },
     {
       "name": "GetGrokBotHarnessMigrationStatusInternal",
@@ -5418,8 +5418,8 @@
       "args": [],
       "area": "account-billing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "handoff",
+      "note": "The app records when the person has seen its terms; accept terms in the Grok Bot app."
     },
     {
       "name": "MergeGrokBotLibraryPins",
@@ -6051,8 +6051,8 @@
       ],
       "area": "account-billing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.account"
     },
     {
       "name": "ResolveGrokBotAttachmentReads",
@@ -6855,8 +6855,8 @@
       ],
       "area": "account-billing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.account"
     },
     {
       "name": "SyncOnePasswordConnections",
