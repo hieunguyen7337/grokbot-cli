@@ -3,6 +3,7 @@ import json
 from typing import Any
 from unittest.mock import Mock
 
+import pytest
 from tui_snapshots import assert_snapshot
 
 from gbot.service.fake import load_fake
@@ -394,5 +395,38 @@ def test_delete_user_store_confirm_names_the_path(tmp_path, monkeypatch):
                 await pilot.press("down")
             await pilot.press("x")
             assert top(app).heading == "Delete /b/prefs.json from Helper?"
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize(
+    "result", [False, OSError("no browser at https://example.invalid/d")]
+)
+def test_library_open_reports_a_failed_browser(tmp_path, monkeypatch, result):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    opened = (
+        Mock(side_effect=result)
+        if isinstance(result, Exception)
+        else Mock(return_value=result)
+    )
+    monkeypatch.setattr("gbot.tui.slash.bot_files.webbrowser.open", opened)
+
+    async def exercise():
+        service = fake_library()
+        app = GbotApp(service, animate=False)
+        notice = Mock()
+        monkeypatch.setattr(app, "notify", notice)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            run(ctx, "/library")
+            await settle(app, pilot)
+            assert isinstance(top(app), LibraryPanel)
+            await pilot.press("o")
+            await settle(app, pilot)
+            opened.assert_called_once_with("https://example.invalid/d")
+            texts = [str(c.args[0]) for c in notice.call_args_list]
+            assert "Could not open a browser for the document." in texts
+            assert "Opened the document." not in texts
+            assert not any("example.invalid" in t for t in texts)
 
     asyncio.run(exercise())

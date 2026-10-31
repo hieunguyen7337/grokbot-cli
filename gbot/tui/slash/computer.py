@@ -102,10 +102,12 @@ class _Computer(_Detail):
 
         def opened() -> None:
             try:
-                webbrowser.open(url)
+                launched = webbrowser.open(url)
             except Exception:  # noqa: BLE001 - browser errors may contain access tokens
                 # Browser errors may embed the access URL.
-                raise ValueError("Could not open the live view.") from None
+                launched = False
+            if not launched:
+                raise ValueError("Could not open a browser for the live view.")
             self.ctx.app.call_from_thread(
                 self.ctx.app.notify, "Opened the live view.", markup=False
             )

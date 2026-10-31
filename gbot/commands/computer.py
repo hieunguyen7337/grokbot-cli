@@ -43,10 +43,12 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         if not value.vnc_url:
             raise ValueError("No live view available.")
         try:
-            webbrowser.open(value.vnc_url)
+            opened = webbrowser.open(value.vnc_url)
         except Exception:  # noqa: BLE001 - browser errors may contain access tokens
             # Browser failures may contain the access URL.
-            raise ValueError("Could not open the live view.") from None
+            opened = False
+        if not opened:
+            raise ValueError("Could not open a browser for the live view.")
         ctx.out.write({"opened": True}, "Opened the live view.")
     else:
         result = asdict(value)

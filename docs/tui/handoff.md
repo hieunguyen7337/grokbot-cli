@@ -10,8 +10,8 @@ cancellation cannot interrupt a check already running.
 The first check runs immediately. Later checks wait 1, 2, 3, then 5 seconds,
 repeating 5 seconds, bounded by a monotonic ten-minute deadline by default. Supply
 `cancel` and optional `wake` threading events. A wake is cleared and triggers a
-fresh check; cancellation takes priority. With two events, event waits are capped
-at 50 ms to observe cancellation without auxiliary threads. No sleep is used.
+fresh check; cancellation takes priority. Every event wait is capped at 50 ms,
+so cancellation is observed without auxiliary threads. No sleep is used.
 
 Push `HandoffScreen(title, url, check, ...)` with a result callback in the TUI.
 It opens the browser on mount, displays a sanitized, wrapped URL, and runs checks

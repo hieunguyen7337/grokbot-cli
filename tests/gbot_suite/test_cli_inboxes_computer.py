@@ -1,4 +1,5 @@
 import json
+import webbrowser
 
 import pytest
 
@@ -67,7 +68,7 @@ def test_requires_yes(monkeypatch, capsys, argv):
 def test_mutations_and_open(monkeypatch, capsys, json_mode):
     fake = setup_cli(monkeypatch)
     opened = []
-    monkeypatch.setattr("webbrowser.open", opened.append)
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.append(url) or True)
     for argv, name in [
         (["inboxes", "--create", " ALPHA "], "CreateGrokBotEmailInbox"),
         (["computer", "Alpha", "--wake"], "ensureForeverBox"),
@@ -96,3 +97,40 @@ def test_missing_handoff_or_view(monkeypatch, capsys):
         assert cli.main(["computer", "Alpha", flag, "--yes"]) == 1
         assert message in capsys.readouterr().err
     assert not any(call[1] == "handBackForeverBox" for call in fake.calls)
+
+
+class BrowserError(webbrowser.Error):
+    pass
+
+
+@pytest.mark.parametrize("failure", ["false", "raises"])
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_open_failure(monkeypatch, capsys, json_mode, failure):
+    setup_cli(monkeypatch)
+
+    def browser(url):
+        if failure == "raises":
+            raise BrowserError(url)
+        return False
+
+    monkeypatch.setattr("webbrowser.open", browser)
+    argv = ["computer", "Alpha", "--open", *(["--json"] if json_mode else [])]
+    assert cli.main(argv) == 1
+    captured = capsys.readouterr()
+    assert "Opened" not in captured.out
+    assert "Could not open a browser for the live view." in captured.err
+    assert URL not in captured.out + captured.err
+    assert "private" not in captured.out + captured.err
+    if json_mode:
+        error = json.loads(captured.err)["error"]
+        assert error["type"] == "invalid"
+        assert error["message"] == "Could not open a browser for the live view."
+
+
+def test_open_success_reports_opened(monkeypatch, capsys):
+    setup_cli(monkeypatch)
+    monkeypatch.setattr("webbrowser.open", lambda url: True)
+    assert cli.main(["computer", "Alpha", "--open"]) == 0
+    captured = capsys.readouterr()
+    assert "Opened the live view." in captured.out
+    assert URL not in captured.out + captured.err
