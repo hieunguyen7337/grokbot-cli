@@ -85,7 +85,7 @@ Meeting-chat drafts are deny-only. The signature shown in the app is not added b
 Approve a review, local tool request, connector grant or message draft.
 
 ```text
-usage: gbot approve [-h] [--yes] [--json] [--always] [--all-bots] REF
+usage: gbot approve [-h] [--yes] [--json] [--bot BOT] [--always] [--all-bots] REF
 
 positional arguments:
   REF
@@ -94,6 +94,7 @@ options:
   -h, --help  show this help message and exit
   --yes
   --json
+  --bot BOT   Bot that owns REF, when REF is ambiguous
   --always
   --all-bots  connector grant: always allow for all team bots
 ```
@@ -107,10 +108,10 @@ connector grant. Use `gbot deny REF` to skip a connector grant.
 
 ## deny
 
-Deny a review, meeting consent or local tool request.
+Deny a review or local tool request. Meeting-consent cards are answered in the app.
 
 ```text
-usage: gbot deny [-h] [--yes] [--json] [--never] REF
+usage: gbot deny [-h] [--yes] [--json] [--bot BOT] [--never] REF
 
 positional arguments:
   REF
@@ -119,19 +120,21 @@ options:
   -h, --help  show this help message and exit
   --yes
   --json
+  --bot BOT   Bot that owns REF, when REF is ambiguous
   --never
 ```
 
 Example: `gbot deny REF`.
 
 `--never` persistently denies only local tool permissions. `--yes` skips confirmation.
+On a meeting-consent card, `deny` exits 1 with `meeting-join-consent: answer in the Grok Bot app.` Answer that card in the app.
 
 ## respond
 
 Answer a widget or ordinary user form.
 
 ```text
-usage: gbot respond [-h] [--yes] [--json] [--field NAME=VALUE] REF [VALUE]
+usage: gbot respond [-h] [--yes] [--json] [--bot BOT] [--field NAME=VALUE] REF [VALUE]
 
 positional arguments:
   REF
@@ -141,6 +144,7 @@ options:
   -h, --help          show this help message and exit
   --yes
   --json
+  --bot BOT   Bot that owns REF, when REF is ambiguous
   --field NAME=VALUE
 ```
 
@@ -153,7 +157,7 @@ Supply VALUE for a widget, or repeat `--field NAME=VALUE` for a form; do not mix
 Dismiss a widget or ordinary user form.
 
 ```text
-usage: gbot dismiss [-h] [--yes] [--json] REF
+usage: gbot dismiss [-h] [--yes] [--json] [--bot BOT] REF
 
 positional arguments:
   REF
@@ -162,6 +166,7 @@ options:
   -h, --help  show this help message and exit
   --yes
   --json
+  --bot BOT   Bot that owns REF, when REF is ambiguous
 ```
 
 Example: `gbot dismiss REF`.
@@ -173,7 +178,7 @@ Example: `gbot dismiss REF`.
 Supply an eligible requested secret through hidden input.
 
 ```text
-usage: gbot secret [-h] [--yes] [--json] REF
+usage: gbot secret [-h] [--yes] [--json] [--bot BOT] REF
 
 positional arguments:
   REF
@@ -182,6 +187,7 @@ options:
   -h, --help  show this help message and exit
   --yes
   --json
+  --bot BOT   Bot that owns REF, when REF is ambiguous
 ```
 
 Example: `gbot secret REF`.
@@ -571,7 +577,8 @@ gbot voice --list [--json]
 
 With no options, show the current voice. `--list` lists available voice IDs,
 speeds and languages in JSON (voice IDs and labels in text). Speeds snap to
-0.5, 0.75, 1, 1.25, 1.5 or 2; invalid speeds become 1. Unknown languages become
+0.5, 0.75, 1, 1.25, 1.5 or 2. A speed that is not a number is refused with
+`Speed must be a number, such as 1.25.` Unknown languages become
 auto. Changes require terminal confirmation or `--yes`. Audio preview uses the
 Grok Bot app.
 

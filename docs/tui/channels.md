@@ -12,6 +12,9 @@ shown without treating it as a transport failure.
 
 `gbot channels listeners [--json]` lists the six event-source platforms, connection
 state and automation usage. `--connect PLATFORM --yes` connects a platform.
+With `--json`, the object holds `integrations`, one row per platform with `platform`,
+`is_connected`, `needed_by_count`, `state`, `detail`, `granted_repos` and `scope_issues`,
+plus `message`.
 
 Slack and listener browser steps use the shared handoff helper. `--no-browser`
 prints the URL on stderr and waits for you to open it manually. JSON stays on
@@ -43,5 +46,6 @@ and Escape cancel; see [handoff.md](handoff.md).
 Every TUI mutation confirms with Cancel focused, refuses read-only mode, runs
 transport work in a thread, and reports sanitized errors without Rich markup.
 Cancelling a Slack handoff preserves the displayed state; `g` can read it again.
-No Microsoft Teams, native Messages grants or desktop GitHub callback operations
-are implemented here.
+Microsoft Teams is not managed here. Use `/teams` in a bot session or `gbot teams BOT`;
+see [teams.md](teams.md). Native Messages grants and desktop GitHub callback operations
+are not implemented here.
