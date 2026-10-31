@@ -120,13 +120,18 @@ def test_newgroup_retry_reuses_the_nonce(tmp_path, monkeypatch):
             form.query_one("#form-0", Input).value = "Team B"
             await submit(app, pilot, form)
             assert len(nonces) == 3 and nonces[2] != nonces[0]
+            # Going back to the first request reuses its nonce, so a lost reply cannot duplicate it.
+            form.query_one("#form-0", Input).value = "Team"
+            await submit(app, pilot, form)
+            assert len(nonces) == 4 and nonces[3] == nonces[0]
+            form.query_one("#form-0", Input).value = "Team B"
             service.transport.commands["createGroup"] = None
             await submit(app, pilot, form)
-            assert len(nonces) == 4 and nonces[3] == nonces[2]
+            assert len(nonces) == 5 and nonces[4] == nonces[2]
             await settle(app, pilot)
             other = await open_form(app, pilot)
             await submit(app, pilot, other)
-            assert len(nonces) == 5 and nonces[4] not in nonces[:4]
+            assert len(nonces) == 6 and nonces[5] not in nonces[:5]
 
     asyncio.run(exercise())
 
