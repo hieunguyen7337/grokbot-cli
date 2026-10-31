@@ -507,6 +507,41 @@ Grok Bot app.
 `--json`: Object with id, voice_id, speed and language; `--list` returns voices,
 speeds and languages.
 
+## skills
+
+```text
+gbot skills BOT [--all] [--json]
+gbot skills BOT --show SKILL [--json]
+gbot skills BOT --new --name N --description D --body FILE|- [--schedule S] [--yes] [--json]
+gbot skills BOT --edit SKILL [--name N] [--description D] [--body FILE|-] [--schedule S] [--unschedule|--pause|--resume] [--yes] [--json]
+gbot skills BOT --delete SKILL [--yes] [--json]
+gbot skills BOT --run SKILL [--yes] [--json]
+gbot skills BOT --import-file PATH [--name N] [--yes] [--json]
+gbot skills BOT --import-url URL [--name N] [--yes] [--json]
+gbot skills BOT --install CATALOG_ID [--yes] [--json]
+gbot skills --catalog [--search TEXT] [--json]
+```
+
+List editable and scheduled skills; `--all` includes managed skills. `--show`
+prints the description and body. SKILL accepts an ID, a unique ID prefix of at
+least six characters, or an exact case-insensitive name. `--new` requires a
+nonblank name, description and body. `--body -` reads standard input; other body
+and import files are UTF-8. `--edit` resends unchanged fields; `--schedule` sets a
+trimmed schedule for server validation, `--unschedule` removes it, and `--pause`
+or `--resume` changes its enabled state. Managed, template and plugin skills
+cannot be edited or deleted. `--run` requires a scheduled skill.
+
+All mutations require terminal confirmation or `--yes`. Imports accept local
+Markdown or HTTP/HTTPS URLs. `--catalog` browses names, publishers and short
+descriptions; `--search` filters them. `--install` imports the catalog entry by
+its URL or content. Unsupported install kinds use the Grok Bot app.
+
+`--json`: Lists and create/edit/delete return skill arrays; show returns one
+skill; run returns id and started (request acknowledged, not run completion).
+Imports/install return added_count and workflow_count, based only on before/after
+workflow counts. Catalog returns id, name, description, publisher and install_kind.
+`--help` (or `-h`) shows command usage.
+
 ## templates
 
 ```text
