@@ -772,6 +772,33 @@ status changes; `--no-browser` prints the link without opening it. Changes need
 `--json`: The state object (state, tenant, installed teams, flags and messages);
 account links have tenant_id, aad_object_id and linked_at_ms.
 
+## publish
+
+```text
+gbot publish BOT [--json]
+gbot publish BOT --listing on|off --yes [--json]
+gbot publish BOT --template-version N [--share-id ID] --yes [--json]
+gbot publish BOT --template-visibility public|team [--share-id ID] --yes [--json]
+gbot publish BOT --delete-template [--share-id ID] [--yes] [--json]
+```
+
+Show whether a bot is listed in the Grok Bot marketplace, its template (name,
+share ID, published, active version, visibility) and what the account may do with
+templates. `--listing on` lists the bot in the marketplace and `--listing off`
+takes it off; the answer is one sentence (for example, a bot must be shared before
+it can be listed). `--template-version N` publishes version N of the template,
+`--template-visibility` makes it visible to everyone (`public`) or to your team
+(`team`), and `--delete-template` deletes it. `--share-id ID` acts on that
+template instead of the bot's own. When the account's policy is off, template
+changes are refused with a sentence saying so, and `public` is refused when the
+policy allows teams only. A refusal from the server exits 1 with its message.
+
+Every change needs `--yes`; without it and without a terminal nothing is sent. In
+a terminal, `--delete-template` without `--yes` asks you to type the template name.
+
+`--json`: The marketplace state, the template, the export policy and its sentence;
+for a change, the result of each change.
+
 ## channels
 
 ```text
