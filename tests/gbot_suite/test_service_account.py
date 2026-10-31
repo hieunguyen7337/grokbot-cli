@@ -228,9 +228,33 @@ def test_payment_card_without_a_vault_match_is_unlabelled():
     )
     assert _method(fake).label == "A saved card"
     fake.rpcs["ListGrokBotStripeLinkPaymentMethods"] = ConnectError(
-        403, '{"code":"permission_denied","message":"no"}'
+        403, '{"code":"permission_denied","message":"Vault is locked."}'
     )
+    assert _method(fake).label == "Vault is locked."
+    fake.rpcs["ListGrokBotStripeLinkPaymentMethods"] = ConnectError(500, "boom")
     assert _method(fake).label == "A saved card"
+
+
+def test_overlong_digit_strings_read_as_zero_and_never_raise():
+    huge = "9" * 5000
+    assert service._int(huge) == 0
+    assert service._enum(huge, "GROK_BOT_PAYMENT_WALLET", ("x_money",)) == "unknown"
+    fake = FakeTransport(
+        rpcs={
+            "GetGrokBotAgentAnalytics": {
+                "weeklyActiveUsers": huge,
+                "topUsers": [{"userId": huge, "userTurns": huge}],
+            },
+            "GetGrokBotDefaultPaymentMethod": {"method": {"wallet": huge}},
+        }
+    )
+    value = service.analytics(fake, "bot")
+    assert isinstance(value, service.Analytics)
+    assert value.weekly_active_users == 0
+    assert value.top_users[0].user_id == 0 and value.top_users[0].user_turns == 0
+    assert _method(fake) == service.DefaultPaymentMethod(
+        "wallet", "unknown", "A wallet"
+    )
 
 
 @pytest.mark.parametrize(

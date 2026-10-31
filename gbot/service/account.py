@@ -34,7 +34,7 @@ def _enum(value: object, prefix: str, names: tuple[str, ...]) -> str:
         return names[value - 1] if 0 < value <= len(names) else "unknown"
     text = str(value).lower().removeprefix(prefix.lower() + "_")
     if text.isdecimal():
-        return _enum(int(text), prefix, names)
+        return _enum(_int(text), prefix, names)
     return text if text in names else "unknown"
 
 
@@ -44,7 +44,12 @@ def _int(value: object) -> int:
         return 0
     if isinstance(value, int):
         return value
-    return int(value) if isinstance(value, str) and value.strip().isdecimal() else 0
+    if not isinstance(value, str) or not value.strip().isdecimal():
+        return 0
+    try:
+        return int(value)
+    except ValueError:  # over Python's integer string digit limit
+        return 0
 
 
 def _float(value: object) -> float:
@@ -293,11 +298,12 @@ def default_payment_method(transport: Transport) -> DefaultPaymentMethod | Refus
 
 
 def _card_label(transport: Transport, card_id: str) -> str:
-    # The label is cosmetic: a refused vault list still leaves the card shown.
+    # The label is cosmetic: a refused vault list still shows the card, labelled with the refusal sentence.
     try:
         _, methods, _ = vault.payment_methods(transport)
-    except ConnectError:
-        return "A saved card"
+    except ConnectError as error:
+        found = refusal(error)
+        return found.message if found is not None else "A saved card"
     for method in methods:
         if method.id == card_id and method.brand and method.last4:
             return f"{method.brand} ending {method.last4}"

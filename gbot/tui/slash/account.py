@@ -48,6 +48,7 @@ class _Read(_Detail):
     ) -> None:
         self.ctx = ctx
         self.fetch = fetch
+        self.generation = 0
         super().__init__(title, lambda: Detail((), body="Loading…"))
 
     def on_mount(self) -> None:
@@ -55,13 +56,21 @@ class _Read(_Detail):
         self.reload()
 
     def reload(self) -> None:
+        self.generation += 1
+        generation = self.generation
+
         def load() -> Detail:
             try:
                 return self.fetch()
             except Exception as error:  # noqa: BLE001 - panel boundary
                 return Detail((), body=str(error))
 
-        _worker(self.ctx, load, self.loaded)
+        def done(value: object) -> None:
+            # A slow earlier load must not replace the result of a later reload.
+            if generation == self.generation:
+                self.loaded(value)
+
+        _worker(self.ctx, load, done)
 
     def loaded(self, value: object) -> None:
         assert isinstance(value, Detail)

@@ -1,4 +1,5 @@
 import asyncio
+import itertools
 from unittest.mock import Mock
 
 from textual.widgets import Input
@@ -11,6 +12,7 @@ from gbot.tui.panels.kit import DetailPanel, ListPanel
 from gbot.tui.screens.home import HomeScreen
 from gbot.tui.screens.session import SessionScreen
 from gbot.tui.slash import SlashContext, commands, run
+from gbot.tui.slash import account as slash_account
 from groken.client import ConnectError
 
 SECRET_CARD = "tui-vault-card-secret"
@@ -179,7 +181,10 @@ def test_payment_label_sentence_and_secret(tmp_path, monkeypatch):
 
 def test_address_lookup_resolves_the_selected_suggestion(tmp_path, monkeypatch):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
-    monkeypatch.setattr(account, "new_session_token", lambda: SECRET_SESSION)
+    counter = itertools.count(1)
+    monkeypatch.setattr(
+        account, "new_session_token", lambda: f"{SECRET_SESSION}-{next(counter)}"
+    )
 
     async def exercise():
         service = load_fake()
@@ -203,13 +208,58 @@ def test_address_lookup_resolves_the_selected_suggestion(tmp_path, monkeypatch):
             assert detail_panel(app).detail.body == (
                 "1 Example Street, Springfield, IL 62701, United States"
             )
+            token = calls(service, "SuggestGrokBotAddresses")[0]["sessionToken"]
+            assert isinstance(token, str) and token.startswith(SECRET_SESSION)
             assert calls(service, "SuggestGrokBotAddresses") == [
-                {"query": "1 example", "sessionToken": SECRET_SESSION}
+                {"query": "1 example", "sessionToken": token}
             ]
             assert calls(service, "ResolveGrokBotAddress") == [
-                {"id": "demo-address-2", "sessionToken": SECRET_SESSION}
+                {"id": "demo-address-2", "sessionToken": token}
             ]
             assert SECRET_SESSION not in app.export_screenshot()
+
+    asyncio.run(exercise())
+
+
+def test_reload_result_from_an_older_load_never_replaces_a_newer_one(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    pending = []
+    monkeypatch.setattr(
+        slash_account,
+        "_worker",
+        lambda ctx, work, done: pending.append((work, done)),
+    )
+
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot)
+            service.transport.rpcs["GetGrokBotEgressPolicy"] = {"restricted": True}
+            run(ctx, "/egress")
+            await settle(app, pilot)
+            first_work, first_done = pending[0]
+            first_done(first_work())
+            await settle(app, pilot)
+            await pilot.press("g")
+            await settle(app, pilot)
+            assert len(pending) == 2
+            # The stale reload reads the restricted reply; the newer reload reads the open one.
+            stale_work, stale_done = pending[1]
+            stale = stale_work()
+            service.transport.rpcs["GetGrokBotEgressPolicy"] = {}
+            await pilot.press("g")
+            await settle(app, pilot)
+            assert len(pending) == 3
+            newer_work, newer_done = pending[2]
+            newer_done(newer_work())
+            await settle(app, pilot)
+            assert detail_panel(app).detail.fields == (("Mode", "Open"),)
+            stale_done(stale)
+            await settle(app, pilot)
+            assert detail_panel(app).detail.fields == (("Mode", "Open"),)
 
     asyncio.run(exercise())
 

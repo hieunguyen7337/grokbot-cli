@@ -1,3 +1,4 @@
+import itertools
 import json
 
 import pytest
@@ -30,7 +31,11 @@ def setup_cli(monkeypatch):
             return fake.rpc(name, payload)
 
     monkeypatch.setattr(context, "backend_factory", Backend)
-    monkeypatch.setattr(account, "new_session_token", lambda: SESSION)
+    # A new token on every call, so a second mint inside one lookup would show in the payloads.
+    counter = itertools.count(1)
+    monkeypatch.setattr(
+        account, "new_session_token", lambda: f"{SESSION}-{next(counter)}"
+    )
     return fake
 
 
@@ -191,17 +196,22 @@ def test_address_lists_then_picks_in_the_same_session(monkeypatch, capsys):
         "title": "2 Main St",
         "subtitle": "",
     }
+    start = len(fake.calls)
     assert cli.main(["account", "address", "main st", "--pick", "2", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
     assert data["formatted"] == "Formatted two, Town, CA"
     assert data["postal_code"] == "90001"
     payloads = [
         payload
-        for _, name, payload in fake.calls
+        for _, name, payload in fake.calls[start:]
         if name in {"SuggestGrokBotAddresses", "ResolveGrokBotAddress"}
     ]
-    assert {payload["sessionToken"] for payload in payloads} == {SESSION}
-    assert payloads[-1] == {"id": "two", "sessionToken": SESSION}
+    token = payloads[0]["sessionToken"]
+    assert isinstance(token, str) and token.startswith(SESSION)
+    assert payloads == [
+        {"query": "main st", "sessionToken": token},
+        {"id": "two", "sessionToken": token},
+    ]
 
 
 def test_address_pick_errors_and_unavailable(monkeypatch, capsys):
