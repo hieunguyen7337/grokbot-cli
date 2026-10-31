@@ -796,3 +796,62 @@ others) and connects one. Browser steps wait until the status changes;
 `--json`: The Slack state, the messaging link with its phones, or the listener
 integrations (platform, connected, state and the number of automations that need
 it).
+
+## apps
+
+```text
+gbot apps [--json]
+gbot apps --update BC_ID --slug S --apex A --visibility private|team|public [--mute-redeploy-prompts] [--require-confirmation] --yes [--json]
+gbot apps --unpublish BC_ID --slug S --apex A --yes [--json]
+```
+
+List your published cloud-agent apps (slug, apex, visibility and the cloud agent
+that built each), change one's slug, apex, visibility and update prompts, or
+unpublish it. When cloud-agent apps are off for the account, the list says so in
+one sentence. `--mute-redeploy-prompts` stops redeploy prompts and
+`--require-confirmation` asks before each update; both go with `--update`.
+Changes need `--yes`. A refusal from the server is shown as its own sentence; a
+refused change exits 1. The app gate (the page that admits viewers with a
+short-lived ticket) opens only in the Grok Bot app, and app links are never
+printed.
+
+`--json`: The list is an object with kind (on, off or unknown) and apps (bc_id,
+slug, apex and visibility); `--update` and `--unpublish` return ok, state and
+message.
+
+## cloud-agent
+
+```text
+gbot cloud-agent BC_ID [--files] [--artifacts] [--json]
+gbot cloud-agent BC_ID --conversation [--json]
+gbot cloud-agent BC_ID --stop --yes [--json]
+gbot cloud-agent BC_ID --proposals [--json]
+gbot cloud-agent BC_ID --confirm-proposal ID --bot BOT --slug S --visibility private|team|public [--require-confirmation] --yes [--json]
+gbot cloud-agent BC_ID --dismiss-proposal ID [--bot BOT] --yes [--json]
+gbot cloud-agent BC_ID --secrets DIR [--json]
+gbot cloud-agent BC_ID --set-secret NAME [--set-secret NAME ...] --project-dir DIR --yes [--json]
+```
+
+Show a cloud agent's status, title, branch, repository, creation time and file
+and artifact counts (`--files` and `--artifacts` ask the server to include them),
+or say that no cloud agent has that id. `--conversation` prints its messages and
+`--stop` stops it. `--proposals` lists its publish proposals; `--confirm-proposal`
+publishes one as the given slug and visibility for the bot named by `--bot`, and
+`--dismiss-proposal` dismisses one (`--bot` is optional there).
+
+`--secrets DIR` lists the names of the app's secrets in that project directory;
+values are never shown. `--set-secret` saves values for one or more names in the
+directory given by `--project-dir`: each value comes from a hidden prompt, or one
+line of stdin per name when stdin is not a terminal, and no option takes a value.
+gbot then tells the bot which names were saved and which were refused, as the
+app does. Refused names are listed with the reason and the command exits 1.
+Changes need `--yes`. A refusal from the server is shown as its own sentence; a
+refused change exits 1. Reply links are never printed.
+
+`--json`: The info object (bc_id, status, title, branch, repo, created_at,
+file_count, artifact_count and extra, the names of other reply fields), or null
+when there is none; messages have role and text; proposals have proposal_id,
+slug, visibility and summary; `--secrets` returns the names; `--set-secret`
+returns saved, refused (name, kind, message, permanent) and apply_needed; the
+other changes return ok, state and message, or `--stop` returns bc_id and
+stopped.

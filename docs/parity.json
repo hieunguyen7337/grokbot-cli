@@ -132,8 +132,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "connectChannel",
@@ -238,8 +238,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": "Obtain access to a published cloud app."
+      "status": "handoff",
+      "note": "The app opens the gate in its in-app web view with a short-lived ticket; open the app in Grok Bot."
     },
     {
       "name": "createGroup",
@@ -375,8 +375,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "dismissTray",
@@ -679,8 +679,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "getCloudAgentConversation",
@@ -690,8 +690,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "getCloudAgentInfo",
@@ -703,8 +703,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "getCloudAgentPublishProposals",
@@ -714,8 +714,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "getConversationOutline",
@@ -1026,8 +1026,8 @@
       "args": [],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "listMcpServerTools",
@@ -1755,8 +1755,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "setGroupMembers",
@@ -1883,8 +1883,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "stopTeachRecording",
@@ -1962,8 +1962,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": "Report the outcome of supplying cloud app secrets."
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "toggleMcpToolDisabled",
@@ -2011,8 +2011,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "unpublishPluginListing",
@@ -2089,8 +2089,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.cloud_agents"
     },
     {
       "name": "updateForeverBox",
