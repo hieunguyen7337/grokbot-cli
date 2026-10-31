@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "at": "2026-10-31T12:07:00Z",
+  "at": "2026-10-31T12:11:10Z",
   "kit": "2026-10-31.16",
   "repo": "hieunguyen7337/grokbot-cli",
   "plans": {
@@ -34,7 +34,7 @@
           "usable": 0.94,
           "points": 0.00511,
           "minutes": 3.8,
-          "p_pick": 0.846,
+          "p_pick": 0.84,
           "forced": false
         },
         {
@@ -51,24 +51,7 @@
           "usable": 0.919,
           "points": 0.00569,
           "minutes": 3.5,
-          "p_pick": 0.0515,
-          "forced": false
-        },
-        {
-          "arm": "haiku/claude-haiku-5-5/xhigh",
-          "lane": "haiku",
-          "where": "subagent",
-          "reviewed": 151,
-          "outcomes": {
-            "accepted": 144,
-            "fixed": 0,
-            "rework": 0,
-            "rejected": 7
-          },
-          "usable": 0.95,
-          "points": 0.00824,
-          "minutes": 6.9,
-          "p_pick": 0.0435,
+          "p_pick": 0.051,
           "forced": false
         },
         {
@@ -85,7 +68,24 @@
           "usable": 0.95,
           "points": 0.00764,
           "minutes": 6.4,
-          "p_pick": 0.038,
+          "p_pick": 0.0445,
+          "forced": false
+        },
+        {
+          "arm": "haiku/claude-haiku-5-5/xhigh",
+          "lane": "haiku",
+          "where": "subagent",
+          "reviewed": 151,
+          "outcomes": {
+            "accepted": 144,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 7
+          },
+          "usable": 0.95,
+          "points": 0.00824,
+          "minutes": 6.9,
+          "p_pick": 0.034,
           "forced": false
         },
         {
@@ -102,7 +102,7 @@
           "usable": 0.944,
           "points": 0.00736,
           "minutes": 3.3,
-          "p_pick": 0.021,
+          "p_pick": 0.0305,
           "forced": false
         }
       ]
@@ -110,23 +110,6 @@
     "substantive": {
       "status": "exploring",
       "arms": [
-        {
-          "arm": "opus/claude-opus-5-5/medium",
-          "lane": "opus",
-          "where": "subagent",
-          "reviewed": 13,
-          "outcomes": {
-            "accepted": 7,
-            "fixed": 5,
-            "rework": 1,
-            "rejected": 0
-          },
-          "usable": 0.901,
-          "points": 0.00721,
-          "minutes": 10.1,
-          "p_pick": 0.2695,
-          "forced": false
-        },
         {
           "arm": "sonnet/claude-sonnet-5-5/medium",
           "lane": "sonnet",
@@ -141,7 +124,7 @@
           "usable": 0.933,
           "points": 0.00736,
           "minutes": 6.5,
-          "p_pick": 0.2465,
+          "p_pick": 0.2625,
           "forced": false
         },
         {
@@ -158,7 +141,24 @@
           "usable": 0.985,
           "points": 0.00764,
           "minutes": 12.9,
-          "p_pick": 0.244,
+          "p_pick": 0.2535,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/medium",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 13,
+          "outcomes": {
+            "accepted": 7,
+            "fixed": 5,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.901,
+          "points": 0.00721,
+          "minutes": 10.1,
+          "p_pick": 0.2495,
           "forced": false
         },
         {
@@ -175,7 +175,7 @@
           "usable": 0.909,
           "points": 0.00738,
           "minutes": 9.4,
-          "p_pick": 0.155,
+          "p_pick": 0.1595,
           "forced": false
         },
         {
@@ -192,7 +192,7 @@
           "usable": 0.854,
           "points": 0.00824,
           "minutes": 15.2,
-          "p_pick": 0.06,
+          "p_pick": 0.0485,
           "forced": false
         },
         {
@@ -209,7 +209,7 @@
           "usable": 0.675,
           "points": 0.00803,
           "minutes": 11.4,
-          "p_pick": 0.025,
+          "p_pick": 0.0265,
           "forced": false
         }
       ]
@@ -231,7 +231,7 @@
           "usable": 0.815,
           "points": 0.00721,
           "minutes": 14.9,
-          "p_pick": 0.36,
+          "p_pick": 0.365,
           "forced": false
         },
         {
@@ -248,7 +248,7 @@
           "usable": 0.851,
           "points": 0.00738,
           "minutes": 15.3,
-          "p_pick": 0.346,
+          "p_pick": 0.3215,
           "forced": false
         },
         {
@@ -265,7 +265,7 @@
           "usable": 0.919,
           "points": 0.00816,
           "minutes": 10.0,
-          "p_pick": 0.1025,
+          "p_pick": 0.1115,
           "forced": false
         },
         {
@@ -282,7 +282,7 @@
           "usable": 0.872,
           "points": 0.00824,
           "minutes": 19.4,
-          "p_pick": 0.093,
+          "p_pick": 0.1,
           "forced": false
         },
         {
@@ -299,7 +299,7 @@
           "usable": 0.82,
           "points": 0.00803,
           "minutes": 24.0,
-          "p_pick": 0.0745,
+          "p_pick": 0.072,
           "forced": false
         },
         {
@@ -316,7 +316,7 @@
           "usable": 0.589,
           "points": 0.02023,
           "minutes": 24.6,
-          "p_pick": 0.0125,
+          "p_pick": 0.018,
           "forced": false
         },
         {
@@ -333,7 +333,7 @@
           "usable": 0.871,
           "points": 0.01474,
           "minutes": 48.6,
-          "p_pick": 0.008,
+          "p_pick": 0.006,
           "forced": false
         },
         {
@@ -350,7 +350,7 @@
           "usable": 0.864,
           "points": 0.0315,
           "minutes": 25.2,
-          "p_pick": 0.0035,
+          "p_pick": 0.006,
           "forced": false
         }
       ]
@@ -372,7 +372,7 @@
           "usable": 0.944,
           "points": 0.00816,
           "minutes": 110.3,
-          "p_pick": 0.6665,
+          "p_pick": 0.6575,
           "forced": false
         },
         {
@@ -389,7 +389,7 @@
           "usable": 0.782,
           "points": 0.00803,
           "minutes": 199.9,
-          "p_pick": 0.271,
+          "p_pick": 0.27,
           "forced": false
         },
         {
@@ -406,7 +406,7 @@
           "usable": 0.785,
           "points": 0.02023,
           "minutes": 151.9,
-          "p_pick": 0.0345,
+          "p_pick": 0.0465,
           "forced": false
         },
         {
@@ -423,7 +423,7 @@
           "usable": 0.844,
           "points": 0.01474,
           "minutes": 330.5,
-          "p_pick": 0.02,
+          "p_pick": 0.017,
           "forced": false
         },
         {
@@ -440,7 +440,7 @@
           "usable": 0.776,
           "points": 0.0315,
           "minutes": 154.7,
-          "p_pick": 0.008,
+          "p_pick": 0.009,
           "forced": false
         }
       ]
@@ -462,7 +462,7 @@
           "usable": 0.979,
           "points": 0.00511,
           "minutes": 3.7,
-          "p_pick": 0.8415,
+          "p_pick": 0.8275,
           "forced": false
         },
         {
@@ -479,7 +479,7 @@
           "usable": 0.982,
           "points": 0.00569,
           "minutes": 5.0,
-          "p_pick": 0.052,
+          "p_pick": 0.045,
           "forced": false
         },
         {
@@ -496,41 +496,7 @@
           "usable": 0.878,
           "points": 0.00824,
           "minutes": 9.4,
-          "p_pick": 0.0255,
-          "forced": false
-        },
-        {
-          "arm": "sonnet/claude-sonnet-5-5/xhigh",
-          "lane": "sonnet",
-          "where": "subagent",
-          "reviewed": 0,
-          "outcomes": {
-            "accepted": 0,
-            "fixed": 0,
-            "rework": 0,
-            "rejected": 0
-          },
-          "usable": 0.812,
-          "points": 0.00803,
-          "minutes": 9.7,
-          "p_pick": 0.024,
-          "forced": false
-        },
-        {
-          "arm": "sonnet/claude-sonnet-5-5/high",
-          "lane": "sonnet",
-          "where": "subagent",
-          "reviewed": 5,
-          "outcomes": {
-            "accepted": 5,
-            "fixed": 0,
-            "rework": 0,
-            "rejected": 0
-          },
-          "usable": 0.929,
-          "points": 0.00738,
-          "minutes": 5.6,
-          "p_pick": 0.0175,
+          "p_pick": 0.036,
           "forced": false
         },
         {
@@ -547,12 +513,29 @@
           "usable": 0.859,
           "points": 0.00736,
           "minutes": 4.5,
-          "p_pick": 0.017,
+          "p_pick": 0.023,
           "forced": false
         },
         {
-          "arm": "opus/claude-opus-5-5/medium",
-          "lane": "opus",
+          "arm": "sonnet/claude-sonnet-5-5/high",
+          "lane": "sonnet",
+          "where": "subagent",
+          "reviewed": 5,
+          "outcomes": {
+            "accepted": 5,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.929,
+          "points": 0.00738,
+          "minutes": 5.6,
+          "p_pick": 0.0195,
+          "forced": false
+        },
+        {
+          "arm": "sonnet/claude-sonnet-5-5/xhigh",
+          "lane": "sonnet",
           "where": "subagent",
           "reviewed": 0,
           "outcomes": {
@@ -561,10 +544,10 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.88,
-          "points": 0.00721,
-          "minutes": 6.5,
-          "p_pick": 0.01,
+          "usable": 0.812,
+          "points": 0.00803,
+          "minutes": 9.7,
+          "p_pick": 0.017,
           "forced": false
         },
         {
@@ -581,7 +564,24 @@
           "usable": 0.892,
           "points": 0.00816,
           "minutes": 7.0,
-          "p_pick": 0.0065,
+          "p_pick": 0.0155,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/medium",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.88,
+          "points": 0.00721,
+          "minutes": 6.5,
+          "p_pick": 0.011,
           "forced": false
         },
         {
@@ -598,7 +598,7 @@
           "usable": 0.967,
           "points": 0.02023,
           "minutes": 10.9,
-          "p_pick": 0.006,
+          "p_pick": 0.0055,
           "forced": false
         }
       ]
@@ -620,7 +620,7 @@
           "usable": 0.935,
           "points": 0.00569,
           "minutes": 9.8,
-          "p_pick": 0.8335,
+          "p_pick": 0.8355,
           "forced": false
         },
         {
@@ -637,7 +637,7 @@
           "usable": 0.728,
           "points": 0.00764,
           "minutes": 19.7,
-          "p_pick": 0.0505,
+          "p_pick": 0.047,
           "forced": false
         },
         {
@@ -654,7 +654,7 @@
           "usable": 0.791,
           "points": 0.00824,
           "minutes": 12.8,
-          "p_pick": 0.046,
+          "p_pick": 0.0435,
           "forced": false
         },
         {
@@ -671,7 +671,7 @@
           "usable": 0.93,
           "points": 0.00738,
           "minutes": 8.2,
-          "p_pick": 0.039,
+          "p_pick": 0.0415,
           "forced": false
         },
         {
@@ -688,7 +688,7 @@
           "usable": 0.844,
           "points": 0.00736,
           "minutes": 7.3,
-          "p_pick": 0.031,
+          "p_pick": 0.0325,
           "forced": false
         }
       ]
