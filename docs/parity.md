@@ -28,7 +28,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | sharing | 15 | 0 | 0 | 3 | M5 |
 | publishing | 0 | 25 | 1 | 6 | M5 |
 | teams | 7 | 0 | 0 | 14 | M5 |
-| memory-files | 11 | 0 | 0 | 0 | M5 |
+| memory-files | 1 | 10 | 0 | 0 | M5 |
 | settings | 15 | 1 | 2 | 1 | M1, M5 |
 | account-billing | 4 | 0 | 2 | 2 | M5 |
 | voice-meetings | 0 | 0 | 0 | 19 | M5 |

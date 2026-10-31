@@ -3228,8 +3228,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.bot_files"
     },
     {
       "name": "BeginGrokBotAttachmentUpload",
@@ -3721,8 +3721,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.bot_files"
     },
     {
       "name": "DeleteGrokBotEmailInbox",
@@ -3789,8 +3789,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.bot_files"
     },
     {
       "name": "DeleteGrokBotVaultCredential",
@@ -4078,8 +4078,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.bot_files"
     },
     {
       "name": "FinishGrokBotSpendApprovalAssertion",
@@ -4870,8 +4870,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.bot_files"
     },
     {
       "name": "ListGrokBotAgentManagers",
@@ -5035,8 +5035,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.library"
     },
     {
       "name": "ListGrokBotLibraryPins",
@@ -5046,8 +5046,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.library"
     },
     {
       "name": "ListGrokBotMarketplaceCategoriesInternal",
@@ -5272,8 +5272,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.bot_files"
     },
     {
       "name": "ListGrokBotVaultCredentials",
@@ -5430,8 +5430,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.library"
     },
     {
       "name": "MintSandVoiceCallSecret",
@@ -6541,8 +6541,8 @@
       ],
       "area": "memory-files",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.library"
     },
     {
       "name": "SetGrokBotMainAgent",

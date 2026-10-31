@@ -799,6 +799,43 @@ a terminal, `--delete-template` without `--yes` asks you to type the template na
 `--json`: The marketplace state, the template, the export policy and its sentence;
 for a change, the result of each change.
 
+## files
+
+```text
+gbot files BOT [--json]
+gbot files BOT --upload PATH --yes [--json]
+gbot files BOT --delete NAME --yes [--json]
+gbot files BOT --delete-user-file PATH --yes [--json]
+```
+
+List a bot's files (every page, with the total size and whether you can edit),
+then the files in its user store. A part the server refuses is shown as its
+message and the other part is still listed. `--upload` sends one local file to the
+bot, `--delete` removes a bot file by name, and `--delete-user-file` removes a
+user-store file by path. Each change needs `--yes`; without it, and without a
+terminal, nothing is sent. Upload addresses are never printed.
+
+`--json`: `bot`, `files`, `total_bytes`, `can_edit`, `user_store_files` and
+`notices`; a change prints `uploaded`, `deleted` or `deleted_user_file`.
+
+## library
+
+```text
+gbot library BOT [--json]
+gbot library BOT --pin KEY --yes [--json]
+gbot library BOT --unpin KEY --yes [--json]
+gbot library BOT --merge-pins FILE --yes [--json]
+```
+
+List the documents the bot has touched, marked when pinned, then its pins.
+`--pin` and `--unpin` take an external document key (the `key` shown for each
+document). `--merge-pins` reads a JSON list of pins in the shape of
+`gbot library BOT --json` (`pins`) and merges it into the bot's pins, which copies
+pins between bots. Each change needs `--yes`.
+
+`--json`: `bot`, `docs` (each with `pinned`), `pins` and `notices`; a change prints
+the pin list after it.
+
 ## channels
 
 ```text
