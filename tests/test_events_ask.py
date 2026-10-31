@@ -7,7 +7,12 @@ import pytest
 from typing_extensions import override
 
 from groken.client import ConnectError
-from groken.gateway import GatewayManager, GatewaySession
+from groken.gateway import (
+    AwaitingUserError,
+    GatewayManager,
+    GatewaySession,
+    ReplyIncompleteError,
+)
 
 JsonObject = Mapping[str, object]
 
@@ -56,6 +61,21 @@ class ScriptedEvents(httpx.SyncByteStream):
                 yield b"event: message\ndata: " + json.dumps(frame).encode() + b"\n\n"
 
 
+class QuietEvents(ScriptedEvents):
+    def __init__(
+        self, clock: FakeClock,
+        frames: Sequence[tuple[float, JsonObject | None]], read_s: float,
+    ) -> None:
+        super().__init__(clock, frames)
+        self.read_s: float = read_s
+
+    @override
+    def __iter__(self) -> Iterator[bytes]:
+        yield from super().__iter__()
+        self.clock.sleep(self.read_s)
+        raise httpx.ReadTimeout("quiet stream")
+
+
 def appended(entry_id: str, content: str) -> dict[str, object]:
     return {
         "channel": "transcript",
@@ -99,8 +119,11 @@ def make_session(
     tails: Sequence[Sequence[JsonObject]] | None = None,
     agents: Sequence[Sequence[JsonObject]] | None = None,
     events_status: int = 200,
+    quiet_streams: Sequence[Sequence[tuple[float, JsonObject | None]]] | None = None,
+    event_reads: list[float] | None = None,
 ) -> tuple[GatewaySession, FakeClock, list[dict[str, object]]]:
     clock = FakeClock()
+    stream_script = list(quiet_streams or [])
     prompts: list[dict[str, object]] = []
     tail_script: list[Sequence[JsonObject]] = list(tails or [[]])
     agent_script: list[Sequence[JsonObject]] = list(agents or [[]])
@@ -122,9 +145,16 @@ def make_session(
         if path.endswith("/events"):
             if events_status != 200:
                 return httpx.Response(events_status, text="events unavailable")
+            read_s = cast(dict[str, float], request.extensions["timeout"])["read"]
+            if event_reads is not None:
+                event_reads.append(read_s)
+            stream = (
+                QuietEvents(clock, stream_script.pop(0), read_s)
+                if stream_script else ScriptedEvents(clock, frames)
+            )
             return httpx.Response(
                 200,
-                stream=ScriptedEvents(clock, frames),
+                stream=stream,
                 headers={"content-type": "text/event-stream"},
             )
         return httpx.Response(404)
@@ -308,6 +338,8 @@ def test_manager_ask_stream_delegates_to_session(
             idle_s: float = 45,
             client_nonce: str | None = None,
             on_chunk: Callable[[str], None] | None = None,
+            *,
+            on_entry: Callable[[dict[str, object]], bool] | None = None,
         ) -> str:
             calls.append((agent_id, text, timeout_s, idle_s, client_nonce, on_chunk))
             return "reply"
@@ -477,3 +509,289 @@ def test_post_send_event_fallback_does_not_resend_prompt() -> None:
     assert len(prompts) == 1
     assert prompts[0]["prompt"] == "q"
     assert prompts[0]["clientNonce"] == "nonce-1"
+
+
+def test_events_wait_for_first_chunk_beyond_reply_quiet_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reads: list[float] = []
+    session, clock, prompts = make_session(
+        [],
+        quiet_streams=[[], [], [
+            (1, appended("r1", "stream reply")),
+            (0, upsert(False, False)),
+            (2, upsert(False, False)),
+        ]],
+        event_reads=reads,
+    )
+
+    def no_poll(*_args: object, **_kwargs: object) -> str:
+        pytest.fail("a thinking bot must stay on the event stream")
+
+    monkeypatch.setattr(session, "_ask_via_poll", no_poll)
+    assert session.ask("a1", "q", timeout_s=30) == "stream reply"
+    assert reads == [2, 2, 2]
+    assert clock.now == 7
+    assert len(prompts) == 1
+
+
+@pytest.mark.parametrize("events_status", [200, 404])
+def test_incomplete_reply_carries_bot_and_elapsed_time(events_status: int) -> None:
+    session, clock, _ = make_session(
+        [(0, appended("r1", "partial")), (4, None)],
+        events_status=events_status,
+    )
+    with pytest.raises(ReplyIncompleteError) as raised:
+        session.ask("a1", "q", timeout_s=3)
+    assert isinstance(raised.value, ConnectError)
+    assert raised.value.bot_id == "a1"
+    assert raised.value.elapsed_s == clock.now == 4
+
+
+def test_quiet_tick_completes_reply_after_one_idle_frame(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[
+            (0, appended("r1", "answer")), (0, upsert(False, False)),
+        ], []],
+        tails=[[transcript_entry("r1", "answer")]],
+        agents=[[{"id": "a1", "isRunning": False, "isComposingMessage": False}]],
+    )
+
+    def no_poll(*_args: object, **_kwargs: object) -> str:
+        pytest.fail("quiet completion must not poll")
+
+    monkeypatch.setattr(session, "_ask_via_poll", no_poll)
+    assert session.ask("a1", "q", timeout_s=60) == "answer"
+    assert clock.now == 2
+    assert len(prompts) == 1
+
+
+def test_prompt_sent_once_across_two_quiet_reconnects() -> None:
+    reads: list[float] = []
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[], [], [
+            (0, appended("r1", "answer")),
+            (0, upsert(False, False)), (2, upsert(False, False)),
+        ]], event_reads=reads,
+    )
+    assert session._ask_via_events("a1", "q", 60, 45, "nonce-1") == "answer"
+    assert reads == [2, 2, 2]
+    assert clock.now == 6
+    assert len(prompts) == 1
+    assert prompts[0]["clientNonce"] == "nonce-1"
+
+
+def test_quiet_reconnect_backfills_gap_and_deduplicates_stream_chunk() -> None:
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[
+            (0, appended("r1", "first")), (0, upsert(True, True)),
+        ], [
+            (0, appended("r2", "gap")), (0, upsert(False, False)), (2, None),
+        ]],
+        tails=[[
+            transcript_entry("r1", "first"), transcript_entry("r2", "gap"),
+        ]],
+        agents=[[{"id": "a1", "isRunning": False, "isComposingMessage": False}]],
+    )
+    chunks: list[str] = []
+    assert session.ask("a1", "q", timeout_s=60, on_chunk=chunks.append) == "first\ngap"
+    assert chunks == ["first", "gap"]
+    assert clock.now == 4
+    assert len(prompts) == 1
+
+
+def test_heartbeat_checks_reply_completion_without_another_data_frame() -> None:
+    session, clock, _ = make_session([
+        (0, appended("r1", "answer")),
+        (0, upsert(False, False)), (0, upsert(False, False)), (2, None),
+        (1, appended("r2", "too late")),
+    ])
+    assert session.ask("a1", "q", timeout_s=60) == "answer"
+    assert clock.now == 2
+
+
+def waiting_entry() -> dict[str, object]:
+    return {
+        "id": "approval-entry", "kind": "send-message", "timestampMs": 9999999999999,
+        "message": {"type": "auto-review-approval", "approval": {
+            "requestId": "request", "status": "pending", "summary": "Run report",
+            "reason": "User permission required", "surface": "box_shell",
+            "command": "python report.py",
+        }},
+    }
+
+
+def waiting_frame(kind: str = "appended", agent_id: str = "a1") -> dict[str, object]:
+    return {
+        "channel": "transcript",
+        "payload": {"type": kind, "agentId": agent_id, "entry": waiting_entry()},
+    }
+
+
+def stop_on_approval(entry: dict[str, object]) -> bool:
+    return require_object(entry.get("message", {})).get("type") == "auto-review-approval"
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("kind", ["appended", "updated"])
+def test_awaiting_hook_on_stream_entries(stream: bool, kind: str) -> None:
+    session, _, prompts = make_session([
+        (0, appended("reply", "Partial reply")), (0, waiting_frame(kind)),
+    ])
+    method = session.ask_stream if stream else session.ask
+    with pytest.raises(AwaitingUserError) as raised:
+        method("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.bot_id == "a1"
+    assert raised.value.entry == waiting_entry()
+    assert raised.value.partial_reply == "Partial reply"
+    assert len(prompts) == 1
+
+
+@pytest.mark.parametrize("hook", [False, True])
+def test_awaiting_upsert_is_opt_in_and_scoped_to_agent(hook: bool) -> None:
+    waiting = {"reason": "Approval required", "since": 1000, "tabId": "chat"}
+    frames: list[tuple[float, JsonObject | None]] = [
+        (0, {"channel": "agent-upserted", "payload": {"agent": {
+            "id": "a2", "awaitingUserResponse": waiting,
+        }}}),
+        (0, appended("reply", "Partial reply")),
+        (0, {"channel": "agent-upserted", "payload": {"agent": {
+            "id": "a1", "awaitingUserResponse": waiting,
+        }}}),
+        (0, upsert(False, False)), (2, upsert(False, False)),
+    ]
+    session, _, prompts = make_session(frames)
+    if hook:
+        with pytest.raises(AwaitingUserError) as raised:
+            session.ask("a1", "q", on_entry=lambda entry: False)
+        assert raised.value.entry == {} and raised.value.partial_reply == "Partial reply"
+    else:
+        assert session.ask("a1", "q", on_entry=None) == "Partial reply"
+    assert len(prompts) == 1
+
+
+def test_entry_hook_filters_stale_wrong_agent_and_duplicates() -> None:
+    stale = waiting_frame()
+    require_object(require_object(stale["payload"])["entry"])["timestampMs"] = 1
+    missing_agent = waiting_frame()
+    require_object(missing_agent["payload"]).pop("agentId")
+    reply = appended("reply", "answer")
+    session, _, _ = make_session([
+        (0, stale), (0, missing_agent), (0, waiting_frame(agent_id="a2")),
+        (0, reply), (0, reply), (0, upsert(False, False)), (2, upsert(False, False)),
+    ])
+    accepted: list[dict[str, object]] = []
+
+    def callback(entry: dict[str, object]) -> bool:
+        accepted.append(entry)
+        return stop_on_approval(entry)
+
+    assert session.ask("a1", "q", on_entry=callback) == "answer"
+    assert [entry["id"] for entry in accepted] == ["reply"]
+
+
+def test_entry_hook_sees_changed_updated_entry() -> None:
+    frame = waiting_frame()
+    resolved = json.loads(json.dumps(frame))
+    resolved["payload"]["entry"]["message"]["approval"]["status"] = "expired"
+    session, _, _ = make_session([(0, resolved), (0, waiting_frame("updated"))])
+    accepted: list[dict[str, object]] = []
+
+    def callback(entry: dict[str, object]) -> bool:
+        accepted.append(entry)
+        return require_object(require_object(entry["message"])["approval"])["status"] == "pending"
+
+    with pytest.raises(AwaitingUserError):
+        session.ask("a1", "q", on_entry=callback)
+    assert len(accepted) == 2
+
+
+@pytest.mark.parametrize("kind", ["appended", "updated"])
+def test_none_hook_keeps_non_text_cards_ignored(kind: str) -> None:
+    session, _, _ = make_session([
+        (0, waiting_frame(kind)), (0, appended("reply", "answer")),
+        (0, upsert(False, False)), (2, upsert(False, False)),
+    ])
+    assert session.ask_stream("a1", "q", on_entry=None) == "answer"
+
+
+def test_entry_hook_quiet_reconnect_backfill() -> None:
+    session, clock, prompts = make_session(
+        [], quiet_streams=[[(0, appended("reply", "Partial reply"))], []],
+        tails=[[transcript_entry("reply", "Partial reply"), waiting_entry()]],
+    )
+    with pytest.raises(AwaitingUserError) as raised:
+        session.ask("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.entry == waiting_entry()
+    assert raised.value.partial_reply == "Partial reply"
+    assert clock.now == 2 and len(prompts) == 1
+
+
+def test_entry_hook_disconnect_backfill() -> None:
+    clock = FakeClock()
+    paths: list[str] = []
+
+    class DroppedEvents(ScriptedEvents):
+        def __iter__(self) -> Iterator[bytes]:
+            yield from super().__iter__()
+            raise httpx.ReadError("stream dropped")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.path)
+        if request.url.path == "/events":
+            return httpx.Response(200, stream=DroppedEvents(clock, [(0, appended("reply", "Partial reply"))]))
+        if request.url.path == "/api/sendPrompt":
+            return httpx.Response(200, json={"accepted": True})
+        if request.url.path == "/api/getAgentTranscriptTail":
+            return httpx.Response(200, json={"entries": [transcript_entry("reply", "Partial reply"), waiting_entry()]})
+        pytest.fail(f"Unexpected request: {request.url.path}")
+
+    session = GatewaySession("https://gw.example", "gt", "nt", "pod", monotonic=clock.monotonic, sleeper=clock.sleep)
+    session.http = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(AwaitingUserError) as raised:
+        session.ask("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.partial_reply == "Partial reply"
+    assert paths == ["/events", "/api/sendPrompt", "/api/getAgentTranscriptTail"]
+
+
+def test_entry_hook_poll_fallback() -> None:
+    session, _, prompts = make_session(
+        [], events_status=404, tails=[[], [waiting_entry()]],
+    )
+    with pytest.raises(AwaitingUserError) as raised:
+        session.ask("a1", "q", on_entry=stop_on_approval)
+    assert raised.value.entry == waiting_entry() and raised.value.partial_reply == ""
+    assert len(prompts) == 1
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("retry", [False, True])
+def test_manager_forwards_entry_hook_without_retrying_awaiting(
+    monkeypatch: pytest.MonkeyPatch, stream: bool, retry: bool,
+) -> None:
+    manager = GatewayManager.__new__(GatewayManager)
+    session, _, _ = make_session([])
+    calls: list[tuple[object, ...]] = []
+    forces: list[bool] = []
+
+    def get_session(force: bool = False) -> GatewaySession:
+        forces.append(force)
+        return session
+
+    def ask(*args: object, **kwargs: object) -> str:
+        calls.append(args)
+        assert kwargs["on_entry"] is stop_on_approval
+        if retry and len(calls) == 1:
+            raise ConnectError(502, "retry")
+        raise AwaitingUserError("a1", waiting_entry(), "Partial reply")
+
+    monkeypatch.setattr(manager, "session", get_session)
+    monkeypatch.setattr(session, "ask_stream" if stream else "ask", ask)
+    method = manager.ask_stream if stream else manager.ask
+    with pytest.raises(AwaitingUserError):
+        method("a1", "q", on_entry=stop_on_approval)
+    assert forces == ([False, True] if retry else [False])
+    if retry:
+        assert calls[0][4] == calls[1][4]

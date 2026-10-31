@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$CLAUDE_CODE_REMOTE\" != true ] || python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-notify.py\" hook || true",
+            "timeout": 15,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$CLAUDE_CODE_REMOTE\" != true ] || python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-notify.py\" hook || true",
+            "timeout": 15,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$CLAUDE_CODE_REMOTE\" != true ] || python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-notify.py\" hook || true",
+            "timeout": 15,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$CLAUDE_CODE_REMOTE\" != true ] || python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-notify.py\" hook || true",
+            "timeout": 15,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$CLAUDE_CODE_REMOTE\" != true ] || python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-notify.py\" hook || true",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

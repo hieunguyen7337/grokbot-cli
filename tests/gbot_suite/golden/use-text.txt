@@ -1,0 +1,3 @@
+Default bot: Research (bot-research)
+--- stderr ---
+--- exit 0 ---

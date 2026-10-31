@@ -1,0 +1,5 @@
+NAME      KIND    ACCOUNT          STATUS     TOOLS  PLUGIN
+Calendar  plugin  ada@example.com  connected  2      on
+Notes     custom  ada@example.com  needsAuth  0      - - connect it in the Grok Bot app
+--- stderr ---
+--- exit 0 ---

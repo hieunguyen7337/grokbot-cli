@@ -1,0 +1,9 @@
+grokbot-cli / gbot is an unofficial fork of trac3r00/groken.
+Upstream: https://github.com/trac3r00/groken
+The upstream MIT license and Copyright (c) 2026 trac3r00 are retained in LICENSE.
+
+This project is not affiliated with or endorsed by SpaceXAI, xAI, Cursor or
+Anysphere. Product names identify the services with which this client interoperates.
+
+No Grok Bot app code is included. Protocol documentation describes interfaces
+in our own words; it does not distribute extracted app files or source code.

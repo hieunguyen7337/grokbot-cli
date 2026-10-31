@@ -65,6 +65,8 @@ def test_install_cli_command_uses_editable_uv_tool_with_all_extras(
     monkeypatch.setattr("groken.installers.HOME", tmp_path)
     monkeypatch.setattr("groken.installers.shutil.which", fake_which)
     monkeypatch.setattr("groken.installers.subprocess.run", fake_run)
+    # setup-uv exports UV_TOOL_BIN_DIR on CI runners; this test pins the default.
+    monkeypatch.delenv("UV_TOOL_BIN_DIR", raising=False)
 
     result = install_cli_command(dry_run=False)
 

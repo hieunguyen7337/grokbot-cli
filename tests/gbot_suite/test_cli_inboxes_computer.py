@@ -1,0 +1,136 @@
+import json
+import webbrowser
+
+import pytest
+
+from gbot import cli, context
+from gbot.service import computer, inboxes
+from gbot.service.transport import FakeTransport
+
+URL = "https://viewer.invalid/?token=private"
+
+
+def setup_cli(monkeypatch):
+    fake = FakeTransport(
+        {
+            **computer.DEMO_COMMANDS,
+            "listAgents": [{"id": "bot", "name": "Alpha", "harness": "box"}],
+        },
+        {**computer.DEMO_RPCS, **inboxes.DEMO_RPCS},
+    )
+    fake.commands["getForeverBoxStatus"] = {
+        **computer._DEMO,
+        "vncUrl": URL,
+        "windows": [{"vncUrl": URL}],
+    }
+    monkeypatch.setattr(context, "manager_factory", lambda: fake)
+
+    class Backend:
+        def unary(self, service, name, payload):
+            return fake.rpc(name, payload)
+
+    monkeypatch.setattr(context, "backend_factory", Backend)
+    return fake
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_reads(monkeypatch, capsys, json_mode):
+    setup_cli(monkeypatch)
+    for argv in (["inboxes"], ["computer", "Alpha"]):
+        assert cli.main([*argv, *(["--json"] if json_mode else [])]) == 0
+        output = capsys.readouterr().out
+        assert URL not in output
+        if json_mode:
+            assert json.loads(output)
+        else:
+            assert "helper@mail.grokbot.com" in output or "State: running" in output
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["inboxes", "--create", "Alpha"],
+        *[
+            ["computer", "Alpha", flag]
+            for flag in ("--wake", "--update", "--hand-back")
+        ],
+    ],
+)
+def test_requires_yes(monkeypatch, capsys, argv):
+    fake = setup_cli(monkeypatch)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+    assert cli.main([*argv, "--json"]) == 1
+    assert "--yes" in capsys.readouterr().err
+    assert not fake.calls
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_mutations_and_open(monkeypatch, capsys, json_mode):
+    fake = setup_cli(monkeypatch)
+    opened = []
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.append(url) or True)
+    for argv, name in [
+        (["inboxes", "--create", " ALPHA "], "CreateGrokBotEmailInbox"),
+        (["computer", "Alpha", "--wake"], "ensureForeverBox"),
+        (["computer", "Alpha", "--update"], "updateForeverBox"),
+        (["computer", "Alpha", "--hand-back"], "handBackForeverBox"),
+        (["computer", "Alpha", "--open"], "getForeverBoxStatus"),
+    ]:
+        assert cli.main([*argv, "--yes", *(["--json"] if json_mode else [])]) == 0
+        output = capsys.readouterr().out
+        assert URL not in output
+        assert any(call[1] == name for call in fake.calls)
+        if json_mode:
+            assert json.loads(output)
+        elif "--open" in argv:
+            assert "Opened the live view." in output
+    assert opened == [URL]
+
+
+def test_missing_handoff_or_view(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    fake.commands["getForeverBoxStatus"] = None
+    for flag, message in [
+        ("--hand-back", "Nothing to hand back"),
+        ("--open", "No live view"),
+    ]:
+        assert cli.main(["computer", "Alpha", flag, "--yes"]) == 1
+        assert message in capsys.readouterr().err
+    assert not any(call[1] == "handBackForeverBox" for call in fake.calls)
+
+
+class BrowserError(webbrowser.Error):
+    pass
+
+
+@pytest.mark.parametrize("failure", ["false", "raises"])
+@pytest.mark.parametrize("json_mode", [False, True])
+def test_open_failure(monkeypatch, capsys, json_mode, failure):
+    setup_cli(monkeypatch)
+
+    def browser(url):
+        if failure == "raises":
+            raise BrowserError(url)
+        return False
+
+    monkeypatch.setattr("webbrowser.open", browser)
+    argv = ["computer", "Alpha", "--open", *(["--json"] if json_mode else [])]
+    assert cli.main(argv) == 1
+    captured = capsys.readouterr()
+    assert "Opened" not in captured.out
+    assert "Could not open a browser for the live view." in captured.err
+    assert URL not in captured.out + captured.err
+    assert "private" not in captured.out + captured.err
+    if json_mode:
+        error = json.loads(captured.err)["error"]
+        assert error["type"] == "invalid"
+        assert error["message"] == "Could not open a browser for the live view."
+
+
+def test_open_success_reports_opened(monkeypatch, capsys):
+    setup_cli(monkeypatch)
+    monkeypatch.setattr("webbrowser.open", lambda url: True)
+    assert cli.main(["computer", "Alpha", "--open"]) == 0
+    captured = capsys.readouterr()
+    assert "Opened the live view." in captured.out
+    assert URL not in captured.out + captured.err

@@ -1,0 +1,12 @@
+card0002  Inbox  auto-review-approval  2m  Run report
+card0004  Inbox  email-draft  2m  From: ada@example.com; To: bob@example.com; Subject: Report
+card0006  Inbox  widget  1m  Which colour?
+  options: A | B
+card0007  Inbox  user-form  1m  Report details
+  fields: color (text, required)
+card0003  Research  local-tool-permission  2m  Run local report
+card0005  Research  slack-draft  2m  To: #reports; Workspace: Example; First line
+card0008  Research  secret-request  1m  Needed for reports
+Answer with: auto-review-approval: gbot approve REF / gbot deny REF; email-draft: gbot approve REF / gbot deny REF; widget: gbot respond REF VALUE / gbot dismiss REF; user-form: gbot respond REF --field ID=VALUE / gbot dismiss REF; local-tool-permission: gbot approve REF / gbot deny REF; slack-draft: gbot approve REF / gbot deny REF; secret-request: gbot secret REF
+--- stderr ---
+--- exit 2 ---

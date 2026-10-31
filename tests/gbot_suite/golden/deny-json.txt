@@ -1,0 +1,32 @@
+{
+  "answered": true,
+  "bot_id": "bot-inbox",
+  "bot_name": "Inbox",
+  "entry_id": "card0004-entry",
+  "type": "email-draft",
+  "rpc": "DiscardGrokBotDraft",
+  "effect": "discards it"
+}
+--- stderr ---
+Bot: Inbox (bot-inbox)  Type: email-draft  REF: card0004-entry
+Summary: From: ada@example.com; To: bob@example.com; Subject: Report
+Draft (7 lines, sent exactly as shown if approved):
+   1| From: ada@example.com
+   2| To: bob@example.com
+   3| Cc: dee@example.com
+   4| Subject: Report
+   5|
+   6| First line
+   7| Second line
+Answer: DiscardGrokBotDraft (discards it)
+--- exit 0 ---
+--- rpc ---
+[
+  {
+    "method": "DiscardGrokBotDraft",
+    "payload": {
+      "agentId": "bot-inbox",
+      "entryId": "card0004-entry"
+    }
+  }
+]

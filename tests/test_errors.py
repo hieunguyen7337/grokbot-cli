@@ -5,6 +5,7 @@ import pytest
 
 from groken.client import ConnectError
 from groken.errors import explain_error
+from groken.gateway import ReplyIncompleteError
 
 
 def test_auth_error_suggests_login() -> None:
@@ -34,6 +35,7 @@ def test_plain_error_passthrough() -> None:
         (httpx.TimeoutException("slow"), "timed out"),
         (httpx.ConnectError("refused"), "connect"),
         (ConnectError(401, "unauthorized after refresh"), "refresh"),
+        (ConnectError(417, ""), "asleep"),
     ],
 )
 def test_explain_error_actionable_cases(exc: Exception, fragment: str) -> None:
@@ -82,3 +84,27 @@ def test_mcp_does_not_swallow_unexpected_errors(
 
     with pytest.raises(ValueError, match="bad test input"):
         _ = asyncio.run(ask())
+
+
+def test_reply_incomplete_suggests_waiting_instead_of_network_repair() -> None:
+    msg = explain_error(ReplyIncompleteError("a1", 30))
+    assert "a1" in msg and "30s" in msg
+    assert "still working" in msg
+    assert "--timeout" in msg and "groken tail" in msg
+    assert "Network connection failed" not in msg
+
+
+@pytest.mark.parametrize(
+    "error, command",
+    [
+        (ConnectError(401, "unauthenticated"), "login"),
+        (ConnectError(401, "unauthorized after refresh"), "login"),
+        (ConnectError(404, "could not be routed"), "doctor"),
+        (ConnectError(404, "unknown gateway method"), "doctor"),
+        (ReplyIncompleteError("a1", 30), "tail"),
+    ],
+)
+def test_error_hints_use_running_cli(error: Exception, command: str) -> None:
+    msg = explain_error(error, cli="gbot")
+    assert f"gbot {command}" in msg
+    assert "groken" not in msg

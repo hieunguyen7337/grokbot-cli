@@ -1,0 +1,17 @@
+Bot: Inbox (bot-inbox)  Type: widget  REF: card0006-entry
+Summary: Which colour?
+Answer: RespondGrokBotWidget
+Answered.
+--- stderr ---
+--- exit 0 ---
+--- rpc ---
+[
+  {
+    "method": "RespondGrokBotWidget",
+    "payload": {
+      "agentId": "bot-inbox",
+      "entryId": "card0006-entry",
+      "value": "A"
+    }
+  }
+]

@@ -10,9 +10,16 @@ from pathlib import Path
 from typing import TypeAlias, cast
 from xml.parsers.expat import ExpatError
 
+from . import winplat
 from .inspect_contracts import CommandContract, extract_command_contracts
 
 DEFAULT_APP_PATH = Path("/Applications/Grok Bot.app")
+if winplat.IS_WINDOWS:
+    _app_dirs = winplat.app_install_dirs()
+    if _app_dirs:
+        DEFAULT_APP_PATH = next(
+            (path for path in _app_dirs if path.exists()), _app_dirs[0]
+        )
 HOST_MAIN = "dist/host/host-main.cjs"
 COORDINATOR_MAIN = "dist/node-agent-coordinator/main.cjs"
 PACKAGE_JSON = "package.json"
@@ -92,7 +99,9 @@ def _lookup(header: AsarHeader, entry: str) -> JsonObject:
         if child is None:
             raise AsarError(f"malformed index node for {entry}")
         node = child
-    if "offset" not in node or "size" not in node:
+    if node.get("unpacked") is not True and (
+        "offset" not in node or "size" not in node
+    ):
         raise AsarError(f"{entry} is not a regular file in the archive")
     return node
 
@@ -100,6 +109,15 @@ def _lookup(header: AsarHeader, entry: str) -> JsonObject:
 def read_asar_entry(archive: Path, header: AsarHeader, entry: str) -> bytes:
     """Return the raw bytes of one regular archive entry."""
     node = _lookup(header, entry)
+    if node.get("unpacked") is True:
+        base = Path(str(archive) + ".unpacked").resolve()
+        target = (base / entry).resolve()
+        if not target.is_relative_to(base):
+            raise AsarError(f"unsafe unpacked entry: {entry}")
+        try:
+            return target.read_bytes()
+        except OSError as exc:
+            raise AsarError(f"cannot read unpacked entry: {entry}") from exc
     try:
         raw_offset, raw_size = node["offset"], node["size"]
         if not isinstance(raw_offset, (str, int, float)) or not isinstance(
@@ -120,6 +138,7 @@ def resolve_asar(app_path: Path) -> Path:
         app_path,
         app_path / "Contents" / "Resources" / "app.asar",
         app_path / "app.asar",
+        app_path / "resources" / "app.asar",
     ):
         if candidate.is_file():
             return candidate
@@ -146,6 +165,11 @@ def read_package_metadata(
 
 
 def read_bundle_version(root: Path) -> str | None:
+    if winplat.IS_WINDOWS:
+        install = root.parent if root.name.lower() == "resources" else root
+        version = winplat.exe_version(install / "Grok Bot.exe")
+        if version:
+            return version
     try:
         loaded = cast(
             "JsonValue",

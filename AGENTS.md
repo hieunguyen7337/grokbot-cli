@@ -1,5 +1,23 @@
 # groken — Project Knowledge Base
 
+## FORK: grokbot-cli (Windows support + `gbot` CLI) — read first
+This fork (hieunguyen7337/grokbot-cli, unofficial, not affiliated with SpaceXAI or Cursor) makes the transport
+core (`auth`, `client`, `checksum`, `config`, `private_files`, `gateway`, `errors`, `app_archive`) Windows-safe and
+adds a thin `gbot` CLI package (`gbot/`). The upstream sections below describe macOS-only groken 0.3.0; where they
+conflict with this section, this section wins.
+- Platform: gate POSIX/macOS-only calls (`os.fchmod`, `fcntl`, `O_NOFOLLOW`, `signal.SIGKILL`, `plistlib`, `ioreg`,
+  `/bin/sh`) behind `sys.platform` checks. On Windows the data dir is `%LOCALAPPDATA%\grokbot-cli` (`GBOT_HOME`
+  overrides); POSIX paths stay `~/.config/groken` so upstream tests keep their meaning.
+- Never call the live Grok Bot / `api2.cursor.sh` API from tests or tools; tests use `httpx.MockTransport`.
+- Never commit tokens, and never commit files extracted from the Grok Bot app bundle (`app.asar`); protocol
+  notes in `docs/` describe interfaces in our own words.
+- Gates (Windows): `.venv/Scripts/python -m pytest -q <files>`, `.venv/Scripts/ruff check groken gbot tests`,
+  `.venv/Scripts/basedpyright --level error`.
+- Branches: `main` takes reviewed work. The main cloud session (started by `lane main`) may merge its own reviewed
+  branch into `main` and push it, with a merge commit, after every gate passes on the merge result; see CLAUDE.md.
+  `gbot-windows` and `gbot-tui` are integration branches that only the owner's local session merges into. Nobody
+  force-pushes, and nobody pushes a tag, a release branch or a pull request.
+
 ## OVERVIEW
 macOS-only Python bridge that lets agents (omo/Hermes) chat with Grok Bot cloud agents in real time: Cursor OAuth PKCE login → `EnsureSandBox` (Connect-RPC) → per-pod gateway (`POST /api/<command>` + `/events` SSE). Ships as `groken` CLI + `groken-mcp` MCP server.
 

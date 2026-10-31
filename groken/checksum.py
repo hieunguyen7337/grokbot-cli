@@ -6,13 +6,14 @@ from __future__ import annotations
 
 import base64
 import subprocess
+import sys
 import time
 import uuid as uuidlib
-from pathlib import Path
 
+from . import winplat
 from .private_files import write_private_text
 
-_STATE_DIR = Path.home() / ".config" / "groken"
+_STATE_DIR = winplat.data_dir()
 _MACHINE_ID_FILE = _STATE_DIR / "machine_id"
 
 
@@ -36,16 +37,18 @@ def create_cursor_checksum(machine_id: str, now_ms: float | None = None) -> str:
 
 
 def get_machine_id() -> str:
-    try:
-        out = subprocess.run(
-            ["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        ).stdout
-    except (OSError, subprocess.SubprocessError):
-        out = ""
+    out = ""
+    if sys.platform == "darwin":
+        try:
+            out = subprocess.run(
+                ["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            ).stdout
+        except (OSError, subprocess.SubprocessError):
+            out = ""
     for line in out.splitlines():
         if "IOPlatformUUID" in line:
             return line.split('"')[-2].strip()
