@@ -32,7 +32,7 @@ def command_options() -> dict[str, set[str]]:
 def test_reference_flags_match_parser() -> None:
     options = command_options()
     reference = (ROOT / "docs/gbot.md").read_text(encoding="utf-8")
-    sections = re.split(r"^## (\w+)\s*$", reference, flags=re.MULTILINE)
+    sections = re.split(r"^## ([\w-]+)\s*$", reference, flags=re.MULTILINE)
     found = set()
     for name, section in zip(sections[1::2], sections[2::2]):
         if name not in options:
@@ -47,7 +47,7 @@ def test_guide_and_skill_example_flags_match_parser() -> None:
     options = command_options()
     for path in (ROOT / "docs/agents.md", ROOT / "skills/gbot/SKILL.md"):
         content = path.read_text(encoding="utf-8")
-        examples = re.findall(r"\bgbot (\w+)[^\n`]*", content)
+        examples = re.findall(r"\bgbot ([\w-]+)[^\n`]*", content)
         assert examples
         for example in examples:
             name = example.split()[0]
