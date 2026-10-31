@@ -18,7 +18,7 @@ Sources: the read-only 0.77.0 coordinator command validators, electron-main prot
 | bots | 3 | 14 | 0 | 3 | M3 |
 | avatar-voice | 0 | 5 | 1 | 1 | M3 |
 | templates | 2 | 8 | 0 | 4 | M3 |
-| connectors | 16 | 4 | 4 | 6 | M1, M4 |
+| connectors | 6 | 14 | 4 | 6 | M1, M4 |
 | plugins-skills | 10 | 2 | 0 | 2 | M4 |
 | automations | 4 | 18 | 0 | 0 | M4 |
 | channels | 1 | 22 | 1 | 16 | M4 |

@@ -576,6 +576,40 @@ Imports/install return added_count and workflow_count, based only on before/afte
 workflow counts. Catalog returns id, name, description, publisher and install_kind.
 `--help` (or `-h`) shows command usage.
 
+## connector
+
+```text
+gbot connector SERVER [--json]
+gbot connector SERVER [--disable-tool T] [--enable-tool T] [--permission T=LEVEL]
+  [--reads LEVEL] [--writes LEVEL] [--instructions TEXT] [--rename-account OLD NEW]
+  [--remove-account KEY] [--remove] [--shared-spaces on|off] [--yes] [--json]
+gbot connector SERVER --sign-in [--account KEY] [--reauth] [--no-browser] [--yes] [--json]
+gbot connector --clear-always-allow [--yes] [--json]
+```
+
+Show one connector's status, account, transport, tools, permission defaults,
+group-chat access and custom instructions. SERVER matches a unique ID, server
+identifier, name or plugin display name, ignoring case. `--json` returns these
+fields as an object; credentials and browser sign-in links are excluded.
+
+`--disable-tool` and `--enable-tool` change a tool's enabled state.
+`--permission T=LEVEL` changes one tool; `--reads` and `--writes` change defaults.
+LEVEL is auto, allow, ask or block (also auto_review, always_allow,
+needs_approval or blocked). Auto removes an explicit tool override.
+`--instructions TEXT` trims and saves text; empty text clears, and `-` reads stdin.
+`--rename-account OLD NEW` renames an account, `--remove-account KEY` removes
+one, and `--remove` removes the connector. Team connectors are managed by admins.
+`--shared-spaces on|off` controls availability in group chats.
+`--clear-always-allow` forgets all saved always-allow answers for connector tools.
+
+Every mutation requires terminal confirmation or `--yes`. `--sign-in` starts
+browser authentication, optionally for `--account KEY`; `--reauth` forces a new
+sign-in. The handoff link prints only on stderr. `--no-browser` displays the
+link without opening it. Completion requires a status change; opening a link
+alone is insufficient. Ctrl+C cancels waiting (exit 130). If the browser asks
+to open the Grok Bot app, finish there: gbot cannot receive that callback.
+`--help` (or `-h`) displays command usage.
+
 ## templates
 
 ```text
