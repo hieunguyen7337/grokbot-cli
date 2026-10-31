@@ -1,4 +1,5 @@
 import argparse
+import sys
 import webbrowser
 
 from gbot.context import Context
@@ -20,13 +21,13 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
     if not args.no_browser:
         try:
             opened = webbrowser.open(login["login_url"])
-        except (OSError, webbrowser.Error):
+        except Exception:  # noqa: BLE001 - browser errors may embed the link
             opened = False
         if not opened:
-            ctx.out.error(
-                RuntimeError(
-                    "Could not open a browser. Open the link shown above to sign in."
-                )
+            # A note, not an error: login goes on and can still succeed, so no JSON error object.
+            print(
+                "Could not open a browser. Open the link shown above to sign in.",
+                file=sys.stderr,
             )
     tokens = auth.poll_for_tokens(
         login["uuid"], login["verifier"], timeout_s=args.timeout

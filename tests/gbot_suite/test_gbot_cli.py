@@ -728,7 +728,7 @@ def test_interrupt_cli(fake, monkeypatch, capsys):
     assert "Re-run with --yes to confirm" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("outcome", ["false", "raises"])
+@pytest.mark.parametrize("outcome", ["false", "raises", "raises-other", "opens"])
 @pytest.mark.parametrize("json_mode", [False, True])
 def test_login_reports_browser_failure(fake, monkeypatch, capsys, outcome, json_mode):
     saved = []
@@ -746,16 +746,22 @@ def test_login_reports_browser_failure(fake, monkeypatch, capsys, outcome, json_
     def fail(target):
         if outcome == "raises":
             raise webbrowser.Error(f"no browser for {target}")
-        return False
+        if outcome == "raises-other":
+            raise ValueError(f"no browser for {target}")
+        return outcome == "opens"
 
     monkeypatch.setattr("gbot.commands.login.webbrowser.open", fail)
     assert (
         cli.main(["login", "--timeout", "42"] + (["--json"] if json_mode else [])) == 0
     )
     captured = capsys.readouterr()
-    assert "Could not open a browser. Open the link shown above to sign in." in (
-        captured.err
-    )
+    note = "Could not open a browser. Open the link shown above to sign in."
+    if outcome == "opens":
+        assert note not in captured.err
+    else:
+        assert note in captured.err
+    # A note, not an error object: login still succeeds and exits 0.
+    assert '"error"' not in captured.err
     assert url not in captured.err and "no browser" not in captured.err
     assert "TOP_SECRET" not in captured.out + captured.err
     assert ('"signed_in": true' if json_mode else "Signed in.") in captured.out
