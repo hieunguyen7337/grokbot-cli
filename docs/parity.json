@@ -834,8 +834,8 @@
       "args": [],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.listings"
     },
     {
       "name": "getSubagents",
@@ -899,8 +899,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": "Check whether a published plugin has a recoverable copy."
+      "status": "done",
+      "note": "Implemented in gbot.service.listings"
     },
     {
       "name": "importAgentWorkflowText",
@@ -1165,8 +1165,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.listings"
     },
     {
       "name": "reactToMessage",
@@ -1467,8 +1467,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.listings"
     },
     {
       "name": "rollBackConversation",
@@ -2023,8 +2023,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.listings"
     },
     {
       "name": "unpublishSkill",
@@ -2034,8 +2034,8 @@
       ],
       "area": "publishing",
       "milestone": "M5",
-      "status": "planned",
-      "note": ""
+      "status": "done",
+      "note": "Implemented in gbot.service.listings"
     },
     {
       "name": "updateAgent",

@@ -796,3 +796,33 @@ others) and connects one. Browser steps wait until the status changes;
 `--json`: The Slack state, the messaging link with its phones, or the listener
 integrations (platform, connected, state and the number of automations that need
 it).
+
+## listings
+
+```text
+gbot listings targets [--json]
+gbot listings publish-skill BOT SKILL [--team ID] --yes [--json]
+gbot listings resync-skill BOT SKILL --yes [--json]
+gbot listings unpublish-skill BOT SKILL --yes [--json]
+gbot listings plugin BOT PLUGIN [--json]
+gbot listings unpublish-plugin BOT PLUGIN [--team ID] --yes [--json]
+```
+
+`targets` shows where skills can be published: the teams you can publish to, or
+the reason publishing is unavailable (a personal account with no team has none).
+`publish-skill` publishes a skill, `resync-skill` refreshes a published skill from
+its current text, and `unpublish-skill` removes its listing. SKILL is a skill's
+workflow id or its name (see `gbot skills BOT`). `--team ID` publishes to or
+removes the listing from that team and is sent only when given.
+
+`plugin` tells whether a plugin's listing has a private copy that stays when the
+listing is removed. `unpublish-plugin` takes the listing down; PLUGIN is a plugin id
+or name (see `gbot plugins BOT`). Run `plugin` first to know whether a copy stays.
+
+Changes need `--yes` (in a terminal, without it you are asked to confirm; without
+a terminal nothing is sent). A bot that is hosted by the backend may refuse these
+commands: the server's message is the error message and the exit code is 1.
+
+`--json`: `targets` has teams (team_id, name), unavailable_reason and
+unavailable_kind; `plugin` has plugin_id, name and restorable_copy; a change has
+ok, state and message plus the workflow_id or plugin_id it applied to.
