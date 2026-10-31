@@ -692,10 +692,18 @@ def test_the_first_poll_timer_waits_one_second(tmp_path, monkeypatch):
         async with app.run_test(size=(100, 30)) as pilot:
             ctx = await setup(app, pilot)
             panel = await open_panel(app, pilot, ctx)
+            delays = []
+            set_timer = panel.set_timer
+
+            def record(delay, callback=None, **kwargs):
+                delays.append(delay)
+                return set_timer(delay, callback, **kwargs)
+
+            monkeypatch.setattr(panel, "set_timer", record)
             await pilot.press("p")
             await accept(app, pilot)
-            # A real Textual timer, set from the service's first delay; the test does not wait for it.
-            assert panel._timer is not None and panel._timer._interval == 1.0
+            # The panel asks Textual for one timer with the service's first delay; the test does not wait for it.
+            assert delays == [1.0]
             assert calls(service, "GetGrokBotAgentInPlaceShareStatus") == []
 
     asyncio.run(exercise())

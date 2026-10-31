@@ -269,6 +269,32 @@ def test_team_row_options(monkeypatch, capsys):
     capsys.readouterr()
 
 
+def test_team_row_on_without_role_keeps_a_manager_row(monkeypatch, capsys):
+    manager_team = {
+        **ACCESS,
+        "state": {
+            **ACCESS["state"],
+            "principals": [
+                {"team": {}, "role": ROLE + "MANAGER"},
+                {"userId": 2, "role": ROLE + "USER"},
+            ],
+        },
+    }
+    fake = setup_cli(
+        monkeypatch,
+        GetGrokBotAgentAccess=manager_team,
+        UpdateGrokBotAgentAccess=manager_team,
+    )
+    assert (
+        cli.main(
+            ["share", "Alpha", "--team-row", "on", "--grant", "user:2=manager", "--yes"]
+        )
+        == 0
+    )
+    assert update(fake)[0] == {"team": {}, "role": ROLE + "MANAGER"}
+    assert update(fake)[1] == {"userId": 2, "role": ROLE + "MANAGER"}
+
+
 def test_the_last_row_cannot_be_turned_off(monkeypatch, capsys):
     only_team = {
         **ACCESS,
@@ -339,12 +365,8 @@ def test_bot_is_required_except_for_invite_codes(monkeypatch, capsys):
     assert fake.calls == []
 
 
-@pytest.mark.parametrize(
-    "outcome,code,expected",
-    [("UPDATED", 0, "now visible"), ("NO_TEAM", 1, "no team"), ("BUSY", 1, "busy")],
-)
-def test_team_visible_outcomes(monkeypatch, capsys, outcome, code, expected):
-    fake = setup_cli(monkeypatch, SetGrokBotAgentVisibility={"outcome": outcome})
+def test_team_visible_updated(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch, SetGrokBotAgentVisibility={"outcome": "UPDATED"})
     argv = [
         "share",
         "Alpha",
@@ -355,10 +377,10 @@ def test_team_visible_outcomes(monkeypatch, capsys, outcome, code, expected):
         "--yes",
         "--json",
     ]
-    assert cli.main(argv) == code
+    assert cli.main(argv) == 0
     data = json.loads(capsys.readouterr().out)
-    assert data["outcome"] == outcome.lower()
-    assert expected in data["message"].lower()
+    assert data["outcome"] == "updated"
+    assert "now visible" in data["message"].lower()
     assert sent(fake, "SetGrokBotAgentVisibility") == [
         {
             "agentId": "gateway",
@@ -366,6 +388,28 @@ def test_team_visible_outcomes(monkeypatch, capsys, outcome, code, expected):
             "personalSecretNames": ["A", "B"],
         }
     ]
+
+
+@pytest.mark.parametrize("outcome,expected", [("NO_TEAM", "no team"), ("BUSY", "busy")])
+def test_a_refused_visibility_outcome_uses_the_error_channel(
+    monkeypatch, capsys, outcome, expected
+):
+    fake = setup_cli(monkeypatch, SetGrokBotAgentVisibility={"outcome": outcome})
+    assert cli.main(["share", "Alpha", "--team-visible", "--yes"]) == 1
+    captured = capsys.readouterr()
+    assert expected in captured.err.lower()
+    assert captured.out == ""
+    assert sent(fake, "SetGrokBotAgentVisibility")
+
+
+def test_a_refused_visibility_outcome_json_is_an_error(monkeypatch, capsys):
+    setup_cli(monkeypatch, SetGrokBotAgentVisibility={"outcome": "NO_TEAM"})
+    assert cli.main(["share", "Alpha", "--team-visible", "--yes", "--json"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    error = json.loads(captured.err)["error"]
+    assert error["message"] == sharing.sentence("no_team")
+    assert error["exit_code"] == 1
 
 
 def test_a_refused_single_change_exits_1_with_the_server_message(monkeypatch, capsys):
@@ -415,7 +459,9 @@ def test_clone_and_in_place(monkeypatch, capsys):
     assert sharing.sentence("started") in capsys.readouterr().out
     fake.rpcs["ShareGrokBotAgentInPlace"] = {"outcome": "INELIGIBLE"}
     assert cli.main(["share", "Alpha", "--share-in-place", "--yes"]) == 1
-    assert sharing.sentence("ineligible") in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert sharing.sentence("ineligible") in captured.err
+    assert captured.out == ""
 
 
 @pytest.mark.parametrize("json_mode", [False, True])

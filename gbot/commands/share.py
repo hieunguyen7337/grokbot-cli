@@ -298,11 +298,11 @@ def _change_access(
     for grant in grants:
         principals = sharing.with_principal(principals, grant)
     if args.team_row:
-        principals = sharing.with_team_row(
-            replace(state, principals=principals),
-            args.team_row == "on",
-            args.role or "user",
-        )
+        staged = replace(state, principals=principals)
+        existing = staged.team_row()
+        # Without --role, an existing team row keeps its role: "on" must not demote a manager row.
+        role = args.role or (existing.role if existing else "user")
+        principals = sharing.with_team_row(staged, args.team_row == "on", role)
     if principals == state.principals:
         ctx.out.write({"changed": False, **_access_json(state)}, "No change.")
         return 0
@@ -320,8 +320,11 @@ def _outcome(
     ctx: Context, outcome: str, good: str, extra: dict[str, object] | None = None
 ) -> int:
     message = sharing.sentence(outcome)
+    if outcome != good:
+        # A refused change reports its sentence on the error channel, as every other refusal does.
+        raise ValueError(message)
     ctx.out.write({"outcome": outcome, "message": message, **(extra or {})}, message)
-    return 0 if outcome == good else 1
+    return 0
 
 
 def _status(ctx: Context, transport: Transport, bot: tuple[str, str]) -> int:

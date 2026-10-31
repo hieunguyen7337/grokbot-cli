@@ -830,7 +830,8 @@ and `--team-row` together make one update.
   the token read a moment before, so a change someone else made in between is
   refused rather than overwritten. The owner is never part of the list.
 - `--team-row on|off` with `--role user|manager`: turn the row for everyone in the
-  team on or off. Turning it off is refused when no other row would remain and the
+  team on or off. Without `--role`, a row that is already there keeps its role; a
+  new row is `user`. Turning it off is refused when no other row would remain and the
   server does not allow it.
 - `--team-visible`: make the bot visible to the team. `--clone-to-team`: copy it
   into the team. `--carry-secret NAME ...` (repeatable) names personal secrets to

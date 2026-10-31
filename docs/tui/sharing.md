@@ -23,7 +23,7 @@ Works in a bot session. The panel `Share <bot>` lists, top to bottom:
 
 A part the server refuses is one sentence in its place (for example
 `Invites: ...`); the rest of the panel still loads. A failure that is not a
-refusal shows the usual error line with `r` to retry.
+refusal shows the usual error line; press `g` to reload the panel and try again.
 
 Keys are shown in the footer only when they apply to the selected row and to what
 the server said:
@@ -75,8 +75,9 @@ and expiry, whether it was sent to your email address, and whether your account 
 eligible. An unknown code, a refusal or a failure stays on the form as a notice,
 with the code removed from the message.
 
-`a` appears only when the invite is open, was sent to you and your account is
-eligible. It asks `Accept access to <bot>?` (Cancel focused, refused in read-only
+`a` appears only when the invite is open and the preview does not say that it was
+sent to another email address or that your account is not eligible (an unknown
+match or an eligibility the server did not report does not hide it). It asks `Accept access to <bot>?` (Cancel focused, refused in read-only
 mode) and then shows the result as a notice: `Invite accepted.` and one line per
 bot, or the sentence for why not.
 
