@@ -92,6 +92,32 @@ def test_list_loading_selection_and_confirmation(tmp_path, monkeypatch):
     asyncio.run(exercise())
 
 
+def test_slash_key_focuses_the_filter(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        app = GbotApp(load_fake(), animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await pilot.pause()
+            panel = ListPanel(
+                "List",
+                lambda: [PanelRow("one", "One"), PanelRow("two", "Two")],
+                filterable=True,
+            )
+            app.push_screen(panel)
+            await pilot.pause()
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+            app.set_focus(None)
+            await pilot.pause()
+            assert not panel.query_one("#panel-filter", Input).has_focus
+            await pilot.press("slash")
+            await pilot.pause()
+            assert panel.query_one("#panel-filter", Input).has_focus
+
+    asyncio.run(exercise())
+
+
 def test_list_load_refusal_shows_server_sentence(tmp_path, monkeypatch):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
 

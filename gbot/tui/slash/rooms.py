@@ -41,6 +41,8 @@ class _BotsForm(FormPanel):
         self.ctx, self.bots, self.group, self.done = ctx, bots, group, done
         self.created: Bot | None = None
         self.created_name = ""
+        self.nonce = str(uuid4())
+        self._request: tuple[str, tuple[str, ...], str] | None = None
         fields = (
             []
             if group
@@ -88,12 +90,17 @@ class _BotsForm(FormPanel):
             )
         else:
             self.created_name = str(values["name"]).strip()
+            # A retry of the same request keeps its nonce; a changed request gets a new one.
+            request = (self.created_name, tuple(ids), str(values["description"]))
+            if self._request is not None and request != self._request:
+                self.nonce = str(uuid4())
+            self._request = request
             self.created = rooms.create_group(
                 self.ctx.service.transport,
                 self.created_name,
                 ids,
                 description=str(values["description"]),
-                nonce=str(uuid4()),
+                nonce=self.nonce,
             )
         return None
 
