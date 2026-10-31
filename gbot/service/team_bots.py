@@ -224,7 +224,7 @@ def _status_name(value: str) -> str:
 def team_agents(transport: Transport, role: str | None = None) -> TeamAgents:
     payload: dict[str, object] = {} if role is None else {"role": role}
     try:
-        reply = transport.rpc("ListGrokBotTeamAgents", payload)
+        reply = _record(transport.rpc("ListGrokBotTeamAgents", payload))
     except ConnectError as error:
         found = refusal(error)
         if found is not None and found.code == "unimplemented":
@@ -238,7 +238,8 @@ def team_agents(transport: Transport, role: str | None = None) -> TeamAgents:
 
 
 def context_summary(transport: Transport, bot_id: str) -> ContextSummary:
-    return _summary(transport.rpc("GetGrokBotTeamContextSummary", {"agentId": bot_id}))
+    reply = transport.rpc("GetGrokBotTeamContextSummary", {"agentId": bot_id})
+    return _summary(_record(reply))
 
 
 def review_items(
@@ -249,9 +250,11 @@ def review_items(
 ) -> tuple[ReviewItem, ...]:
     # The server refuses a request without a status, so an empty choice means pending.
     names = [_status_name(status) for status in statuses or ("pending",)]
-    reply = transport.rpc(
-        "ListGrokBotTeamReviewItems",
-        {"agentId": bot_id, "statuses": names, "limit": limit},
+    reply = _record(
+        transport.rpc(
+            "ListGrokBotTeamReviewItems",
+            {"agentId": bot_id, "statuses": names, "limit": limit},
+        )
     )
     return tuple(_item(row) for row in _rows(reply.get("items")))
 
@@ -260,28 +263,32 @@ def resolve_review_item(
     transport: Transport, bot_id: str, item_id: str, approve: bool
 ) -> ReviewItem:
     decision = "APPROVE" if approve else "REJECT"
-    reply = transport.rpc(
-        "ResolveGrokBotTeamReviewItem",
-        {
-            "agentId": bot_id,
-            "itemId": item_id,
-            "decision": "GROK_BOT_TEAM_REVIEW_DECISION_" + decision,
-        },
+    reply = _record(
+        transport.rpc(
+            "ResolveGrokBotTeamReviewItem",
+            {
+                "agentId": bot_id,
+                "itemId": item_id,
+                "decision": "GROK_BOT_TEAM_REVIEW_DECISION_" + decision,
+            },
+        )
     )
     return _item({"itemId": item_id, **_record(reply.get("item"))})
 
 
 def bot_memories(transport: Transport, bot_id: str) -> tuple[MemoryFact, ...]:
-    reply = transport.rpc("ListGrokBotUserBotMemories", {"agentId": bot_id})
+    reply = _record(transport.rpc("ListGrokBotUserBotMemories", {"agentId": bot_id}))
     return tuple(_memory(row) for row in _rows(reply.get("memories")))
 
 
 def promote_memories(
     transport: Transport, bot_id: str, fact_ids: Sequence[str]
 ) -> PromoteResult:
-    reply = transport.rpc(
-        "PromoteGrokBotMemoriesToTeam",
-        {"agentId": bot_id, "factIds": list(fact_ids)},
+    reply = _record(
+        transport.rpc(
+            "PromoteGrokBotMemoriesToTeam",
+            {"agentId": bot_id, "factIds": list(fact_ids)},
+        )
     )
     return PromoteResult(
         tuple(_memory(row) for row in _rows(reply.get("created"))),
@@ -299,15 +306,20 @@ def promote_sentence(result: PromoteResult) -> str:
 
 
 def link_preview(transport: Transport, team_id: int) -> bool:
-    reply = transport.rpc("GetGrokBotTeamLinkPreview", {"teamId": team_id})
+    reply = _record(transport.rpc("GetGrokBotTeamLinkPreview", {"teamId": team_id}))
     return _record(reply.get("setting")).get("enabled") is True
 
 
 def set_link_preview(transport: Transport, team_id: int, enabled: bool) -> bool:
-    reply = transport.rpc(
-        "SetGrokBotTeamLinkPreview", {"teamId": team_id, "enabled": enabled}
+    reply = _record(
+        transport.rpc(
+            "SetGrokBotTeamLinkPreview", {"teamId": team_id, "enabled": enabled}
+        )
     )
-    return _record(reply.get("setting")).get("enabled") is True
+    # A reply without a setting echoes the request: the server leaves a false flag out.
+    if "setting" not in reply:
+        return enabled
+    return _record(reply["setting"]).get("enabled") is True
 
 
 def date_text(ms: int) -> str:

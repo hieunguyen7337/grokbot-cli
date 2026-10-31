@@ -793,7 +793,8 @@ previews. This needs a team account: on a personal account the server's refusal
 is the error message, with exit code 1. The TUI shows the same screens; see
 [tui/team.md](tui/team.md).
 
-`--status` may repeat; it defaults to pending. `--limit` defaults to 100. Use
+`--role` lists only the team bots with that role; without it, every team bot is
+listed. `--status` may repeat; it defaults to pending. `--limit` defaults to 100. Use
 the IDs from `--review` and `--memories` with `--approve`, `--reject` and
 `--promote`. `--promote` takes one or more memory IDs. `--set` turns a team's
 link previews on or off; it is a team-wide switch, not a bot's public card.

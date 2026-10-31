@@ -293,3 +293,23 @@ def test_team_list_refusal_is_a_notice(monkeypatch, capsys):
     refuse(fake, "ListGrokBotTeamAgents")
     assert cli.main(["team"]) == 1
     assert capsys.readouterr().err.strip() == "Only a team manager can see this."
+
+
+def test_a_blank_review_id_is_refused_before_the_prompt(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+
+    def prompt(prompt=""):
+        raise AssertionError("asked before the ID was checked")
+
+    monkeypatch.setattr("builtins.input", prompt)
+    assert cli.main(["team", "Alpha", "--approve", " "]) == 1
+    assert "Give the review item ID." in capsys.readouterr().err
+    assert not fake.calls
+
+
+def test_review_id_is_sent_trimmed(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    assert cli.main(["team", "Alpha", "--reject", " item-1 ", "--yes"]) == 0
+    assert rpc_calls(fake, "ResolveGrokBotTeamReviewItem")[-1]["itemId"] == "item-1"
+    assert capsys.readouterr().out.strip() == "Rejected review item item-1."

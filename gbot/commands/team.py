@@ -112,6 +112,9 @@ def _run(args: argparse.Namespace, ctx: Context) -> int:
         )
     if actions[0] != "--review" and (args.status or args.limit is not None):
         raise ValueError("Use --status and --limit with --review.")
+    if actions[0] in ("--approve", "--reject"):
+        # Check the ID before asking, so a bad ID never reaches the prompt.
+        _item_id(args, actions[0])
     if actions[0] in _CHANGES:
         _require_confirmation(args.yes)
         _confirm(args.yes, json_mode=args.json)
@@ -153,9 +156,7 @@ def _bot(args: argparse.Namespace, ctx: Context, action: str) -> int:
         )
     elif action in ("--approve", "--reject"):
         approve = action == "--approve"
-        item_id = args.approve if approve else args.reject
-        if not item_id or not item_id.strip():
-            raise ValueError("Give the review item ID.")
+        item_id = _item_id(args, action)
         item = team_bots.resolve_review_item(transport, bot_id, item_id, approve)
         ctx.out.write(
             asdict(item),
@@ -165,6 +166,13 @@ def _bot(args: argparse.Namespace, ctx: Context, action: str) -> int:
         result = team_bots.promote_memories(transport, bot_id, args.promote)
         ctx.out.write(asdict(result), team_bots.promote_sentence(result))
     return 0
+
+
+def _item_id(args: argparse.Namespace, action: str) -> str:
+    item_id = (args.approve if action == "--approve" else args.reject).strip()
+    if not item_id:
+        raise ValueError("Give the review item ID.")
+    return item_id
 
 
 def _link_preview(args: argparse.Namespace, ctx: Context) -> int:

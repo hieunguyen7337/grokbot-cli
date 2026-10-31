@@ -1,5 +1,7 @@
 import json
+from collections.abc import Mapping
 from dataclasses import asdict
+from typing import cast
 
 import pytest
 
@@ -352,3 +354,38 @@ def test_demo_replies_cover_every_rpc():
     transport = load_fake().transport
     assert set(team_bots.RPCS) <= transport.rpcs.keys()
     assert team_bots.team_agents(transport) == team_bots.TeamAgents()
+
+
+class RawTransport:
+    """Returns the reply as the server sent it, even when it is not an object."""
+
+    def __init__(self, reply: object) -> None:
+        self.reply = reply
+
+    def command(self, name: str, args: Mapping[str, object] | None = None) -> object:
+        return self.reply
+
+    def rpc(self, method: str, payload: Mapping[str, object]) -> dict[str, object]:
+        return cast(dict[str, object], self.reply)
+
+
+@pytest.mark.parametrize("reply", [None, [], "odd"])
+def test_a_non_mapping_reply_gives_defaults(reply):
+    fake = RawTransport(reply)
+    assert team_bots.team_agents(fake) == team_bots.TeamAgents()
+    assert team_bots.context_summary(fake, "gateway") == team_bots.ContextSummary()
+    assert team_bots.review_items(fake, "gateway") == ()
+    assert team_bots.resolve_review_item(fake, "gateway", "x", True).item_id == "x"
+    assert team_bots.bot_memories(fake, "gateway") == ()
+    assert team_bots.promote_memories(fake, "gateway", ["f1"]) == (
+        team_bots.PromoteResult()
+    )
+    assert team_bots.link_preview(fake, 5) is False
+
+
+def test_set_link_preview_without_a_setting_echoes_the_request():
+    fake = FakeTransport(rpcs={"SetGrokBotTeamLinkPreview": {}})
+    assert team_bots.set_link_preview(fake, 5, True) is True
+    assert team_bots.set_link_preview(fake, 5, False) is False
+    fake.rpcs["SetGrokBotTeamLinkPreview"] = {"setting": {}}
+    assert team_bots.set_link_preview(fake, 5, True) is False
