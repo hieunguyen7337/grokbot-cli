@@ -30,7 +30,10 @@ first, so their cards appear soonest.
 - A bot that the list does not flag as waiting is read for its newest page of
   each session only (`HOME_RECENT_PAGES` in `gbot/tui/app.py`). A bot that is
   flagged as waiting is read in full. A card further back on a bot that is not
-  flagged appears once the list flags the bot or the bot is opened.
+  flagged shows once that bot's cards are read in full. That happens when the
+  bot adds a card, when an entry arrives while it is flagged, after a resync,
+  or at the next start if it is flagged then. `gbot approvals --all` and
+  `gbot approvals --bot <name>` always read in full.
 - The sweep reuses the bot list that was already loaded. It does not list the
   roster again for each bot.
 - A 401 from the gateway stops the sweep from starting new checks. The user

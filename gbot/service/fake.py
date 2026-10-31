@@ -174,7 +174,8 @@ class FakeService:
                 entries = self.state.transcripts.get(bot_id, [])
                 # Transcripts run oldest to newest, as `_page` reads them; a waiting bot is read in full.
                 if recent_pages is not None and not row.get("awaitingUserResponse"):
-                    entries = entries[-recent_pages * 100 :] if recent_pages > 0 else []
+                    # Like `cards.tail`, a cap below one still reads the newest page.
+                    entries = entries[-max(recent_pages, 1) * 100 :]
                 for entry in entries:
                     card = classify(copy.deepcopy(entry), bot_id, name)
                     if card is not None:
