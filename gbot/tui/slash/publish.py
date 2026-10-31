@@ -45,11 +45,8 @@ class PublishPanel(_Detail):
 
     @property
     def marketplace(self) -> str:
-        return (
-            self.state.listing
-            if self.state.listing != "unknown"
-            else (self.listing or "unknown")
-        )
+        # A list or unlist made in this panel is newer than the roster row the panel opened with.
+        return self.listing or self.state.listing
 
     def content(self) -> Detail:
         state, template, market = self.state, self.state.template, self.marketplace

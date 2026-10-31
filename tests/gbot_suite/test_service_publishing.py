@@ -176,6 +176,14 @@ def test_listing_state():
     assert state(publishedAtMs="1700") == ("published", 1700)
     assert state(publishedAtMs=None) == ("unpublished", None)
     assert state(publishedAt=0) == ("unpublished", None)
+    assert state(publishedAtMs="abc") == ("unknown", None)
+
+
+@pytest.mark.parametrize("reply", [None, [], "ok", 3, {"agent": "odd"}])
+def test_odd_publish_replies_read_as_unknown(reply):
+    fake = transport(PublishGrokBotAgent=reply, UnpublishGrokBotAgent=reply)
+    assert p.publish_bot(fake, "bot") == p.PublishResult("unknown", None)
+    assert p.unpublish_bot(fake, "bot") == p.PublishResult("unknown", None)
 
 
 def test_refusal_message_is_passed_through_untouched():

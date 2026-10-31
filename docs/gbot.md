@@ -662,8 +662,8 @@ Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetche
 
 `--json`: Browsing returns featured_listings, listings and category_order; show
 returns template, expected_active_version and creator_display_name; use returns
-bot, setup_handled_by_server and note. Template version inspection and publishing
-remain planned for a later milestone.
+bot, setup_handled_by_server and note. Publishing a template and listing a bot in
+the marketplace are under `gbot publish`.
 
 ## secrets
 

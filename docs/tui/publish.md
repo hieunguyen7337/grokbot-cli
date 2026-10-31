@@ -23,6 +23,6 @@ sentence says why. A bot without a template shows one sentence saying so.
 
 Every change refuses in read-only mode with `Read-only mode`, asks through a
 confirmation with Cancel focused, runs in a worker thread and reloads the panel.
-A server refusal (sharing disabled, public sharing disabled, template deleted, or
-a bot that must be shared first) is shown as its readable message, not an error
-trace. Creating a template, skills and plugin listings stay in the Grok Bot app.
+A server refusal (sharing disabled, public sharing disabled or template deleted)
+is shown as its readable message, not an error trace. A bot that must be shared
+first is a listing outcome, shown as its sentence. Creating a template, skills and plugin listings stay in the Grok Bot app.

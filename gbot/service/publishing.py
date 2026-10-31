@@ -1,6 +1,6 @@
 """List a bot in the marketplace or take it off, and manage the bot's own template."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from groken.client import ConnectError
@@ -189,8 +189,12 @@ def listing_state(bot: Bot) -> tuple[str, int | None]:
     """The roster's marketplace state: published, unpublished or unknown, and the published-at time."""
     for key in ("publishedAtMs", "publishedAt"):
         if key in bot.raw:
-            stamp = _int64(bot.raw[key])
-            return ("published", stamp) if stamp else ("unpublished", None)
+            value = bot.raw[key]
+            if value is None or value == "" or value == 0 or value == "0":
+                return "unpublished", None
+            stamp = _int64(value)
+            # A value that cannot be read says nothing about the listing.
+            return ("published", stamp) if stamp else ("unknown", None)
     return "unknown", None
 
 
@@ -255,11 +259,13 @@ def delete_template(transport: Transport, share_id: str) -> None:
     transport.rpc("DeleteGrokBotTemplate", {"shareId": share_id})
 
 
-def _result(reply: Mapping[str, object], names: Sequence[str]) -> PublishResult:
-    stamp = _int64(_record(reply.get("agent")).get("publishedAt"))
+def _result(reply: object, names: Sequence[str]) -> PublishResult:
+    data = _record(reply)
+    agent = _record(data.get("agent"))
+    stamp = _int64(agent.get("publishedAt"))
     if stamp is None:
-        stamp = _int64(_record(reply.get("agent")).get("publishedAtMs"))
-    return PublishResult(_enum(reply.get("outcome"), names), stamp or None)
+        stamp = _int64(agent.get("publishedAtMs"))
+    return PublishResult(_enum(data.get("outcome"), names), stamp or None)
 
 
 def publish_bot(transport: Transport, bot_id: str) -> PublishResult:

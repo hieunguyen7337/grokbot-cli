@@ -173,6 +173,27 @@ def test_listing_confirm_cancel_and_outcome(tmp_path, monkeypatch):
     asyncio.run(exercise())
 
 
+def test_listing_outcome_wins_over_the_roster_row(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = make()
+        service.transport.rpcs["PublishGrokBotAgent"] = {"outcome": "PUBLISHED"}
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await setup(app, pilot, "unpublished")
+            run(ctx, "/publish")
+            await settle(app, pilot)
+            panel = app.screen
+            assert isinstance(panel, PublishPanel)
+            assert dict(panel.detail.fields)["Marketplace"] == "unpublished"
+            await pilot.press("p")
+            await accept(app, pilot)
+            assert dict(panel.detail.fields)["Marketplace"] == "published"
+
+    asyncio.run(exercise())
+
+
 def test_version_and_delete_typed_name(tmp_path, monkeypatch):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
 
