@@ -43,6 +43,20 @@ def text(stage, *, ascii_only: bool, **options) -> str:
 
 
 @pytest.mark.parametrize("ascii_only", [False, True])
+def test_progress_text_older_checks_of_waiting_bots(ascii_only):
+    older = text("older", ascii_only=ascii_only, done=2, total=5)
+    assert "Checking older cards 2/5" in older
+    assert len(text("older", ascii_only=ascii_only, done=999, total=999)) <= MAX_LINE
+    assert "Checking for cards" not in older
+    # The same bar rules as the quick pass: 2 of 5 is 12 of 30 cells.
+    fill, empty = ("#", "-") if ascii_only else ("█", "░")
+    assert older.endswith(f"[{fill * 12}{empty * 18}]")
+    assert older.count("[") == 1 and older.count("]") == 1
+    if ascii_only:
+        assert older.isascii()
+
+
+@pytest.mark.parametrize("ascii_only", [False, True])
 def test_progress_text_shapes(ascii_only):
     assert text(None, ascii_only=ascii_only) == ""
     early = text("connecting", ascii_only=ascii_only, elapsed=4)

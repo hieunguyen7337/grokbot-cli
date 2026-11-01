@@ -116,6 +116,7 @@ class GbotService:
         *,
         bots: Sequence[Bot] | None = None,
         recent_pages: int | None = None,
+        waiting_in_full: bool = True,
     ) -> tuple[list[Card], list[str]]:
         if bots is None:
             bots = conversation.roster(self._background_transport)
@@ -129,6 +130,7 @@ class GbotService:
             rows,
             all_bots=True,
             recent_pages=recent_pages,
+            waiting_in_full=waiting_in_full,
         )
 
     def still_pending(self, card: Card) -> bool:

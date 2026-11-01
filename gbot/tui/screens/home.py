@@ -64,6 +64,8 @@ def progress_text(
     filled = round(PROGRESS_CELLS * done / total) if total else 0
     fill, empty = ("#", "-") if ascii_only else ("█", "░")
     bar = fill * filled + empty * (PROGRESS_CELLS - filled)
+    if stage == "older":
+        return f"{spinner} Checking older cards {done}/{total} [{bar}]"
     return f"{spinner} Checking for cards {done}/{total} [{bar}]"
 
 
