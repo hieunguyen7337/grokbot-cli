@@ -60,5 +60,10 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "deny": [
+      "mcp__claude-code-remote__create_session"
+    ]
   }
 }
