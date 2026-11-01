@@ -35,8 +35,9 @@ first, so their cards appear soonest.
   a waiting bot show after the rest of the list has its newest cards. The
   waiting bots are the ones the roster shows with a waiting flag or a waiting
   session. A waiting bot's full check starts only after its quick result is on
-  home. It is skipped when its quick check failed or when the bot's cards were
-  already refreshed, and a quick result never replaces a full one.
+  home, or after its quick check failed. It is skipped when the bot's cards
+  were already refreshed, and a quick result never replaces a full one, the
+  sweep's or a refresh's. A warning that both checks report shows once.
 - A card further back on a bot that is not waiting does not show during the
   sweep. It shows once that bot's cards are read in full. That happens when the
   bot adds a card, when an entry arrives while the bot is flagged as waiting,
