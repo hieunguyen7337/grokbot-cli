@@ -13,6 +13,11 @@
   compaction it rebuilds its state from its branch's `orch:` markers, the `.review/` files and the lane ledger before
   it starts new work. If work under way cannot be rebuilt from them, it says so in chat and in an `orch: STATUS`
   marker and redoes that unit rather than guess.
+- No session or worker on this repository starts a cloud session with the `create_session` tool, because workers
+  were leaving empty sessions behind (owner's call, 2026-11-01). `.claude/settings.json` denies that tool. The rule
+  also covers subagents, which share the session's permission rules, and it takes effect without a restart. A side
+  session starts only through `lane <claude lane> --cloud --side "<reason>"`, which runs the `claude --cloud`
+  command and not the tool.
 - No other session pushes `main`. No session pushes a release branch, a tag or a pull request, and none force-pushes.
   `gbot-windows` and `gbot-tui` are integration branches: only the owner's local session merges into them.
 - Never call the live Grok Bot API from tests or workers, and never read token files (`~/.config/groken`,
