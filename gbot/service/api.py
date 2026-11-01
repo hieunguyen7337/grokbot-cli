@@ -83,15 +83,17 @@ class Service(Protocol):
         *,
         bots: Sequence[Bot] | None = None,
         recent_pages: int | None = None,
+        waiting_in_full: bool = True,
     ) -> tuple[list[Card], list[str]]:
         """Cards waiting on the user (all bots when `bot_ids` is None) and per-bot warnings, never printed.
 
         `bots` is a roster the caller already loaded. When it is given, the rows come from it and the gateway
         roster is not listed again; `bot_ids` still filters them. Without it, each call lists the roster.
 
-        `recent_pages` caps the transcript pages read for a bot the roster does not show as waiting (see
-        `cards.waiting`); a waiting bot is always read in full. A card older than the cap on a non-waiting
-        bot is not returned. None (the default) reads every bot in full.
+        `recent_pages` caps the transcript pages read for a bot (see `cards.waiting`). By default a bot the roster
+        shows as waiting is read in full and only the others are capped. With `waiting_in_full=False` the cap
+        applies to every bot, waiting or not. A card older than the cap is not returned. None (the default)
+        reads every bot in full.
         """
         ...
 

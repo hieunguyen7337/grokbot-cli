@@ -15,6 +15,7 @@ from gbot.output import terminal_safe
 from gbot.service import bots as bot_service
 from gbot.service import events, trays
 from gbot.service.api import Service
+from gbot.service.cards import waiting as waiting_row
 from gbot.service.models import Bot, Card, ConnectionStatus
 from gbot.tui.glyphs import glyphs
 from gbot.tui.notifications import Notifier
@@ -46,31 +47,77 @@ class ServiceEvent(Message):
         self.event = event
 
 
+def _waiting_ids(bots: Sequence[Bot]) -> set[str]:
+    # The bots whose cards get a full read, by the same test discover uses.
+    return {bot.id for bot in bots if waiting_row(bot.raw)}
+
+
 class _CardSweep:
-    """The checks of one card sweep. Check threads share it; every field is read or written under the lock."""
+    """The checks of one card sweep. Check threads share it; every field is read or written under the lock.
+
+    Every bot gets a quick check of its newest page first. A waiting bot then gets a full check, queued at the end of
+    the queue by the thread that finished its quick check once that result is on home.
+    """
 
     def __init__(self, bot_ids: Sequence[str], bots: Sequence[Bot]) -> None:
         self.bots = list(bots)
         self.total = len(bot_ids)
         self.done = 0
-        self._queue: deque[str] = deque(bot_ids)
+        self._waiting = _waiting_ids(self.bots) & set(bot_ids)
+        self.full_total = len(self._waiting)
+        self.full_done = 0
+        # (bot id, is a full check)
+        self._queue: deque[tuple[str, bool]] = deque(
+            (bot_id, False) for bot_id in bot_ids
+        )
         self._stopped = False
         self._running = 0
+        # (bot id, warning) already shown: a waiting bot's quick and full reads can report the same warning.
+        self._warned: set[tuple[str, str]] = set()
         self._lock = threading.Lock()
 
     def start(self, threads: int) -> None:
         with self._lock:
             self._running = threads
 
-    def take(self) -> str | None:
+    def take(self) -> tuple[str, bool] | None:
         with self._lock:
             if self._stopped or not self._queue:
                 return None
             return self._queue.popleft()
 
     def count(self) -> None:
+        # One quick check counted.
         with self._lock:
             self.done += 1
+
+    def count_full(self) -> None:
+        with self._lock:
+            self.full_done += 1
+
+    def plan_full(self, bot_id: str, *, wanted: bool) -> None:
+        # Called once a quick check is finished and its result is installed. A waiting bot's full check joins the end
+        # of the queue, or, when none is wanted (the quick check failed or the cards were refreshed), counts as done.
+        with self._lock:
+            if bot_id not in self._waiting:
+                return
+            if wanted:
+                self._queue.append((bot_id, True))
+            else:
+                self.full_done += 1
+
+    def unseen(self, bot_id: str, warnings: Sequence[str]) -> list[str]:
+        with self._lock:
+            fresh = [w for w in warnings if (bot_id, w) not in self._warned]
+            self._warned.update((bot_id, w) for w in fresh)
+            return fresh
+
+    def progress(self) -> tuple[bool, int, int]:
+        # (older, done, total): the quick checks until every one is counted, then the full checks of waiting bots.
+        with self._lock:
+            if self.done >= self.total and self.full_done < self.full_total:
+                return True, self.full_done, self.full_total
+            return False, self.done, self.total
 
     def stop_for_auth(self) -> bool:
         # True only for the first caller, which owns the one notice.
@@ -151,17 +198,25 @@ class GbotApp(App[None]):
 
     @property
     def load_stage(self) -> str | None:
-        """What home shows while loading: connecting, loading, sweeping, or None once there is nothing to show."""
+        """What home shows while loading: connecting, loading, sweeping, older (full checks of waiting bots), or None."""
         if self._sweep_finished:
             return None
         if not self._loaded:
             return "loading" if self._roster_returned else "connecting"
-        return "sweeping" if self._sweep is not None and self._sweep.total else None
+        sweep = self._sweep
+        if sweep is None or not sweep.total:
+            return None
+        older, _, _ = sweep.progress()
+        return "older" if older else "sweeping"
 
     @property
     def sweep_progress(self) -> tuple[int, int]:
+        # (done, total) of the stage load_stage names.
         sweep = self._sweep
-        return (sweep.done, sweep.total) if sweep is not None else (0, 0)
+        if sweep is None:
+            return (0, 0)
+        _, done, total = sweep.progress()
+        return (done, total)
 
     async def on_mount(self) -> None:
         self.started_at = monotonic()
@@ -274,7 +329,7 @@ class GbotApp(App[None]):
         # The home list must hold this roster before the sweep can follow its display order.
         self.refresh_home()
         shown = self._display_order([bot.id for bot in bots])
-        waiting = {bot.id for bot in bots if bot.awaiting is not None}
+        waiting = _waiting_ids(bots)
         self._sweep = _CardSweep(
             [
                 *(bot_id for bot_id in shown if bot_id in waiting),
@@ -360,42 +415,85 @@ class GbotApp(App[None]):
                 pass
 
     def _check_bots(self, sweep: _CardSweep) -> None:
-        while (bot_id := sweep.take()) is not None:
+        while (item := sweep.take()) is not None:
             if self._service_closing:
                 break
-            if bot_id in self._cards_refreshed:
-                sweep.count()
-                continue
-            try:
-                cards, warnings = self.service.pending(
-                    [bot_id], bots=sweep.bots, recent_pages=HOME_RECENT_PAGES
-                )
-            except Exception as error:  # noqa: BLE001 - service/worker boundary
-                sweep.count()
-                if self._service_closing:
-                    break
-                if isinstance(error, ConnectError) and error.status == 401:
-                    # One notice for the whole sweep; the other checks in flight end quietly.
-                    if sweep.stop_for_auth():
-                        self.call_from_thread(self.service_error, error)
-                else:
-                    self.call_from_thread(self.bot_error, bot_id, error, notify=False)
-                continue
+            bot_id, full = item
+            if full:
+                self._full_check(sweep, bot_id)
+            else:
+                self._quick_check(sweep, bot_id)
+
+    def _quick_check(self, sweep: _CardSweep, bot_id: str) -> None:
+        if bot_id in self._cards_refreshed:
             sweep.count()
-            if self._service_closing:
-                break
-            try:
-                self.call_from_thread(
-                    self._install_sweep_cards, bot_id, cards, warnings
-                )
-            except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
-                self.call_from_thread(self.bot_error, bot_id, error, notify=False)
+            sweep.plan_full(bot_id, wanted=False)
+            return
+        try:
+            cards, warnings = self.service.pending(
+                [bot_id],
+                bots=sweep.bots,
+                recent_pages=HOME_RECENT_PAGES,
+                waiting_in_full=False,
+            )
+        except Exception as error:  # noqa: BLE001 - service/worker boundary
+            sweep.count()
+            self._check_failed(sweep, bot_id, error)
+            # A waiting bot still gets its full read, as before the quick pass; a 401 has stopped the sweep.
+            auth = isinstance(error, ConnectError) and error.status == 401
+            sweep.plan_full(bot_id, wanted=not auth)
+            return
+        sweep.count()
+        if self._service_closing:
+            return
+        try:
+            installed = self.call_from_thread(
+                self._install_sweep_cards, bot_id, cards, sweep.unseen(bot_id, warnings)
+            )
+        except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
+            installed = False
+            self.call_from_thread(self.bot_error, bot_id, error, notify=False)
+        # Only now, with the quick result on home, may the full check of a waiting bot join the queue.
+        sweep.plan_full(bot_id, wanted=installed)
+
+    def _full_check(self, sweep: _CardSweep, bot_id: str) -> None:
+        if bot_id in self._cards_refreshed:
+            sweep.count_full()
+            return
+        try:
+            cards, warnings = self.service.pending([bot_id], bots=sweep.bots)
+        except Exception as error:  # noqa: BLE001 - service/worker boundary
+            sweep.count_full()
+            self._check_failed(sweep, bot_id, error)
+            return
+        sweep.count_full()
+        if self._service_closing:
+            return
+        try:
+            self.call_from_thread(
+                self._install_sweep_cards, bot_id, cards, sweep.unseen(bot_id, warnings)
+            )
+        except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
+            self.call_from_thread(self.bot_error, bot_id, error, notify=False)
+
+    def _check_failed(self, sweep: _CardSweep, bot_id: str, error: Exception) -> None:
+        if self._service_closing:
+            return
+        if isinstance(error, ConnectError) and error.status == 401:
+            # One notice for the whole sweep; the other checks in flight end quietly.
+            if sweep.stop_for_auth():
+                self.call_from_thread(self.service_error, error)
+        else:
+            self.call_from_thread(self.bot_error, bot_id, error, notify=False)
 
     def _install_sweep_cards(
         self, bot_id: str, cards: list[Card], warnings: list[str]
-    ) -> None:
-        if bot_id not in self._cards_refreshed:
-            self._install_cards(bot_id, cards, warnings)
+    ) -> bool:
+        # Refreshed cards already hold a full read, which a sweep result must not replace. Returns whether installed.
+        if bot_id in self._cards_refreshed:
+            return False
+        self._install_cards(bot_id, cards, warnings)
+        return True
 
     def on_service_event(self, message: ServiceEvent) -> None:
         from gbot.tui.screens.handoff import HandoffScreen
@@ -490,9 +588,18 @@ class GbotApp(App[None]):
     def refresh_cards(self, bot_id: str) -> None:
         try:
             cards, warnings = self.service.pending([bot_id])
-            self.call_from_thread(self._install_cards, bot_id, cards, warnings)
+            self.call_from_thread(
+                self._install_refreshed_cards, bot_id, cards, warnings
+            )
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
             self.call_from_thread(self.bot_error, bot_id, error)
+
+    def _install_refreshed_cards(
+        self, bot_id: str, cards: list[Card], warnings: list[str]
+    ) -> None:
+        # A full read: a capped sweep result that lands later must not replace it.
+        self._cards_refreshed.add(bot_id)
+        self._install_cards(bot_id, cards, warnings)
 
     def _install_cards(
         self, bot_id: str, cards: list[Card], warnings: list[str]
