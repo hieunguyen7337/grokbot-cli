@@ -662,7 +662,10 @@ def test_waiting_bot_newest_card_shows_before_its_full_read(home_env):
     asyncio.run(exercise())
 
 
-def test_waiting_bot_with_failed_quick_check_gets_no_full_check(home_env):
+@pytest.mark.parametrize("full_fails", [False, True])
+def test_waiting_bot_with_failed_quick_check_still_gets_its_full_read(
+    home_env, full_fails
+):
     async def exercise():
         service = waiting_card_service()
         original = service.pending
@@ -674,7 +677,10 @@ def test_waiting_bot_with_failed_quick_check_gets_no_full_check(home_env):
             if bot_ids == ["idle-00"]:
                 if recent_pages is None:
                     full_checks.append(["idle-00"])
-                raise OSError("offline")
+                    if full_fails:
+                        raise OSError("still offline")
+                else:
+                    raise OSError("offline")
             return call_original(original, bot_ids, bots, recent_pages, waiting_in_full)
 
         service.pending = pending
@@ -683,8 +689,92 @@ def test_waiting_bot_with_failed_quick_check_gets_no_full_check(home_env):
             await wait_until(pilot, lambda: app.settled, "the sweep to settle")
             await pilot.pause()
             assert app.load_stage is None
-        assert full_checks == []
-        assert app.state.errors["idle-00"] == "offline"
+        # A failed quick check does not cost the waiting bot its full read, which the sweep did before.
+        assert full_checks == [["idle-00"]]
+        if full_fails:
+            assert app.state.errors["idle-00"] == "still offline"
+            assert app.state.cards["idle-00"] == []
+        else:
+            assert "idle-00" not in app.state.errors
+            assert {c.entry_id for c in app.state.cards["idle-00"]} == {"old", "new"}
+
+    asyncio.run(exercise())
+
+
+def test_refreshed_cards_are_not_replaced_by_a_later_quick_check(home_env):
+    async def exercise():
+        # idle-01 is not waiting; its card is on an older page, which only a full read finds.
+        service = waiting_card_service()
+        service.state.rows[0]["awaitingUserResponse"] = None
+        service.state.transcripts["idle-01"] = service.state.transcripts.pop("idle-00")
+        original = service.pending
+        quick_entered, release = threading.Event(), threading.Event()
+
+        def pending(
+            bot_ids=None, *, bots=None, recent_pages=None, waiting_in_full=True
+        ):
+            if bot_ids == ["idle-01"] and recent_pages is not None:
+                # The sweep's capped read of idle-01 is held open while the user refreshes it.
+                quick_entered.set()
+                release.wait(5)
+            return call_original(original, bot_ids, bots, recent_pages, waiting_in_full)
+
+        service.pending = pending
+        app = GbotApp(service, animate=False)
+        try:
+            async with app.run_test() as pilot:
+                await wait_until(pilot, quick_entered.is_set, "the quick check")
+                app.refresh_cards("idle-01")
+                await wait_until(
+                    pilot,
+                    lambda: (
+                        {c.entry_id for c in app.state.cards["idle-01"]}
+                        == {"old", "new"}
+                    ),
+                    "the refreshed cards",
+                )
+                release.set()
+                await wait_until(pilot, lambda: app.settled, "the sweep to settle")
+                await pilot.pause()
+                # The capped result came last and was dropped: the full read stays on home.
+                assert {c.entry_id for c in app.state.cards["idle-01"]} == {
+                    "old",
+                    "new",
+                }
+        finally:
+            release.set()
+
+    asyncio.run(exercise())
+
+
+def test_waiting_bot_warning_shows_once(home_env, monkeypatch):
+    async def exercise():
+        service = waiting_card_service()
+        original = service.pending
+        notices: list[str] = []
+
+        def notify(self, message, *, severity="information", **kwargs):
+            notices.append(str(message))
+
+        monkeypatch.setattr(GbotApp, "notify", notify)
+
+        def pending(
+            bot_ids=None, *, bots=None, recent_pages=None, waiting_in_full=True
+        ):
+            cards, warnings = call_original(
+                original, bot_ids, bots, recent_pages, waiting_in_full
+            )
+            if bot_ids == ["idle-00"]:
+                # Both the quick and the full read of the waiting bot report the same session failure.
+                warnings = [*warnings, "Bot-00: session unavailable"]
+            return cards, warnings
+
+        service.pending = pending
+        app = GbotApp(service, animate=False)
+        async with app.run_test() as pilot:
+            await wait_until(pilot, lambda: app.settled, "the sweep to settle")
+            await pilot.pause()
+        assert notices.count("Bot-00: session unavailable") == 1
 
     asyncio.run(exercise())
 

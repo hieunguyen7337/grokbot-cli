@@ -72,6 +72,8 @@ class _CardSweep:
         )
         self._stopped = False
         self._running = 0
+        # (bot id, warning) already shown: a waiting bot's quick and full reads can report the same warning.
+        self._warned: set[tuple[str, str]] = set()
         self._lock = threading.Lock()
 
     def start(self, threads: int) -> None:
@@ -103,6 +105,12 @@ class _CardSweep:
                 self._queue.append((bot_id, True))
             else:
                 self.full_done += 1
+
+    def unseen(self, bot_id: str, warnings: Sequence[str]) -> list[str]:
+        with self._lock:
+            fresh = [w for w in warnings if (bot_id, w) not in self._warned]
+            self._warned.update((bot_id, w) for w in fresh)
+            return fresh
 
     def progress(self) -> tuple[bool, int, int]:
         # (older, done, total): the quick checks until every one is counted, then the full checks of waiting bots.
@@ -430,15 +438,17 @@ class GbotApp(App[None]):
             )
         except Exception as error:  # noqa: BLE001 - service/worker boundary
             sweep.count()
-            sweep.plan_full(bot_id, wanted=False)
             self._check_failed(sweep, bot_id, error)
+            # A waiting bot still gets its full read, as before the quick pass; a 401 has stopped the sweep.
+            auth = isinstance(error, ConnectError) and error.status == 401
+            sweep.plan_full(bot_id, wanted=not auth)
             return
         sweep.count()
         if self._service_closing:
             return
         try:
             installed = self.call_from_thread(
-                self._install_sweep_cards, bot_id, cards, warnings
+                self._install_sweep_cards, bot_id, cards, sweep.unseen(bot_id, warnings)
             )
         except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
             installed = False
@@ -460,7 +470,9 @@ class GbotApp(App[None]):
         if self._service_closing:
             return
         try:
-            self.call_from_thread(self._install_sweep_cards, bot_id, cards, warnings)
+            self.call_from_thread(
+                self._install_sweep_cards, bot_id, cards, sweep.unseen(bot_id, warnings)
+            )
         except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
             self.call_from_thread(self.bot_error, bot_id, error, notify=False)
 
@@ -576,9 +588,18 @@ class GbotApp(App[None]):
     def refresh_cards(self, bot_id: str) -> None:
         try:
             cards, warnings = self.service.pending([bot_id])
-            self.call_from_thread(self._install_cards, bot_id, cards, warnings)
+            self.call_from_thread(
+                self._install_refreshed_cards, bot_id, cards, warnings
+            )
         except Exception as error:  # noqa: BLE001 - service/worker boundary must notify
             self.call_from_thread(self.bot_error, bot_id, error)
+
+    def _install_refreshed_cards(
+        self, bot_id: str, cards: list[Card], warnings: list[str]
+    ) -> None:
+        # A full read: a capped sweep result that lands later must not replace it.
+        self._cards_refreshed.add(bot_id)
+        self._install_cards(bot_id, cards, warnings)
 
     def _install_cards(
         self, bot_id: str, cards: list[Card], warnings: list[str]
