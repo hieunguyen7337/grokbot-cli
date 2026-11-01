@@ -160,6 +160,7 @@ class FakeService:
         *,
         bots: Sequence[Bot] | None = None,
         recent_pages: int | None = None,
+        waiting_in_full: bool = True,
     ) -> tuple[list[Card], list[str]]:
         with self._lock:
             if bots is None:
@@ -174,7 +175,7 @@ class FakeService:
                     continue
                 entries = self.state.transcripts.get(bot_id, [])
                 # Transcripts run oldest to newest, as `_page` reads them; a waiting bot is read in full.
-                if recent_pages is not None and not waiting(row):
+                if recent_pages is not None and not (waiting_in_full and waiting(row)):
                     # Like `cards.tail`, a cap below one still reads the newest page.
                     entries = entries[-max(recent_pages, 1) * 100 :]
                 for entry in entries:

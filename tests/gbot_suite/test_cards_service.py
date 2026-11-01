@@ -477,6 +477,24 @@ def test_discover_recent_pages_card_on_second_page():
     assert found == [classify(WIDGET, "bot", "Bot")]
 
 
+def test_discover_waiting_in_full_false_caps_waiting_bots():
+    rows: list[dict[str, object]] = [
+        {"id": "bot", "name": "Bot", "awaitingUserResponse": {"reason": "approval"}}
+    ]
+    transport = FakeTransport(commands={"getAgentTranscriptTail": two_pages})
+    # Capped for a waiting bot too: the card is on the older page, so it is not found.
+    found, warnings = cards.discover(
+        transport, rows, all_bots=True, recent_pages=1, waiting_in_full=False
+    )
+    assert (found, warnings) == ([], [])
+    assert len(transport.calls) == 1
+    transport.calls.clear()
+    # The default still reads a waiting bot in full.
+    found, _ = cards.discover(transport, rows, all_bots=True, recent_pages=1)
+    assert found == [classify(WIDGET, "bot", "Bot")]
+    assert len(transport.calls) == 2
+
+
 def test_discover_recent_pages_keeps_auth_failure():
     transport = FakeTransport(
         commands={"getAgentTranscriptTail": ConnectError(401, "expired")}

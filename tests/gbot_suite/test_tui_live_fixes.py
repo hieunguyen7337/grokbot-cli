@@ -7,6 +7,7 @@ import pytest
 from gbot import cli, context
 from gbot.commands import tui
 from gbot.service import events
+from gbot.service.cards import waiting
 from gbot.service.fake import load_fake
 from gbot.service.models import Bot
 from gbot.tui import app as app_module
@@ -28,7 +29,7 @@ def sweep_service():
     service.state.rows[0]["awaitingUserResponse"] = None
     calls = []
 
-    def pending(bot_ids=None, *, bots=None, recent_pages=None):
+    def pending(bot_ids=None, *, bots=None, recent_pages=None, waiting_in_full=True):
         ids = bot_ids
         calls.append(ids)
         if ids is None:
@@ -53,7 +54,9 @@ def test_sweep(home_env, monkeypatch, failure):
             # One check at a time, so the 401 cut-off is exact; the parallel order is checked below.
             monkeypatch.setattr(app_module, "CARD_SWEEP_PARALLEL", 1)
 
-        def pending(bot_ids=None, *, bots=None, recent_pages=None):
+        def pending(
+            bot_ids=None, *, bots=None, recent_pages=None, waiting_in_full=True
+        ):
             selected = bot_ids
             result = original(selected)
             # The first check to start fails; the sweep must start no other check.
@@ -77,10 +80,13 @@ def test_sweep(home_env, monkeypatch, failure):
             if isinstance(failure, ConnectError):
                 assert calls == first_check
             else:
-                # Checks run in parallel, so only the set of checks is fixed: each bot once,
-                # waiting bots included, and never one call for every bot.
+                # Checks run in parallel, so only the set of checks is fixed: a quick check of each
+                # bot, waiting bots included, then a full check of each waiting bot, and never one
+                # call for every bot.
+                full = [b.id for b in service.roster() if waiting(b.raw)]
+                assert full
                 assert None not in calls
-                assert sorted(calls) == sorted([i] for i in every)
+                assert sorted(calls) == sorted([i] for i in [*every, *full])
                 assert (
                     next(r for r in app.home.rows if r.bot_id == ids[0]).state
                     == RowState.NEEDS_INPUT
@@ -102,7 +108,9 @@ def test_event_refresh_wins(home_env):
         entered, release = threading.Event(), threading.Event()
         stale = original(["demo-inbox"])
 
-        def pending(bot_ids=None, *, bots=None, recent_pages=None):
+        def pending(
+            bot_ids=None, *, bots=None, recent_pages=None, waiting_in_full=True
+        ):
             ids = bot_ids
             if ids == ["demo-inbox"] and not entered.is_set():
                 entered.set()
@@ -135,7 +143,7 @@ def test_screenshot_sweep(home_env, monkeypatch, capsys, slow):
     release = threading.Event()
     close = service.close
 
-    def pending(bot_ids=None, *, bots=None, recent_pages=None):
+    def pending(bot_ids=None, *, bots=None, recent_pages=None, waiting_in_full=True):
         ids = bot_ids
         if slow and ids == ["demo-inbox"]:
             release.wait()

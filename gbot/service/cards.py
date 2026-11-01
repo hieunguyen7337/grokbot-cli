@@ -297,6 +297,7 @@ def discover(
     all_bots: bool = False,
     awaiting_only: bool = True,
     recent_pages: int | None = None,
+    waiting_in_full: bool = True,
 ) -> tuple[list[Card], list[str]]:
     warnings: list[str] = []
     found: dict[tuple[str, str], Card] = {}
@@ -311,8 +312,9 @@ def discover(
         awaiting = bot.get("awaitingSessionIds")
         if isinstance(awaiting, list):
             sessions.extend(dict.fromkeys(s for s in awaiting if isinstance(s, str)))
-        # A bot the roster shows as waiting is always read in full; the cap only spares the others.
-        cap = None if waiting(bot) else recent_pages
+        # A bot the roster shows as waiting is read in full unless the caller turns that off; the cap only spares
+        # the others (and, with waiting_in_full False, every bot).
+        cap = None if waiting_in_full and waiting(bot) else recent_pages
         try:
             scanned = [
                 (session_id, tail(transport, bot_id, session_id, max_pages=cap))
