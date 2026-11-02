@@ -137,3 +137,12 @@ def test_sessions_empty_text(monkeypatch, capsys):
     fake.rpcs["ListGrokBotAgentSessions"] = {}
     assert cli.main(["sessions", "--bot", "Box"]) == 0
     assert "No sessions" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("bot", ["Box", "Temporal"])
+@pytest.mark.parametrize("nonce", ["", "  "])
+def test_blank_send_nonce_is_refused(monkeypatch, capsys, bot, nonce):
+    fake = setup_cli(monkeypatch)
+    assert cli.main(["send", "--bot", bot, "--nonce", nonce, "hi"]) == 1
+    assert "nonce" in capsys.readouterr().err
+    assert not sent(fake)

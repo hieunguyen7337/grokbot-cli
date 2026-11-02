@@ -136,6 +136,8 @@ def send(
 ) -> SendResult:
     if not text.strip() and not attachments:
         raise ValueError("Prompt must not be empty.")
+    if nonce is not None and not nonce.strip():
+        raise ValueError("A send nonce must not be blank.")
     nonce = nonce if nonce is not None else str(uuid.uuid4())
     page = transcript(transport, bot_id, limit=1, session_id=session_id)
     args: dict[str, object] = {
