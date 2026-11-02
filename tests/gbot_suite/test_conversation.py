@@ -1,6 +1,7 @@
 import pytest
 
 from gbot.service import conversation as c
+from gbot.service.routing import Harness, Router
 from gbot.service.transport import FakeTransport
 
 
@@ -80,3 +81,108 @@ def test_send_nonce_and_blank():
 )
 def test_box_state(reply, expected):
     assert c.box_state(FakeTransport({"getForeverBoxStatus": reply}), "b") == expected
+
+
+def test_send_status_box_uses_the_gateway_command():
+    transport = FakeTransport({"promptAcceptanceStatus": {"status": "accepted"}})
+    assert c.send_status(transport, "b", "n", session_id="s", task_id="k") == {
+        "status": "accepted"
+    }
+    assert c.send_status(transport, "b", "n") == {"status": "accepted"}
+    assert transport.calls == [
+        (
+            "command",
+            "promptAcceptanceStatus",
+            {"agentId": "b", "clientNonce": "n", "sessionId": "s", "taskId": "k"},
+        ),
+        ("command", "promptAcceptanceStatus", {"agentId": "b", "clientNonce": "n"}),
+    ]
+
+
+@pytest.mark.parametrize("reply", [None, [], "junk"])
+def test_send_status_odd_reply_is_unknown(reply):
+    transport = FakeTransport({"promptAcceptanceStatus": reply})
+    assert c.send_status(transport, "b", "n") == {"outcome": "unknown-durability"}
+
+
+def test_send_status_needs_a_nonce():
+    transport = FakeTransport({"promptAcceptanceStatus": {}})
+    with pytest.raises(ValueError, match="nonce"):
+        c.send_status(transport, "b", " ")
+    assert transport.calls == []
+
+
+def test_send_status_temporal_uses_the_backend():
+    fake = FakeTransport(
+        {"promptAcceptanceStatus": {}},
+        {"GetGrokBotSendStatus": {"outcome": "X_NOT_FOUND"}},
+    )
+    harness = Harness()
+    harness.learn([{"id": "t", "harness": "temporal"}])
+    assert c.send_status(Router(fake, harness), "t", "n") == {"outcome": "not-found"}
+    assert [call[:2] for call in fake.calls] == [("rpc", "GetGrokBotSendStatus")]
+
+
+def test_list_sessions_parses_kinds_and_times():
+    reply = {
+        "sessions": [
+            {
+                "agentId": "b",
+                "sessionId": "",
+                "kind": "GROK_BOT_AGENT_SESSION_KIND_MAIN",
+                "createdAtMs": "1800000000000",
+                "updatedAtMs": "1800000001000",
+                "lastActivityAtMs": "1800000002000",
+            },
+            {
+                "agentId": "b",
+                "sessionId": "task:0123456789",
+                "kind": "GROK_BOT_AGENT_SESSION_KIND_SLACK_THREAD",
+                "createdAtMs": 5,
+                "updatedAtMs": "6",
+            },
+            {"sessionId": "x", "kind": 3},
+            "junk",
+        ]
+    }
+    transport = FakeTransport(rpcs={"ListGrokBotAgentSessions": reply})
+    assert c.list_sessions(transport, "b") == [
+        {
+            "agentId": "b",
+            "sessionId": "",
+            "kind": "main",
+            "createdAtMs": 1_800_000_000_000,
+            "updatedAtMs": 1_800_000_001_000,
+            "lastActivityAtMs": 1_800_000_002_000,
+        },
+        {
+            "agentId": "b",
+            "sessionId": "task:0123456789",
+            "kind": "slack_thread",
+            "createdAtMs": 5,
+            "updatedAtMs": 6,
+        },
+        {
+            "agentId": "b",
+            "sessionId": "x",
+            "kind": "unspecified",
+            "createdAtMs": 0,
+            "updatedAtMs": 0,
+        },
+    ]
+    assert transport.calls == [("rpc", "ListGrokBotAgentSessions", {"agentId": "b"})]
+
+
+@pytest.mark.parametrize("reply", [{}, {"sessions": None}, {"sessions": "x"}])
+def test_list_sessions_empty(reply):
+    transport = FakeTransport(rpcs={"ListGrokBotAgentSessions": reply})
+    assert c.list_sessions(transport, "b") == []
+
+
+def test_demo_data_parses():
+    transport = FakeTransport(dict(c.DEMO_COMMANDS), dict(c.DEMO_RPCS))
+    rows = c.list_sessions(transport, "demo-bot")
+    assert [row["kind"] for row in rows] == ["main", "dm"]
+    assert all(row["agentId"] == "demo-bot" for row in rows)
+    status = c.send_status(transport, "demo-bot", "nonce-1")
+    assert status["status"] == "accepted" and status["clientNonce"] == "nonce-1"

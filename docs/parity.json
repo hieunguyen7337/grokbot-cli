@@ -1141,8 +1141,8 @@
       ],
       "area": "conversation",
       "milestone": "M1",
-      "status": "planned",
-      "note": "triage (a): The documented send-status mapping supports fake accepted, rejected, pending and missing cases."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "publishBotTemplate",
@@ -4432,8 +4432,8 @@
       ],
       "area": "conversation",
       "milestone": "M1",
-      "status": "planned",
-      "note": "triage (a): The documented request mapping and delivery outcomes can be faked without sending a real message."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "GetGrokBotSlackInstallState",
@@ -4916,8 +4916,8 @@
       ],
       "area": "conversation",
       "milestone": "M2",
-      "status": "planned",
-      "note": "triage (a): The session list fields, kinds and timestamps are documented and can be tested as routing contexts."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "ListGrokBotAgentSkills",
@@ -6370,8 +6370,8 @@
       ],
       "area": "conversation",
       "milestone": "M1",
-      "status": "planned",
-      "note": "triage (a): The field mapping and acceptance outcomes are documented, so fakes can cover sending and duplicate handling."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "SetGrokBotAgentAllowCollaboratorAutomationCreation",

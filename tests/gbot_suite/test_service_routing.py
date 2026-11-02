@@ -1,13 +1,17 @@
 import argparse
+import json
 import threading
 
+import httpx
 import pytest
 
 from gbot.context import Context
+from gbot.service import conversation, routing
 from gbot.service.broker import BrokerTransport, CredentialBroker
 from gbot.service.client import GbotService
 from gbot.service.routing import ROUTES, Harness, Router
 from gbot.service.transport import ContextTransport, FakeTransport
+from groken import client as groken_client
 from groken.client import ConnectError
 
 # Independent wire expectations, including fields that must not reach the backend.
@@ -359,8 +363,6 @@ def test_failure_never_falls_back(failure):
 @pytest.mark.parametrize(
     "command",
     [
-        "sendPrompt",
-        "promptAcceptanceStatus",
         "setGroupMembers",
         "updateAgent",
         "createAgent",
@@ -476,3 +478,315 @@ def test_context_and_service_use_shared_registry(monkeypatch):
     )
     service.close()
     ctx.close()
+
+
+# Send path: temporal bots use the backend twins, box bots keep the gateway commands.
+NOW = 1_800_000_010_000
+
+
+@pytest.fixture
+def clock(monkeypatch):
+    monkeypatch.setattr(routing, "now_ms", lambda: NOW)
+
+
+def test_temporal_send_maps_every_documented_field(clock):
+    fake = FakeTransport(
+        rpcs={"SendGrokBotUserMessage": {"delivery": "X_ACCEPTED_TEMPORAL"}}
+    )
+    args = {
+        "agentId": "t",
+        "prompt": "hi",
+        "clientNonce": "n1",
+        "richText": "<p>hi</p>",
+        "replyToId": "r",
+        "replyQuote": "q",
+        "isFork": True,
+        "traceparent": "tp",
+        "enterEpochMs": 1_800_000_000_000,
+        "composedAtMs": 1_800_000_005_000.7,
+        "sessionId": "s",
+        "machineId": "m",
+        "onePasswordAppInstalled": True,
+        "rendersMcpElicitationForms": True,
+        "mcpConfigJson": "{}",
+        "taskId": "k",
+        "language": "en",
+        "firstSentAtMs": NOW - 1500.5,
+        "directAddressedAcceptance": True,
+        "unrelated": "dropped",
+    }
+    assert routed(fake).command("sendPrompt", args) == {"accepted": True}
+    assert fake.calls == [
+        (
+            "rpc",
+            "SendGrokBotUserMessage",
+            {
+                "agentId": "t",
+                "messageId": "n1",
+                "text": "hi",
+                "sentAtMs": str(NOW),
+                "richText": "<p>hi</p>",
+                "replyToId": "r",
+                "replyQuote": "q",
+                "traceparent": "tp",
+                "mcpConfigJson": "{}",
+                "taskId": "k",
+                "language": "en",
+                "isFork": True,
+                "attachmentPaths": [],
+                "attachmentNames": [],
+                "enterEpochMs": "1800000000000",
+                "composedAtMs": "1800000005000",
+                "sessionId": "s",
+                "machineId": "m",
+                "onePasswordAppInstalled": True,
+                "rendersMcpElicitationForms": True,
+                "firstSentAgeMs": "1500",
+            },
+        )
+    ]
+
+
+def test_temporal_send_minimal_and_false_flags(clock):
+    fake = FakeTransport(rpcs={"SendGrokBotUserMessage": {"delivery": "DUPLICATE"}})
+    args = {
+        "agentId": "t",
+        "prompt": "hi",
+        "clientNonce": "n1",
+        "isFork": False,
+        "sessionId": "",
+        "machineId": "",
+        "onePasswordAppInstalled": False,
+        "attachmentPaths": ["p"],
+        "attachmentNames": ["a.txt"],
+        "firstSentAtMs": NOW + 99,
+    }
+    assert routed(fake).command("sendPrompt", args) == {"accepted": True}
+    assert fake.calls[0][2] == {
+        "agentId": "t",
+        "messageId": "n1",
+        "text": "hi",
+        "sentAtMs": str(NOW),
+        "attachmentPaths": ["p"],
+        "attachmentNames": ["a.txt"],
+        "firstSentAgeMs": "0",
+    }
+
+
+@pytest.mark.parametrize(
+    "delivery", ["X_ACCEPTED_BOX", "X_ACCEPTED_TEMPORAL", "X_DUPLICATE"]
+)
+def test_temporal_send_accepted_outcomes(clock, delivery):
+    fake = FakeTransport(rpcs={"SendGrokBotUserMessage": {"delivery": delivery}})
+    reply = routed(fake).command(
+        "sendPrompt", {"agentId": "t", "prompt": "hi", "clientNonce": "n"}
+    )
+    assert reply == {"accepted": True}
+
+
+@pytest.mark.parametrize(
+    "reply, message",
+    [
+        ({"delivery": "X_REFUSED"}, "Send refused: X_REFUSED"),
+        ({}, "Send refused: unknown delivery"),
+        ({"delivery": "X_SOMETHING_NEW"}, "Send refused: X_SOMETHING_NEW"),
+        (
+            {"refusal": {"failureCode": "busy", "message": "Try later"}},
+            "Send refused: busy: Try later",
+        ),
+    ],
+)
+def test_temporal_send_refusals_never_fall_back(clock, reply, message):
+    fake = FakeTransport(
+        {"sendPrompt": {"accepted": True}}, {"SendGrokBotUserMessage": reply}
+    )
+    with pytest.raises(ValueError, match=message):
+        routed(fake).command(
+            "sendPrompt", {"agentId": "t", "prompt": "hi", "clientNonce": "n"}
+        )
+    assert [call[0] for call in fake.calls] == ["rpc"]
+
+
+def test_temporal_send_transport_error_never_falls_back(clock):
+    fake = FakeTransport(
+        {"sendPrompt": {"accepted": True}},
+        {"SendGrokBotUserMessage": ConnectError(503, "unavailable")},
+    )
+    with pytest.raises(ConnectError):
+        routed(fake).command(
+            "sendPrompt", {"agentId": "t", "prompt": "hi", "clientNonce": "n"}
+        )
+    assert [call[0] for call in fake.calls] == ["rpc"]
+
+
+def test_temporal_send_needs_a_nonce(clock):
+    fake = FakeTransport({"sendPrompt": {}}, {"SendGrokBotUserMessage": {}})
+    with pytest.raises(ValueError, match="clientNonce"):
+        routed(fake).command("sendPrompt", {"agentId": "t", "prompt": "hi"})
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize("harness", [None, "box", "other"])
+def test_box_send_and_status_stay_on_gateway(harness):
+    fake = FakeTransport(
+        {"sendPrompt": {"accepted": True}, "promptAcceptanceStatus": {"x": 1}},
+        {"SendGrokBotUserMessage": {}, "GetGrokBotSendStatus": {}},
+    )
+    registry = Harness()
+    registry.learn([{"id": "t", "harness": "temporal"}])
+    row: dict[str, object] = {"id": "b"}
+    if harness:
+        row["harness"] = harness
+    registry.learn([row])
+    router = Router(fake, registry)
+    send = {"agentId": "b", "prompt": "hi", "clientNonce": "n"}
+    assert router.command("sendPrompt", send) == {"accepted": True}
+    status = {"agentId": "b", "clientNonce": "n"}
+    assert router.command("promptAcceptanceStatus", status) == {"x": 1}
+    assert fake.calls == [
+        ("command", "sendPrompt", send),
+        ("command", "promptAcceptanceStatus", status),
+    ]
+
+
+def test_temporal_status_request_mapping(clock):
+    fake = FakeTransport(rpcs={"GetGrokBotSendStatus": {"outcome": "X_NOT_FOUND"}})
+    args = {
+        "agentId": "t",
+        "clientNonce": "n",
+        "sessionId": "s",
+        "taskId": "k",
+        "firstSentAtMs": NOW - 20,
+        "accountSlot": "host",
+    }
+    assert routed(fake).command("promptAcceptanceStatus", args) == {
+        "outcome": "not-found"
+    }
+    assert fake.calls == [
+        (
+            "rpc",
+            "GetGrokBotSendStatus",
+            {
+                "agentId": "t",
+                "messageId": "n",
+                "sessionId": "s",
+                "taskId": "k",
+                "firstSentAgeMs": "20",
+            },
+        )
+    ]
+
+
+def _record(status, **extra):
+    return {
+        "accountSlot": "host",
+        "clientNonce": "n",
+        "agentId": "t",
+        "inputDigest": "",
+        "status": status,
+        **extra,
+    }
+
+
+@pytest.mark.parametrize(
+    "reply, expected",
+    [
+        ({"outcome": "X_NOT_FOUND"}, {"outcome": "not-found"}),
+        ({}, {"outcome": "unknown-durability"}),
+        ({"outcome": "X_UNSPECIFIED"}, {"outcome": "unknown-durability"}),
+        (
+            {"outcome": "X_FOUND", "status": "X_MYSTERY"},
+            {"outcome": "unknown-durability"},
+        ),
+        (
+            {
+                "outcome": "X_FOUND",
+                "status": "X_ACCEPTED",
+                "acceptedAtMs": "1800000000000",
+                "echoEntryId": "e1",
+                "rejectionCode": "ignored",
+            },
+            _record(
+                "accepted",
+                acceptedAtMs=1_800_000_000_000,
+                echoEntryId="e1",
+                rejectionCode=None,
+            ),
+        ),
+        (
+            {"outcome": "X_FOUND", "status": "X_PENDING"},
+            _record("pending", acceptedAtMs=0, echoEntryId=None, rejectionCode=None),
+        ),
+        (
+            {
+                "outcome": "X_FOUND",
+                "record": {"status": "X_REJECTED", "rejectionCode": "too_long"},
+            },
+            _record(
+                "rejected", acceptedAtMs=0, echoEntryId=None, rejectionCode="too_long"
+            ),
+        ),
+    ],
+)
+def test_temporal_status_outcomes(clock, reply, expected):
+    fake = FakeTransport(
+        {"promptAcceptanceStatus": {}}, {"GetGrokBotSendStatus": reply}
+    )
+    result = routed(fake).command(
+        "promptAcceptanceStatus", {"agentId": "t", "clientNonce": "n"}
+    )
+    assert result == expected
+    assert [call[0] for call in fake.calls] == ["rpc"]
+
+
+def test_temporal_send_retry_keeps_the_message_id(clock):
+    fake = FakeTransport(
+        {"getAgentTranscriptTail": {"entries": []}},
+        {"SendGrokBotUserMessage": {"delivery": "X_ACCEPTED_TEMPORAL"}},
+    )
+    router = routed(fake)
+    first = conversation.send(router, "t", "hi")
+    again = conversation.send(router, "t", "hi", nonce=first.nonce)
+    assert first.accepted and again.accepted
+    sends = [
+        args for kind, name, args in fake.calls if name == "SendGrokBotUserMessage"
+    ]
+    assert [args["messageId"] for args in sends] == [first.nonce, first.nonce]
+    assert not [call for call in fake.calls if call[1] == "sendPrompt"]
+
+
+def test_temporal_send_refreshes_once_and_retries_the_same_message_id(
+    clock, monkeypatch
+):
+    bodies = []
+
+    def handle(request):
+        bodies.append(json.loads(request.content))
+        if len(bodies) == 1:
+            return httpx.Response(401, text="expired")
+        return httpx.Response(200, json={"delivery": "X_ACCEPTED_TEMPORAL"})
+
+    sand = groken_client.SandClient.__new__(groken_client.SandClient)
+    sand.access_token = "fake"
+    sand.machine_id = "machine"
+    sand.client_version = "0.0.0"
+    sand.http = httpx.Client(transport=httpx.MockTransport(handle))
+    refreshed = []
+    monkeypatch.setattr(sand, "_relogin_once", lambda: refreshed.append(1) or True)
+
+    class Backend:
+        def command(self, name, args=None):
+            pytest.fail("a temporal send must not reach the gateway")
+
+        def rpc(self, method, payload):
+            return sand.unary(groken_client.GROK_BOT, method, dict(payload))
+
+    registry = Harness()
+    registry.learn([{"id": "t", "harness": "temporal"}])
+    reply = Router(Backend(), registry).command(
+        "sendPrompt", {"agentId": "t", "prompt": "hi", "clientNonce": "n"}
+    )
+    assert reply == {"accepted": True}
+    assert refreshed == [1]
+    assert len(bodies) == 2 and bodies[0] == bodies[1]
+    assert bodies[0]["messageId"] == "n"
