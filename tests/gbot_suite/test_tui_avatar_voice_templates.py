@@ -270,9 +270,6 @@ def test_templates(tmp_path, monkeypatch):
             detail = app.screen
             assert isinstance(detail, DetailPanel)
             assert ("Version", "1") in detail.detail.fields
-            assert ("Recipe profile", "Helper") in detail.detail.fields
-            assert ("Download link", "available") in detail.detail.fields
-            assert not any("blobGetUrl" in str(field) for field in detail.detail.fields)
             app.read_only = True
             await pilot.press("u")
             assert notices[-1] == "Read-only mode"

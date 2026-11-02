@@ -91,11 +91,8 @@ def templates(ctx: SlashContext, args: str) -> None:
 
         def load_detail() -> None:
             details = service.details(ctx.service.transport, listing.share_id)
-            version = service.get_version(
-                ctx.service.transport, listing.share_id, details.expected_active_version
-            )
             ctx.app.call_from_thread(
-                ctx.app.push_screen, _TemplatePanel(ctx, listing, details, version)
+                ctx.app.push_screen, _TemplatePanel(ctx, listing, details)
             )
 
         _worker(ctx, load_detail)
@@ -116,17 +113,12 @@ class _TemplatePanel(_Detail):
         ctx: SlashContext,
         listing: service.Listing,
         details: service.TemplateDetails,
-        version: dict[str, object],
     ) -> None:
         self.ctx, self.details = ctx, details
         self.agent_id = str(uuid4())
         self.result: service.TemplateResult | None = None
         name = str(details.template.get("name") or listing.name)
         self.template_name = name
-        recipe = version.get("recipe")
-        recipe = recipe if isinstance(recipe, dict) else {}
-        profile = recipe.get("profile")
-        profile = profile if isinstance(profile, dict) else {}
         super().__init__(
             name,
             lambda: Detail(
@@ -142,11 +134,6 @@ class _TemplatePanel(_Detail):
                         ", ".join(listing.categories or (listing.category,)),
                     ),
                     ("Version", str(details.expected_active_version)),
-                    ("Recipe profile", str(profile.get("name") or "Unknown")),
-                    (
-                        "Download link",
-                        "available" if version.get("download_link_exists") else "none",
-                    ),
                 ),
                 actions=(PanelAction("u", "Use template", self.use),),
             ),
