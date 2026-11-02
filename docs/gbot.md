@@ -515,6 +515,9 @@ gbot automations BOT --on ID [--yes] [--json]
 gbot automations BOT --off ID [--yes] [--json]
 gbot automations BOT --delete ID [--yes] [--json]
 gbot automations BOT --run ID [--no-wait] [--yes] [--json]
+gbot automations BOT --routines [--time-zone Z] [--json]
+gbot automations BOT --routine-on AUTOMATION_ID [--time-zone Z] [--yes] [--json]
+gbot automations BOT --routine-off AUTOMATION_ID [--time-zone Z] [--yes] [--json]
 ```
 
 Omit BOT to list the account. `--show` includes prompt and recent runs.
@@ -526,6 +529,11 @@ reads stdin. `--on ID` and `--off ID` enable or disable; `--delete` removes.
 `--no-wait` returns after the request. Every mutation requires terminal
 confirmation or `--yes`. `--help` shows command help.
 
+`--routines` lists backend agent routines for one bot. Use the exact
+`automationId` with `--routine-on` or `--routine-off`; those changes require
+confirmation. `--time-zone` is sent to the routine RPC. If the account returns
+NotFound for routine listing, the command reports `supported: false` and exits 2.
+
 Schedules support numeric five-field cron, lists/ranges/steps, macros
 `@hourly`, `@daily`, `@midnight`, `@weekly`, `@monthly`, `@yearly`, `@annually`,
 and `@every` durations (ms/s/m/h/d, including combined/decimal durations and
@@ -536,7 +544,10 @@ on edit; change their trigger in the Grok Bot app.
 `--json`: listing returns record objects including bot_id, server_id and
 allowed actions. Show returns one record; create/edit/toggle/delete return
 an automations object; run returns id, status and the new run (or null).
-Exit 0 on success, 1 on error, cancellation or run-start timeout.
+Routine listing returns supported, routines, routine_policy and raw. Opaque
+routine and policy message fields remain raw mappings. Routine toggles return
+the optional routine mapping. Exit 0 on success, 1 on error, cancellation or
+run-start timeout, and 2 when routine listing is unsupported for the account.
 
 ## plugins
 
@@ -643,6 +654,8 @@ gbot connector SERVER [--disable-tool T] [--enable-tool T] [--permission T=LEVEL
   [--remove-account KEY] [--remove] [--shared-spaces on|off] [--yes] [--json]
 gbot connector SERVER --sign-in [--account KEY] [--reauth] [--no-browser] [--yes] [--json]
 gbot connector --clear-always-allow [--yes] [--json]
+gbot connector --user-settings [--json]
+gbot connector --set-user-settings JSON|- [--keep-disabled-tools] [--yes] [--json]
 ```
 
 Show one connector's status, account, transport, tools, permission defaults,
@@ -659,6 +672,12 @@ needs_approval or blocked). Auto removes an explicit tool override.
 one, and `--remove` removes the connector. Team connectors are managed by admins.
 `--shared-spaces on|off` controls availability in group chats.
 `--clear-always-allow` forgets all saved always-allow answers for connector tools.
+
+`--user-settings` reads account-wide MCP settings. `--set-user-settings JSON`
+replaces them; pass `-` to read a JSON object from stdin. This write requires
+terminal confirmation or `--yes`. `--keep-disabled-tools` sends the documented
+keepDisabledTools flag. Settings and unknown nested message fields are retained
+as mappings in JSON output.
 
 Every mutation requires terminal confirmation or `--yes`. `--sign-in` starts
 browser authentication, optionally for `--account KEY`; `--reauth` forces a new

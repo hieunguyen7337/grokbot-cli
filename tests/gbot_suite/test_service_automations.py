@@ -8,6 +8,7 @@ import pytest
 from gbot.service import automations as a
 from gbot.service.models import Bot
 from gbot.service.transport import FakeTransport
+from groken.client import ConnectError
 
 
 def record(**changes):
@@ -29,6 +30,88 @@ def wrapped(**changes):
 
 def transport():
     return FakeTransport(a.DEMO_COMMANDS, a.DEMO_RPCS)
+
+
+def test_agent_routines_list_and_unsupported_account():
+    t = transport()
+    routine = {
+        "automationId": "automation-1",
+        "routineId": "routine-1",
+        "name": "Morning brief",
+        "triggerDescription": "Weekdays",
+        "triggerPresentationJson": '{"kind":"cron"}',
+        "schedule": "0 9 * * 1-5",
+        "isEnabled": True,
+        "nextRunAtMs": "1800000000000",
+        "createdAtMs": "1790000000000",
+        "runAsUserId": 7,
+        "runAsDisplayName": "Owner",
+        "runAsIsViewer": True,
+        "recordJson": '{"future":true}',
+        "viewerPermissions": {"futurePermission": True},
+    }
+    policy = {"futurePolicy": {"enabled": True}}
+    t.rpcs["ListGrokBotAgentRoutines"] = {
+        "routines": [routine],
+        "routinePolicy": policy,
+        "futureReplyField": "kept",
+    }
+
+    result = a.list_agent_routines(t, "agent-1", time_zone="Australia/Brisbane")
+
+    assert t.calls[-1] == (
+        "rpc",
+        "ListGrokBotAgentRoutines",
+        {"agentId": "agent-1", "timeZone": "Australia/Brisbane"},
+    )
+    assert result.available
+    assert result.routines[0].automation_id == "automation-1"
+    assert result.routines[0].next_run_at_ms == 1_800_000_000_000
+    assert result.routines[0].raw["viewerPermissions"] == {"futurePermission": True}
+    assert result.routine_policy == policy
+    assert result.raw["futureReplyField"] == "kept"
+
+    t.rpcs["ListGrokBotAgentRoutines"] = ConnectError(404, '{"code":"not_found"}')
+    unavailable = a.list_agent_routines(t, "unsupported-agent")
+    assert not unavailable.available
+    assert unavailable.routines == ()
+
+
+def test_set_agent_routine_enabled_maps_request_and_parses_optional_reply():
+    t = transport()
+    t.rpcs["SetGrokBotAgentRoutineEnabled"] = {
+        "routine": {
+            "automationId": "automation-1",
+            "routineId": "routine-1",
+            "name": "Morning brief",
+            "isEnabled": False,
+            "futureField": {"kept": True},
+        }
+    }
+
+    result = a.set_agent_routine_enabled(
+        t,
+        "agent-1",
+        "automation-1",
+        False,
+        time_zone="UTC",
+    )
+
+    assert t.calls[-1] == (
+        "rpc",
+        "SetGrokBotAgentRoutineEnabled",
+        {
+            "agentId": "agent-1",
+            "automationId": "automation-1",
+            "isEnabled": False,
+            "timeZone": "UTC",
+        },
+    )
+    assert result is not None
+    assert result.is_enabled is False
+    assert result.raw["futureField"] == {"kept": True}
+    t.rpcs["SetGrokBotAgentRoutineEnabled"] = {}
+    assert a.set_agent_routine_enabled(t, "agent-1", "automation-1", True) is None
 
 
 @pytest.mark.parametrize("harness", ["box", "temporal"])

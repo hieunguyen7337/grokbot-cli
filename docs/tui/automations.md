@@ -6,6 +6,10 @@ and all bots, `r` to reload, `n` to create, and Enter to open a record.
 On an account list, creation uses the selected row's bot; select a bot first
 when the account list is empty.
 
+`/automations routines` opens the selected bot's backend agent routines. Press
+`t` on a row to toggle it after confirmation. A NotFound response is shown as
+an account-specific unsupported message.
+
 Rows show state, trigger, relative next run, and the bot name in account view.
 Details show Trigger, State, Next run, Last run, Created, Provenance, prompt,
 and the last five runs. Server permissions determine which actions appear:

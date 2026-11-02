@@ -1,10 +1,10 @@
 """Account connector settings, with credential-free display models."""
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
-from .models import _record
+from .models import _record, _text
 from .transport import Transport
 
 COMMANDS = {
@@ -23,6 +23,8 @@ COMMANDS = {
     ),
 }
 RPCS = (
+    "GetGrokBotUserMcpSettings",
+    "SetGrokBotUserMcpSettings",
     "GetGrokBotUserRuntimeSettings",
     "SetGrokBotMcpToolPermissions",
     "GetGrokBotConnectorSharedSpaceAllowlist",
@@ -59,6 +61,73 @@ class Server:
     tool_count: int
     transport: str
     custom_instructions: str
+
+
+@dataclass(frozen=True)
+class UserMcpSettings:
+    servers: tuple[Mapping[str, object], ...]
+    custom_instructions_by_name: Mapping[str, object]
+    user_time_zone: str | None
+    user_time_zone_override: str | None
+    updated_at_ms: int | None
+    auto_review_instructions: Mapping[str, object] | None
+    raw: Mapping[str, object]
+
+
+def _user_settings(value: object) -> UserMcpSettings | None:
+    if not isinstance(value, Mapping):
+        return None
+    row = dict(value)
+    server_rows = row.get("servers")
+    servers = (
+        tuple(dict(server) for server in server_rows if isinstance(server, Mapping))
+        if isinstance(server_rows, list)
+        else ()
+    )
+    instructions = row.get("customInstructionsByName")
+    auto_review = row.get("autoReviewInstructions")
+    return UserMcpSettings(
+        servers,
+        dict(instructions) if isinstance(instructions, Mapping) else {},
+        _text(row.get("userTimeZone")) or None,
+        _text(row.get("userTimeZoneOverride")) or None,
+        _int64(row.get("updatedAtMs")),
+        dict(auto_review) if isinstance(auto_review, Mapping) else None,
+        row,
+    )
+
+
+def _int64(value: object) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def user_mcp_settings(transport: Transport) -> UserMcpSettings | None:
+    """Read account MCP settings, retaining the documented opaque message as raw data."""
+    reply = transport.rpc("GetGrokBotUserMcpSettings", {})
+    return _user_settings(reply.get("settings"))
+
+
+def set_user_mcp_settings(
+    transport: Transport,
+    settings: Mapping[str, object],
+    *,
+    keep_disabled_tools: bool = False,
+) -> UserMcpSettings | None:
+    """Replace user MCP settings and parse the optional settings reply."""
+    if type(keep_disabled_tools) is not bool:
+        raise ValueError("keep_disabled_tools must be true or false.")
+    reply = transport.rpc(
+        "SetGrokBotUserMcpSettings",
+        {"settings": dict(settings), "keepDisabledTools": keep_disabled_tools},
+    )
+    return _user_settings(reply.get("settings"))
 
 
 def servers(transport: Transport) -> list[Server]:
@@ -403,3 +472,18 @@ DEMO_COMMANDS.update(
 DEMO_RPCS: dict[str, object] = {
     name: {} for name in RPCS if name != "GetGrokBotUserRuntimeSettings"
 }
+_DEMO_USER_SETTINGS = {
+    "servers": [
+        {
+            "serverId": "demo-connector",
+            "customInstructions": "",
+            "disabledTools": [],
+        }
+    ],
+    "customInstructionsByName": {},
+    "userTimeZone": "UTC",
+    "updatedAtMs": "1800000000000",
+    "autoReviewInstructions": {},
+}
+DEMO_RPCS["GetGrokBotUserMcpSettings"] = {"settings": _DEMO_USER_SETTINGS}
+DEMO_RPCS["SetGrokBotUserMcpSettings"] = {"settings": _DEMO_USER_SETTINGS}

@@ -6,6 +6,7 @@ import pytest
 from gbot import cli, context
 from gbot.service import automations as a
 from gbot.service.transport import FakeTransport
+from groken.client import ConnectError
 
 
 def setup_cli(monkeypatch):
@@ -21,6 +22,66 @@ def setup_cli(monkeypatch):
 
     monkeypatch.setattr(context, "backend_factory", Backend)
     return fake
+
+
+def test_agent_routines_list_toggle_and_unsupported(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    routine = {
+        "automationId": "routine-a",
+        "routineId": "routine-r",
+        "name": "Daily brief",
+        "triggerDescription": "Daily",
+        "schedule": "@daily",
+        "isEnabled": True,
+        "createdAtMs": "1800000000000",
+        "runAsDisplayName": "Demo user",
+    }
+    fake.rpcs["ListGrokBotAgentRoutines"] = {
+        "routines": [routine],
+        "routinePolicy": {"futurePolicy": True},
+    }
+    assert (
+        cli.main(
+            ["automations", "Helper", "--routines", "--time-zone", "UTC", "--json"]
+        )
+        == 0
+    )
+    listed = json.loads(capsys.readouterr().out)
+    assert listed["routines"][0]["automation_id"] == "routine-a"
+    assert listed["routine_policy"] == {"futurePolicy": True}
+    fake.rpcs["SetGrokBotAgentRoutineEnabled"] = {
+        "routine": {**routine, "isEnabled": False}
+    }
+    assert (
+        cli.main(
+            [
+                "automations",
+                "Helper",
+                "--routine-off",
+                "routine-a",
+                "--time-zone",
+                "UTC",
+                "--yes",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    changed = json.loads(capsys.readouterr().out)
+    assert changed["routine"]["is_enabled"] is False
+    assert fake.calls[-1] == (
+        "rpc",
+        "SetGrokBotAgentRoutineEnabled",
+        {
+            "agentId": "demo-helper",
+            "automationId": "routine-a",
+            "isEnabled": False,
+            "timeZone": "UTC",
+        },
+    )
+    fake.rpcs["ListGrokBotAgentRoutines"] = ConnectError(404, '{"code":"not_found"}')
+    assert cli.main(["automations", "Helper", "--routines", "--json"]) == 2
+    assert json.loads(capsys.readouterr().out)["supported"] is False
 
 
 @pytest.mark.parametrize("argv", [[], ["Helper"], ["Helper", "--show", "demo-a"]])

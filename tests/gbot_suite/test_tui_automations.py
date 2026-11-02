@@ -13,7 +13,12 @@ from gbot.tui.panels.kit import FormPanel
 from gbot.tui.screens.confirm import ConfirmScreen
 from gbot.tui.screens.session import SessionScreen
 from gbot.tui.slash import SlashContext, run
-from gbot.tui.slash.automations import AutomationPanel, AutomationsPanel
+from gbot.tui.slash.automations import (
+    AgentRoutinesPanel,
+    AutomationPanel,
+    AutomationsPanel,
+)
+from groken.client import ConnectError
 
 
 async def settle(app, pilot):
@@ -87,6 +92,56 @@ def test_list_detail_events_and_snapshots(tmp_path, monkeypatch):
             )
             await settle(app, pilot)
             assert len(service.transport.calls) > before
+
+    asyncio.run(exercise())
+
+
+def test_agent_routines_surface_toggle_and_unsupported(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await opened(app, pilot)
+            assert run(ctx, "/automations routines") is None
+            await settle(app, pilot)
+            panel = app.screen
+            assert isinstance(panel, AgentRoutinesPanel)
+            assert panel.rows[0].label == "Morning briefing"
+            service.transport.rpcs["SetGrokBotAgentRoutineEnabled"] = {
+                "routine": {
+                    **a.DEMO_RPCS["ListGrokBotAgentRoutines"]["routines"][0],
+                    "isEnabled": False,
+                }
+            }
+            await pilot.press("t")
+            await settle(app, pilot)
+            await confirm(app, pilot)
+            assert [
+                call
+                for call in service.transport.calls
+                if call[1] == "SetGrokBotAgentRoutineEnabled"
+            ] == [
+                (
+                    "rpc",
+                    "SetGrokBotAgentRoutineEnabled",
+                    {
+                        "agentId": "demo-helper",
+                        "automationId": "demo-routine",
+                        "isEnabled": False,
+                    },
+                )
+            ]
+
+            app.pop_screen()
+            service.transport.rpcs["ListGrokBotAgentRoutines"] = ConnectError(
+                404, '{"code":"not_found"}'
+            )
+            assert run(ctx, "/automations routines") is None
+            await settle(app, pilot)
+            assert isinstance(app.screen, AgentRoutinesPanel)
+            assert "unavailable for this account" in app.screen.error
 
     asyncio.run(exercise())
 

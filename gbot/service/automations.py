@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from threading import Event
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
+from groken.client import ConnectError
+
 from .handoff import wait_until
 from .models import Bot, _int, _record, _text
 from .transport import Transport
@@ -26,6 +28,8 @@ RPCS = (
     "ListGrokBotAccountAutomations",
     "DeleteGrokBotAgentAutomation",
     "SetGrokBotAgentAutomationEnabled",
+    "ListGrokBotAgentRoutines",
+    "SetGrokBotAgentRoutineEnabled",
 )
 
 
@@ -57,6 +61,125 @@ class Automation:
 
     def permits(self, action: str) -> bool:
         return self.allowed is None or action.upper() in self.allowed
+
+
+@dataclass(frozen=True)
+class AgentRoutine:
+    automation_id: str
+    routine_id: str
+    name: str
+    trigger_description: str
+    schedule: str
+    is_enabled: bool
+    next_run_at_ms: int | None
+    created_at_ms: int | None
+    run_as_user_id: int | None
+    run_as_display_name: str
+    run_as_is_viewer: bool
+    raw: Mapping[str, object] = field(default_factory=dict, repr=False, compare=False)
+
+
+@dataclass(frozen=True)
+class AgentRoutineList:
+    routines: tuple[AgentRoutine, ...]
+    routine_policy: Mapping[str, object] | None
+    available: bool
+    raw: Mapping[str, object] = field(default_factory=dict, repr=False, compare=False)
+
+
+def _routine(value: object) -> AgentRoutine | None:
+    if not isinstance(value, Mapping):
+        return None
+    row = dict(value)
+    user_id = _int(row.get("runAsUserId"))
+    return AgentRoutine(
+        _text(row.get("automationId")),
+        _text(row.get("routineId")),
+        _text(row.get("name")),
+        _text(row.get("triggerDescription")),
+        _text(row.get("schedule")),
+        row.get("isEnabled") is True,
+        _int64(row.get("nextRunAtMs")),
+        _int64(row.get("createdAtMs")),
+        user_id,
+        _text(row.get("runAsDisplayName")),
+        row.get("runAsIsViewer") is True,
+        row,
+    )
+
+
+def _int64(value: object) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _not_found(error: ConnectError) -> bool:
+    try:
+        reply = _record(json.loads(error.body))
+    except (ValueError, TypeError):
+        reply = {}
+    code = str(reply.get("code") or reply.get("status") or "").lower()
+    return (
+        error.status == 404
+        or code.replace("_", "") == "notfound"
+        or "notfound" in error.body.casefold()
+    )
+
+
+def list_agent_routines(
+    transport: Transport, agent_id: str, *, time_zone: str | None = None
+) -> AgentRoutineList:
+    """List backend routines; NotFound means this account does not support them."""
+    payload: dict[str, object] = {"agentId": agent_id}
+    if time_zone is not None:
+        payload["timeZone"] = time_zone
+    try:
+        reply = transport.rpc("ListGrokBotAgentRoutines", payload)
+    except ConnectError as error:
+        if _not_found(error):
+            return AgentRoutineList((), None, False, {"error": "not_found"})
+        raise
+    rows = reply.get("routines")
+    routines = tuple(
+        routine
+        for value in (rows if isinstance(rows, list) else [])
+        if (routine := _routine(value)) is not None
+    )
+    policy = reply.get("routinePolicy")
+    return AgentRoutineList(
+        routines,
+        dict(policy) if isinstance(policy, Mapping) else None,
+        True,
+        dict(reply),
+    )
+
+
+def set_agent_routine_enabled(
+    transport: Transport,
+    agent_id: str,
+    automation_id: str,
+    is_enabled: bool,
+    *,
+    time_zone: str | None = None,
+) -> AgentRoutine | None:
+    """Toggle one backend routine and return its parsed optional routine message."""
+    if type(is_enabled) is not bool:
+        raise ValueError("Routine enabled state must be true or false.")
+    payload: dict[str, object] = {
+        "agentId": agent_id,
+        "automationId": automation_id,
+        "isEnabled": is_enabled,
+    }
+    if time_zone is not None:
+        payload["timeZone"] = time_zone
+    reply = transport.rpc("SetGrokBotAgentRoutineEnabled", payload)
+    return _routine(reply.get("routine"))
 
 
 def _parse(row: object, bot_id: str) -> Automation | None:
@@ -464,3 +587,24 @@ DEMO_RPCS["ListGrokBotAccountAutomations"] = {
         }
     ]
 }
+_DEMO_ROUTINE = {
+    "automationId": "demo-routine",
+    "routineId": "demo-routine",
+    "name": "Morning briefing",
+    "triggerDescription": "Weekday mornings",
+    "triggerPresentationJson": "{}",
+    "schedule": "0 9 * * 1-5",
+    "isEnabled": True,
+    "nextRunAtMs": "1800000000000",
+    "createdAtMs": "1790000000000",
+    "runAsUserId": 1,
+    "runAsDisplayName": "Demo user",
+    "runAsIsViewer": True,
+    "recordJson": "{}",
+    "viewerPermissions": {},
+}
+DEMO_RPCS["ListGrokBotAgentRoutines"] = {
+    "routines": [_DEMO_ROUTINE],
+    "routinePolicy": {},
+}
+DEMO_RPCS["SetGrokBotAgentRoutineEnabled"] = {"routine": _DEMO_ROUTINE}

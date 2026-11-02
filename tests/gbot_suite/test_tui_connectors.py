@@ -1,4 +1,5 @@
 import asyncio
+import json
 from unittest.mock import Mock
 
 import pytest
@@ -15,6 +16,7 @@ from gbot.tui.slash.connectors import (
     ConnectorPanel,
     ConnectorsPanel,
     ConnectorToolsPanel,
+    UserMcpSettingsPanel,
     _Handoff,
 )
 
@@ -103,6 +105,39 @@ def test_panels_snapshot_and_tools():
                     if name == "level"
                     else payload["reads"] == 3
                 )
+
+    asyncio.run(exercise())
+
+
+def test_user_mcp_settings_surface_edits_with_keep_disabled_tools():
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            await settle(app, pilot)
+            ctx = SlashContext(app, app.screen, None, None)
+            assert run(ctx, "/connectors settings") is None
+            await settle(app, pilot)
+            panel = app.screen
+            assert isinstance(panel, UserMcpSettingsPanel)
+            assert panel.settings is not None
+            await pilot.press("e")
+            await settle(app, pilot)
+            form = app.screen
+            assert isinstance(form, FormPanel)
+            form.query_one("#form-0", TextArea).load_text(
+                json.dumps(dict(panel.settings.raw))
+            )
+            await pilot.press("ctrl+s")
+            await settle(app, pilot)
+            assert isinstance(app.screen, ConfirmScreen)
+            await accept(app, pilot)
+            assert calls(service, "SetGrokBotUserMcpSettings") == [
+                {
+                    "settings": dict(panel.settings.raw),
+                    "keepDisabledTools": True,
+                }
+            ]
 
     asyncio.run(exercise())
 

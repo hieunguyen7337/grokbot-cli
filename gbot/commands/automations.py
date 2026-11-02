@@ -20,6 +20,9 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("bot", metavar="BOT", nargs="?")
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--show", metavar="ID")
+    actions.add_argument("--routines", action="store_true")
+    actions.add_argument("--routine-on", metavar="AUTOMATION_ID")
+    actions.add_argument("--routine-off", metavar="AUTOMATION_ID")
     actions.add_argument("--new", action="store_true")
     for flag in ("edit", "on", "delete", "run"):
         actions.add_argument(f"--{flag}", metavar="ID")
@@ -27,6 +30,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     for flag in ("name", "prompt", "schedule"):
         parser.add_argument(f"--{flag}")
     parser.add_argument("--no-wait", action="store_true")
+    parser.add_argument("--time-zone")
     parser.add_argument("--yes", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.set_defaults(func=run)
@@ -42,8 +46,18 @@ def _row(item: service.Automation) -> dict[str, object]:
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
+    routine_action = args.routines or args.routine_on or args.routine_off
     mutation = args.new or any(
-        v is not None for v in (args.edit, args.on, args.off, args.delete, args.run)
+        v is not None
+        for v in (
+            args.edit,
+            args.on,
+            args.off,
+            args.delete,
+            args.run,
+            args.routine_on,
+            args.routine_off,
+        )
     )
     if (
         args.off is not None
@@ -60,9 +74,13 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         raise ValueError("Use --name, --prompt and --schedule with --new or --edit.")
     if args.no_wait and not args.run:
         raise ValueError("Use --no-wait with --run.")
+    if args.time_zone and not routine_action:
+        raise ValueError(
+            "Use --time-zone with --routines, --routine-on or --routine-off."
+        )
     if mutation:
         _require_confirmation(args.yes)
-    if (mutation or args.show) and not args.bot:
+    if (mutation or args.show or args.routines) and not args.bot:
         raise ValueError("Specify BOT for this action.")
     if args.new and any(v is None for v in (args.name, args.prompt, args.schedule)):
         raise ValueError("--new requires --name, --prompt and --schedule.")
@@ -73,6 +91,56 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
     bot = next((b for b in bots if b.id == bot_id), None)
     if bot is None and bot_id:
         raise ValueError("Bot not found.")
+    if routine_action:
+        assert bot is not None
+        listed = service.list_agent_routines(
+            transport, bot.id, time_zone=args.time_zone
+        )
+        if not listed.available:
+            data = {
+                "supported": False,
+                "routines": [],
+                "routine_policy": None,
+                "raw": dict(listed.raw),
+            }
+            ctx.out.write(data, "Agent routines are unavailable for this account.")
+            return 2
+        if args.routine_on or args.routine_off:
+            automation_id = args.routine_on or args.routine_off
+            matches = [
+                item for item in listed.routines if item.automation_id == automation_id
+            ]
+            if len(matches) != 1:
+                raise ValueError("Routine not found; use its exact automation ID.")
+            _confirm(args.yes, json_mode=args.json)
+            routine = service.set_agent_routine_enabled(
+                transport,
+                bot.id,
+                automation_id,
+                bool(args.routine_on),
+                time_zone=args.time_zone,
+            )
+            ctx.out.write(
+                {"routine": asdict(routine) if routine else None},
+                "Routine enabled." if args.routine_on else "Routine disabled.",
+            )
+            return 0
+        ctx.out.write(
+            {
+                "supported": True,
+                "routines": [asdict(item) for item in listed.routines],
+                "routine_policy": dict(listed.routine_policy)
+                if listed.routine_policy is not None
+                else None,
+                "raw": dict(listed.raw),
+            },
+            "\n".join(
+                f"{item.name} · {'on' if item.is_enabled else 'off'} · {item.schedule}"
+                for item in listed.routines
+            )
+            or "No agent routines.",
+        )
+        return 0
     target = args.show or args.edit or args.on or args.off or args.delete or args.run
     item = service.get(transport, bot, target) if bot and target else None
     if mutation:

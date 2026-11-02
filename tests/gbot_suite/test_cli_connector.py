@@ -39,6 +39,47 @@ def setup_cli(monkeypatch):
     return fake
 
 
+def test_user_mcp_settings_cli_read_and_replace(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    settings = {
+        "servers": [{"serverId": "s", "disabledTools": ["search"]}],
+        "customInstructionsByName": {},
+        "userTimeZone": "UTC",
+        "updatedAtMs": "1800000000000",
+        "autoReviewInstructions": {"future": "kept"},
+    }
+    fake.rpcs["GetGrokBotUserMcpSettings"] = {"settings": settings}
+    assert cli.main(["connector", "--user-settings", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["settings"]["raw"] == settings
+    before = len(fake.calls)
+    assert (
+        cli.main(["connector", "--set-user-settings", json.dumps(settings), "--json"])
+        == 1
+    )
+    assert "--yes" in capsys.readouterr().err
+    assert len(fake.calls) == before
+    fake.rpcs["SetGrokBotUserMcpSettings"] = {"settings": settings}
+    assert (
+        cli.main(
+            [
+                "connector",
+                "--set-user-settings",
+                json.dumps(settings),
+                "--keep-disabled-tools",
+                "--yes",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)["settings"]["raw"] == settings
+    assert fake.calls[-1] == (
+        "rpc",
+        "SetGrokBotUserMcpSettings",
+        {"settings": settings, "keepDisabledTools": True},
+    )
+
+
 @pytest.mark.parametrize("json_mode", [False, True])
 def test_detail(monkeypatch, capsys, json_mode):
     setup_cli(monkeypatch)
