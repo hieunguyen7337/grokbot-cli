@@ -111,7 +111,7 @@ def test_agent_routines_surface_toggle_and_unsupported(tmp_path, monkeypatch):
             assert panel.rows[0].label == "Morning briefing"
             service.transport.rpcs["SetGrokBotAgentRoutineEnabled"] = {
                 "routine": {
-                    **a.DEMO_RPCS["ListGrokBotAgentRoutines"]["routines"][0],
+                    **a._DEMO_ROUTINE,
                     "isEnabled": False,
                 }
             }

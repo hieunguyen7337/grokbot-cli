@@ -199,6 +199,7 @@ def test_replace_computer_secrets_uses_file_and_hides_values(tmp_path, monkeypat
             form.query_one("#form-0", Input).value = str(source)
             await pilot.press("ctrl+s")
             await settle(app, pilot)
+            assert isinstance(app.screen, ConfirmScreen)
             assert "secret" in app.screen.heading.lower()
             await accept(app, pilot)
             assert calls(service, "setBoxSecrets") == [

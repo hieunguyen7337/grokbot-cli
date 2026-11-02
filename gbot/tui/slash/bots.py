@@ -1,7 +1,7 @@
 """Confirmed bot creation, identity and runtime settings."""
 
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal
 from uuid import uuid4
 
 from rich.text import Text
@@ -213,7 +213,9 @@ class BotForm(FormPanel):
             )
             return f"Created {values['name']}"
         if not self.settings:
-            edits = {key: str(values[key]) for key in self.changes(values)}
+            edits: dict[str, Any] = {
+                key: str(values[key]) for key in self.changes(values)
+            }
             bots.update(transport, self.bot, **edits)
             return None
         applied = []

@@ -2,6 +2,7 @@
 
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
 from textual import events
 from textual.widgets import Static
@@ -383,7 +384,7 @@ class _AvatarPanel(_Detail):
         }
 
         def prepare(values: dict[str, str | bool]) -> None:
-            changes = {
+            changes: dict[str, Any] = {
                 key: str(value)
                 for key, value in values.items()
                 if value != initial[key]

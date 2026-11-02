@@ -156,12 +156,13 @@ def set_box_secrets(transport: Transport, values: Mapping[str, str]) -> BoxSecre
         raise ValueError(
             "Computer secrets were not saved; no value is displayed."
         ) from None
+    keys, card_keys = reply.get("keys"), reply.get("cardKeys")
     return BoxSecrets(
-        tuple(row for row in reply.get("keys", []) if isinstance(row, str))
-        if isinstance(reply.get("keys"), list)
+        tuple(row for row in keys if isinstance(row, str))
+        if isinstance(keys, list)
         else (),
-        tuple(row for row in reply.get("cardKeys", []) if isinstance(row, str))
-        if isinstance(reply.get("cardKeys"), list)
+        tuple(row for row in card_keys if isinstance(row, str))
+        if isinstance(card_keys, list)
         else (),
         reply.get("isApplied") is True,
         int(str(reply["lastAppliedAtMs"]))
