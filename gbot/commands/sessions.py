@@ -19,7 +19,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
 def _when(ms: object) -> str:
     if not isinstance(ms, int) or ms <= 0:
         return "-"
-    return datetime.fromtimestamp(ms / 1000, UTC).strftime("%Y-%m-%d %H:%M")
+    try:
+        return datetime.fromtimestamp(ms / 1000, UTC).strftime("%Y-%m-%d %H:%M")
+    except (ValueError, OverflowError, OSError):
+        return "-"
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:

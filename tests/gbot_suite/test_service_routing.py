@@ -790,3 +790,36 @@ def test_temporal_send_refreshes_once_and_retries_the_same_message_id(
     assert refreshed == [1]
     assert len(bodies) == 2 and bodies[0] == bodies[1]
     assert bodies[0]["messageId"] == "n"
+
+
+def test_send_reply_refusal_wins_over_other_enum_fields():
+    with pytest.raises(ValueError, match="REFUSED"):
+        routing._send_reply(
+            {
+                "delivery": "GROK_BOT_SEND_DELIVERY_REFUSED",
+                "messageId": "RETRY_DUPLICATE",
+            }
+        )
+
+
+def test_enum_suffix_does_not_read_a_negation():
+    assert routing._enum("GROK_BOT_SEND_STATUS_NOT_ACCEPTED", "ACCEPTED") is None
+    assert routing._enum("GROK_BOT_SEND_STATUS_ACCEPTED", "ACCEPTED") == "ACCEPTED"
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_send_request_drops_non_finite_numbers(bad):
+    payload = routing._send_request(
+        {"agentId": "t", "clientNonce": "n", "enterEpochMs": bad, "firstSentAtMs": bad},
+        10,
+    )
+    assert "enterEpochMs" not in payload and "firstSentAgeMs" not in payload
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(1_800_000_000_000.0, 1_800_000_000_000), (float("nan"), 0), (True, 0), ("x", 0)],
+)
+def test_status_reply_tolerates_odd_accepted_times(value, expected):
+    reply = {"outcome": "X_FOUND", "status": "X_ACCEPTED", "acceptedAtMs": value}
+    assert routing._status_reply(reply, {})["acceptedAtMs"] == expected

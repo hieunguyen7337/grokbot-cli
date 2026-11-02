@@ -1,5 +1,6 @@
 """Shared conversation commands for the CLI and service."""
 
+import math
 import uuid
 from collections.abc import Mapping, Sequence
 
@@ -189,6 +190,8 @@ def _ms(value: object) -> int:
         return 0
     if isinstance(value, int):
         return value
+    if isinstance(value, float) and math.isfinite(value):
+        return math.floor(value)
     if isinstance(value, str) and value.isdigit():
         return int(value)
     return 0
@@ -211,7 +214,7 @@ def list_sessions(transport: Transport, bot_id: str) -> list[dict[str, object]]:
             "createdAtMs": _ms(row.get("createdAtMs")),
             "updatedAtMs": _ms(row.get("updatedAtMs")),
         }
-        if "lastActivityAtMs" in row:
+        if row.get("lastActivityAtMs") is not None:
             item["lastActivityAtMs"] = _ms(row["lastActivityAtMs"])
         sessions.append(item)
     return sessions

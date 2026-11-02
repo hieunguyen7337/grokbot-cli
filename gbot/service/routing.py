@@ -191,18 +191,34 @@ def now_ms() -> int:
     return int(time.time() * 1000)
 
 
-def _int64(value: object) -> str | None:
-    """A JSON number as a protobuf JSON int64 (a decimal string); anything else is dropped."""
+def _finite(value: object) -> int | None:
+    """A finite JSON number, floored; bools, NaN, infinities and anything else are None."""
     if isinstance(value, bool) or not isinstance(value, int | float):
         return None
-    return str(math.floor(value))
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return math.floor(value)
+
+
+def _int64(value: object) -> str | None:
+    """A JSON number as a protobuf JSON int64 (a decimal string); anything else is dropped."""
+    number = _finite(value)
+    return None if number is None else str(number)
+
+
+def _ms(value: object) -> int:
+    """A reply time in ms (number or decimal string); anything unreadable is 0."""
+    if isinstance(value, str):
+        return int(value) if value.isdigit() else 0
+    number = _finite(value)
+    return 0 if number is None else number
 
 
 def _age(args: Mapping[str, object], now: int) -> dict[str, str]:
     sent = args.get("firstSentAtMs")
-    if isinstance(sent, bool) or not isinstance(sent, int | float):
+    if _finite(sent) is None:
         return {}
-    return {"firstSentAgeMs": str(max(0, math.floor(now - sent)))}
+    return {"firstSentAgeMs": str(max(0, math.floor(now - sent)))}  # type: ignore[operator]
 
 
 def _nonce(args: Mapping[str, object]) -> str:
@@ -271,7 +287,13 @@ def _enum(value: object, *names: str) -> str | None:
     if not isinstance(value, str):
         return None
     return next(
-        (name for name in names if value == name or value.endswith("_" + name)), None
+        (
+            name
+            for name in names
+            if value == name
+            or (value.endswith("_" + name) and not value.endswith("_NOT_" + name))
+        ),
+        None,
     )
 
 
@@ -290,12 +312,13 @@ def _send_reply(reply: Mapping[str, object]) -> dict[str, object]:
         if refusal.get("message"):
             detail += f": {refusal['message']}"
         raise ValueError(detail)  # noqa: TRY004 - a refusal is a service error
-    values = _enums(reply)
+    named = reply.get("delivery")
+    # The documented delivery field decides alone; other enum fields are read only without it.
+    values = [named] if isinstance(named, str) and named else _enums(reply)
     if any(_enum(v, "ACCEPTED_BOX", "ACCEPTED_TEMPORAL", "DUPLICATE") for v in values):
         return {"accepted": True}
     delivery = next((v for v in values if _enum(v, "REFUSED")), None)
     if delivery is None:
-        named = reply.get("delivery")
         delivery = named if isinstance(named, str) and named else "unknown delivery"
     raise ValueError(f"Send refused: {delivery}")
 
@@ -320,7 +343,7 @@ def _status_reply(
         "agentId": args.get("agentId"),
         "inputDigest": "",
         "status": status,
-        "acceptedAtMs": _number(record.get("acceptedAtMs")),
+        "acceptedAtMs": _ms(record.get("acceptedAtMs")),
         "echoEntryId": echo if isinstance(echo, str) and echo else None,
         "rejectionCode": code
         if status == "rejected" and isinstance(code, str) and code

@@ -367,7 +367,7 @@ Example: `gbot send --bot "Research" "Prepare a summary"`.
 
 `--bot BOT` overrides the selected bot. `--session ID` routes the prompt to that session. Use tail or ask to inspect subsequent activity.
 
-`--json`: Object with `accepted`, `bot` (id, name), and `last_seq`, the highest sequence before sending, or null if none. It is not the eventual reply.
+`--json`: Object with `accepted`, `bot` (id, name), `last_seq`, the highest sequence before sending, or null if none (it is not the eventual reply), and `nonce`, the send's idempotency key, which `--status` reads back.
 
 Repeat `--attach PATH` to upload local files before sending; text may be omitted when
 files are attached. JSON adds `attachments` with each file's `name` and committed `path`.

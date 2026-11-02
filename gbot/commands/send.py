@@ -46,6 +46,7 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
             "accepted": result.accepted,
             "bot": {"id": bot_id, "name": name},
             "last_seq": result.last_seq,
+            "nonce": result.nonce,
             **({"attachments": attachment_json(files)} if files else {}),
         },
         f"Sent to {name}.",

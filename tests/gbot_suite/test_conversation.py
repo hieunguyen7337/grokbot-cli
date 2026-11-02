@@ -186,3 +186,23 @@ def test_demo_data_parses():
     assert all(row["agentId"] == "demo-bot" for row in rows)
     status = c.send_status(transport, "demo-bot", "nonce-1")
     assert status["status"] == "accepted" and status["clientNonce"] == "nonce-1"
+
+
+def test_list_sessions_keeps_float_times_and_skips_null_activity():
+    fake = FakeTransport(
+        {},
+        {
+            "ListGrokBotAgentSessions": {
+                "sessions": [
+                    {
+                        "kind": "X_DM",
+                        "updatedAtMs": 1_800_000_000_000.0,
+                        "lastActivityAtMs": None,
+                    }
+                ]
+            }
+        },
+    )
+    (row,) = c.list_sessions(fake, "b")
+    assert row["updatedAtMs"] == 1_800_000_000_000
+    assert "lastActivityAtMs" not in row

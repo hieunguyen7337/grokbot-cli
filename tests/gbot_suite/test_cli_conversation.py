@@ -51,6 +51,7 @@ def test_send_box_bot_uses_the_gateway(monkeypatch, capsys):
         "accepted": True,
         "bot": {"id": "box-bot", "name": "Box"},
         "last_seq": 3,
+        "nonce": "key-1",
     }
     assert sent(fake) == [
         (
@@ -146,3 +147,14 @@ def test_blank_send_nonce_is_refused(monkeypatch, capsys, bot, nonce):
     assert cli.main(["send", "--bot", bot, "--nonce", nonce, "hi"]) == 1
     assert "nonce" in capsys.readouterr().err
     assert not sent(fake)
+
+
+def test_sessions_survive_out_of_range_times(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    fake.rpcs["ListGrokBotAgentSessions"] = {
+        "sessions": [
+            {"sessionId": "s", "kind": "X_DM", "updatedAtMs": "99999999999999999"}
+        ]
+    }
+    assert cli.main(["sessions", "--bot", "Box"]) == 0
+    assert "-" in capsys.readouterr().out
