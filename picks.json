@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "at": "2026-10-31T12:11:10Z",
-  "kit": "2026-10-31.16",
+  "at": "2026-11-02T02:54:01Z",
+  "kit": "2026-11-01.8",
   "repo": "hieunguyen7337/grokbot-cli",
   "plans": {
     "codex": "prolite",
@@ -11,30 +11,90 @@
   },
   "modes": {
     "codex": "utilization",
-    "claude": "utilization",
+    "claude": "saving",
     "gemini": "utilization",
     "cline": "default"
   },
-  "excluded": [],
+  "modes_until": {
+    "codex": "2026-11-04T06:42:04Z",
+    "claude": "2026-11-08T02:00:00Z",
+    "gemini": "2026-11-06T02:47:05Z",
+    "cline": null
+  },
+  "excluded": [
+    "gemini",
+    "glm"
+  ],
   "classes": {
     "mechanical": {
       "status": "locked",
       "arms": [
         {
+          "arm": "luna/gpt-6-luna/medium",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 152,
+          "outcomes": {
+            "accepted": 143,
+            "fixed": 1,
+            "rework": 0,
+            "rejected": 8
+          },
+          "usable": 0.944,
+          "points": 0.00474,
+          "minutes": 2.0,
+          "p_pick": 0.7085,
+          "forced": false
+        },
+        {
+          "arm": "luna/gpt-6-luna/low",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 158,
+          "outcomes": {
+            "accepted": 147,
+            "fixed": 1,
+            "rework": 1,
+            "rejected": 9
+          },
+          "usable": 0.934,
+          "points": 0.00482,
+          "minutes": 4.1,
+          "p_pick": 0.178,
+          "forced": false
+        },
+        {
+          "arm": "luna/gpt-6-luna/high",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 1,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.498,
+          "points": 0.00685,
+          "minutes": 3.9,
+          "p_pick": 0.027,
+          "forced": false
+        },
+        {
           "arm": "haiku/claude-haiku-5-5/low",
           "lane": "haiku",
           "where": "subagent",
-          "reviewed": 172,
+          "reviewed": 175,
           "outcomes": {
             "accepted": 162,
-            "fixed": 0,
+            "fixed": 3,
             "rework": 0,
             "rejected": 10
           },
-          "usable": 0.94,
-          "points": 0.00511,
-          "minutes": 3.8,
-          "p_pick": 0.84,
+          "usable": 0.941,
+          "points": 0.01079,
+          "minutes": 4.2,
+          "p_pick": 0.0215,
           "forced": false
         },
         {
@@ -49,26 +109,43 @@
             "rejected": 12
           },
           "usable": 0.919,
-          "points": 0.00569,
-          "minutes": 3.5,
-          "p_pick": 0.051,
+          "points": 0.02003,
+          "minutes": 4.1,
+          "p_pick": 0.014,
           "forced": false
         },
         {
-          "arm": "haiku/claude-haiku-5-5/high",
-          "lane": "haiku",
-          "where": "subagent",
-          "reviewed": 151,
+          "arm": "terra/gpt-6.1-terra/low",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 1,
           "outcomes": {
-            "accepted": 144,
-            "fixed": 0,
+            "accepted": 0,
+            "fixed": 1,
             "rework": 0,
-            "rejected": 7
+            "rejected": 0
           },
-          "usable": 0.95,
-          "points": 0.00764,
-          "minutes": 6.4,
-          "p_pick": 0.0445,
+          "usable": 0.634,
+          "points": 0.00861,
+          "minutes": 2.6,
+          "p_pick": 0.011,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/medium",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 2,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 2,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.844,
+          "points": 0.01233,
+          "minutes": 4.1,
+          "p_pick": 0.0105,
           "forced": false
         },
         {
@@ -83,9 +160,43 @@
             "rejected": 7
           },
           "usable": 0.95,
-          "points": 0.00824,
-          "minutes": 6.9,
-          "p_pick": 0.034,
+          "points": 0.04518,
+          "minutes": 9.8,
+          "p_pick": 0.0095,
+          "forced": false
+        },
+        {
+          "arm": "haiku/claude-haiku-5-5/high",
+          "lane": "haiku",
+          "where": "subagent",
+          "reviewed": 151,
+          "outcomes": {
+            "accepted": 144,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 7
+          },
+          "usable": 0.95,
+          "points": 0.04359,
+          "minutes": 8.9,
+          "p_pick": 0.009,
+          "forced": false
+        },
+        {
+          "arm": "sol/gpt-6.1-sol/low",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 4,
+          "outcomes": {
+            "accepted": 4,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.918,
+          "points": 0.00875,
+          "minutes": 5.9,
+          "p_pick": 0.008,
           "forced": false
         },
         {
@@ -100,9 +211,9 @@
             "rejected": 8
           },
           "usable": 0.944,
-          "points": 0.00736,
-          "minutes": 3.3,
-          "p_pick": 0.0305,
+          "points": 0.05705,
+          "minutes": 4.5,
+          "p_pick": 0.003,
           "forced": false
         }
       ]
@@ -111,88 +222,173 @@
       "status": "exploring",
       "arms": [
         {
-          "arm": "sonnet/claude-sonnet-5-5/medium",
-          "lane": "sonnet",
-          "where": "subagent",
-          "reviewed": 22,
+          "arm": "luna/gpt-6-luna/high",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 6,
           "outcomes": {
-            "accepted": 11,
-            "fixed": 10,
+            "accepted": 3,
+            "fixed": 2,
             "rework": 1,
             "rejected": 0
           },
-          "usable": 0.933,
-          "points": 0.00736,
-          "minutes": 6.5,
-          "p_pick": 0.2625,
+          "usable": 0.76,
+          "points": 0.00685,
+          "minutes": 8.6,
+          "p_pick": 0.328,
           "forced": false
         },
         {
-          "arm": "haiku/claude-haiku-5-5/high",
-          "lane": "haiku",
-          "where": "subagent",
-          "reviewed": 38,
+          "arm": "sol/gpt-6.1-sol/medium",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 35,
           "outcomes": {
-            "accepted": 25,
-            "fixed": 13,
+            "accepted": 10,
+            "fixed": 23,
+            "rework": 2,
+            "rejected": 0
+          },
+          "usable": 0.935,
+          "points": 0.00786,
+          "minutes": 12.3,
+          "p_pick": 0.295,
+          "forced": false
+        },
+        {
+          "arm": "luna/gpt-6-luna/xhigh",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 6,
+          "outcomes": {
+            "accepted": 2,
+            "fixed": 4,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.985,
-          "points": 0.00764,
-          "minutes": 12.9,
-          "p_pick": 0.2535,
+          "usable": 0.922,
+          "points": 0.00803,
+          "minutes": 11.4,
+          "p_pick": 0.2285,
           "forced": false
         },
         {
-          "arm": "opus/claude-opus-5-5/medium",
-          "lane": "opus",
-          "where": "subagent",
-          "reviewed": 13,
+          "arm": "luna/gpt-6-luna/max",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 9,
           "outcomes": {
-            "accepted": 7,
+            "accepted": 6,
+            "fixed": 2,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.836,
+          "points": 0.00803,
+          "minutes": 17.3,
+          "p_pick": 0.0605,
+          "forced": false
+        },
+        {
+          "arm": "sol/gpt-6.1-sol/low",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 19,
+          "outcomes": {
+            "accepted": 12,
+            "fixed": 7,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.974,
+          "points": 0.00875,
+          "minutes": 8.7,
+          "p_pick": 0.019,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/medium",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 7,
+          "outcomes": {
+            "accepted": 1,
             "fixed": 5,
             "rework": 1,
             "rejected": 0
           },
-          "usable": 0.901,
-          "points": 0.00721,
-          "minutes": 10.1,
-          "p_pick": 0.2495,
+          "usable": 0.824,
+          "points": 0.01233,
+          "minutes": 4.9,
+          "p_pick": 0.0125,
           "forced": false
         },
         {
-          "arm": "sonnet/claude-sonnet-5-5/high",
-          "lane": "sonnet",
-          "where": "subagent",
-          "reviewed": 15,
+          "arm": "terra/gpt-6.1-terra/high",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 8,
           "outcomes": {
-            "accepted": 5,
-            "fixed": 9,
-            "rework": 1,
+            "accepted": 2,
+            "fixed": 3,
+            "rework": 3,
             "rejected": 0
           },
-          "usable": 0.909,
-          "points": 0.00738,
-          "minutes": 9.4,
-          "p_pick": 0.1595,
+          "usable": 0.619,
+          "points": 0.00905,
+          "minutes": 4.9,
+          "p_pick": 0.0125,
           "forced": false
         },
         {
           "arm": "haiku/claude-haiku-5-5/xhigh",
           "lane": "haiku",
           "where": "subagent",
-          "reviewed": 23,
+          "reviewed": 25,
           "outcomes": {
             "accepted": 16,
-            "fixed": 4,
+            "fixed": 6,
             "rework": 3,
             "rejected": 0
           },
-          "usable": 0.854,
-          "points": 0.00824,
+          "usable": 0.865,
+          "points": 0.04518,
           "minutes": 15.2,
-          "p_pick": 0.0485,
+          "p_pick": 0.01,
+          "forced": false
+        },
+        {
+          "arm": "sol/gpt-6.1-sol/high",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 6,
+          "outcomes": {
+            "accepted": 3,
+            "fixed": 3,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.914,
+          "points": 0.0108,
+          "minutes": 10.3,
+          "p_pick": 0.009,
+          "forced": false
+        },
+        {
+          "arm": "haiku/claude-haiku-5-5/high",
+          "lane": "haiku",
+          "where": "subagent",
+          "reviewed": 42,
+          "outcomes": {
+            "accepted": 26,
+            "fixed": 16,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.986,
+          "points": 0.04359,
+          "minutes": 12.6,
+          "p_pick": 0.0075,
           "forced": false
         },
         {
@@ -206,10 +402,61 @@
             "rework": 1,
             "rejected": 0
           },
-          "usable": 0.675,
-          "points": 0.00803,
-          "minutes": 11.4,
-          "p_pick": 0.0265,
+          "usable": 0.689,
+          "points": 0.03277,
+          "minutes": 11.3,
+          "p_pick": 0.006,
+          "forced": false
+        },
+        {
+          "arm": "sonnet/claude-sonnet-5-5/medium",
+          "lane": "sonnet",
+          "where": "subagent",
+          "reviewed": 26,
+          "outcomes": {
+            "accepted": 13,
+            "fixed": 12,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.943,
+          "points": 0.05705,
+          "minutes": 6.2,
+          "p_pick": 0.004,
+          "forced": false
+        },
+        {
+          "arm": "sonnet/claude-sonnet-5-5/high",
+          "lane": "sonnet",
+          "where": "subagent",
+          "reviewed": 18,
+          "outcomes": {
+            "accepted": 5,
+            "fixed": 12,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.922,
+          "points": 0.03173,
+          "minutes": 9.3,
+          "p_pick": 0.004,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/medium",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 17,
+          "outcomes": {
+            "accepted": 9,
+            "fixed": 7,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.921,
+          "points": 0.0336,
+          "minutes": 10.1,
+          "p_pick": 0.0035,
           "forced": false
         }
       ]
@@ -218,26 +465,94 @@
       "status": "exploring",
       "arms": [
         {
-          "arm": "opus/claude-opus-5-5/medium",
-          "lane": "opus",
-          "where": "subagent",
-          "reviewed": 0,
+          "arm": "sol/gpt-6.1-sol/medium",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 5,
+          "outcomes": {
+            "accepted": 2,
+            "fixed": 3,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.926,
+          "points": 0.00786,
+          "minutes": 14.0,
+          "p_pick": 0.399,
+          "forced": false
+        },
+        {
+          "arm": "sol/gpt-6.1-sol/xhigh",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 5,
           "outcomes": {
             "accepted": 0,
+            "fixed": 5,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.925,
+          "points": 0.00795,
+          "minutes": 32.0,
+          "p_pick": 0.3055,
+          "forced": false
+        },
+        {
+          "arm": "luna/gpt-6-luna/xhigh",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 2,
+          "outcomes": {
+            "accepted": 2,
             "fixed": 0,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.815,
-          "points": 0.00721,
-          "minutes": 14.9,
-          "p_pick": 0.365,
+          "usable": 0.863,
+          "points": 0.00803,
+          "minutes": 23.3,
+          "p_pick": 0.1575,
           "forced": false
         },
         {
-          "arm": "sonnet/claude-sonnet-5-5/high",
-          "lane": "sonnet",
-          "where": "subagent",
+          "arm": "luna/gpt-6-luna/max",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 2,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 1,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.613,
+          "points": 0.00803,
+          "minutes": 36.8,
+          "p_pick": 0.039,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/high",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 1,
+          "outcomes": {
+            "accepted": 1,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.703,
+          "points": 0.00905,
+          "minutes": 6.2,
+          "p_pick": 0.0195,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/medium",
+          "lane": "terra",
+          "where": "local",
           "reviewed": 1,
           "outcomes": {
             "accepted": 0,
@@ -245,44 +560,61 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.851,
-          "points": 0.00738,
-          "minutes": 15.3,
-          "p_pick": 0.3215,
-          "forced": false
-        },
-        {
-          "arm": "opus/claude-opus-5-5/high",
-          "lane": "opus",
-          "where": "subagent",
-          "reviewed": 4,
-          "outcomes": {
-            "accepted": 4,
-            "fixed": 0,
-            "rework": 0,
-            "rejected": 0
-          },
-          "usable": 0.919,
-          "points": 0.00816,
-          "minutes": 10.0,
-          "p_pick": 0.1115,
+          "usable": 0.806,
+          "points": 0.01233,
+          "minutes": 7.2,
+          "p_pick": 0.0185,
           "forced": false
         },
         {
           "arm": "haiku/claude-haiku-5-5/xhigh",
           "lane": "haiku",
           "where": "subagent",
-          "reviewed": 2,
+          "reviewed": 3,
           "outcomes": {
             "accepted": 0,
-            "fixed": 2,
+            "fixed": 3,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.872,
-          "points": 0.00824,
-          "minutes": 19.4,
-          "p_pick": 0.1,
+          "usable": 0.893,
+          "points": 0.04518,
+          "minutes": 19.7,
+          "p_pick": 0.0125,
+          "forced": false
+        },
+        {
+          "arm": "sol/gpt-6.1-sol/high",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.752,
+          "points": 0.0108,
+          "minutes": 16.0,
+          "p_pick": 0.01,
+          "forced": false
+        },
+        {
+          "arm": "astra/gpt-6-astra/xhigh",
+          "lane": "astra",
+          "where": "local",
+          "reviewed": 2,
+          "outcomes": {
+            "accepted": 1,
+            "fixed": 1,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.87,
+          "points": 0.01043,
+          "minutes": 24.3,
+          "p_pick": 0.009,
           "forced": false
         },
         {
@@ -296,10 +628,78 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.82,
-          "points": 0.00803,
-          "minutes": 24.0,
-          "p_pick": 0.072,
+          "usable": 0.835,
+          "points": 0.03277,
+          "minutes": 24.1,
+          "p_pick": 0.009,
+          "forced": false
+        },
+        {
+          "arm": "astra/gpt-6-astra/max",
+          "lane": "astra",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.755,
+          "points": 0.01062,
+          "minutes": 33.5,
+          "p_pick": 0.006,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/medium",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.815,
+          "points": 0.0336,
+          "minutes": 15.3,
+          "p_pick": 0.0045,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/high",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 6,
+          "outcomes": {
+            "accepted": 4,
+            "fixed": 2,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.937,
+          "points": 0.04693,
+          "minutes": 10.1,
+          "p_pick": 0.0045,
+          "forced": false
+        },
+        {
+          "arm": "sonnet/claude-sonnet-5-5/high",
+          "lane": "sonnet",
+          "where": "subagent",
+          "reviewed": 1,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 1,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.85,
+          "points": 0.03173,
+          "minutes": 15.3,
+          "p_pick": 0.0035,
           "forced": false
         },
         {
@@ -313,10 +713,10 @@
             "rework": 1,
             "rejected": 0
           },
-          "usable": 0.589,
-          "points": 0.02023,
-          "minutes": 24.6,
-          "p_pick": 0.018,
+          "usable": 0.591,
+          "points": 0.1921,
+          "minutes": 23.7,
+          "p_pick": 0.001,
           "forced": false
         },
         {
@@ -330,10 +730,10 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.871,
-          "points": 0.01474,
-          "minutes": 48.6,
-          "p_pick": 0.006,
+          "usable": 0.87,
+          "points": 0.0503,
+          "minutes": 48.5,
+          "p_pick": 0.0005,
           "forced": false
         },
         {
@@ -347,32 +747,117 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.864,
-          "points": 0.0315,
+          "usable": 0.862,
+          "points": 0.09958,
           "minutes": 25.2,
-          "p_pick": 0.006,
+          "p_pick": 0.0005,
           "forced": false
         }
       ]
     },
     "design": {
-      "status": "leaning",
+      "status": "exploring",
       "arms": [
         {
-          "arm": "opus/claude-opus-5-5/high",
-          "lane": "opus",
-          "where": "subagent",
-          "reviewed": 7,
+          "arm": "sol/gpt-6.1-sol/xhigh",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 0,
           "outcomes": {
-            "accepted": 6,
-            "fixed": 1,
+            "accepted": 0,
+            "fixed": 0,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.944,
-          "points": 0.00816,
-          "minutes": 110.3,
-          "p_pick": 0.6575,
+          "usable": 0.814,
+          "points": 0.00795,
+          "minutes": 196.6,
+          "p_pick": 0.583,
+          "forced": false
+        },
+        {
+          "arm": "luna/gpt-6-luna/max",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 1,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 1
+          },
+          "usable": 0.533,
+          "points": 0.00803,
+          "minutes": 161.8,
+          "p_pick": 0.157,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/high",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.607,
+          "points": 0.00905,
+          "minutes": 44.7,
+          "p_pick": 0.099,
+          "forced": false
+        },
+        {
+          "arm": "astra/gpt-6-astra/xhigh",
+          "lane": "astra",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.788,
+          "points": 0.01043,
+          "minutes": 149.3,
+          "p_pick": 0.065,
+          "forced": false
+        },
+        {
+          "arm": "astra/gpt-6-astra/max",
+          "lane": "astra",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.755,
+          "points": 0.01062,
+          "minutes": 205.8,
+          "p_pick": 0.051,
+          "forced": false
+        },
+        {
+          "arm": "sol/gpt-6.1-sol/high",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 1,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.586,
+          "points": 0.0108,
+          "minutes": 98.2,
+          "p_pick": 0.018,
           "forced": false
         },
         {
@@ -386,10 +871,61 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.782,
-          "points": 0.00803,
-          "minutes": 199.9,
-          "p_pick": 0.27,
+          "usable": 0.8,
+          "points": 0.03277,
+          "minutes": 199.7,
+          "p_pick": 0.0095,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/high",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 8,
+          "outcomes": {
+            "accepted": 6,
+            "fixed": 2,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.948,
+          "points": 0.04693,
+          "minutes": 110.3,
+          "p_pick": 0.007,
+          "forced": false
+        },
+        {
+          "arm": "sonnet/claude-sonnet-5-5/max",
+          "lane": "sonnet",
+          "where": "subagent",
+          "reviewed": 1,
+          "outcomes": {
+            "accepted": 1,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.843,
+          "points": 0.0503,
+          "minutes": 327.9,
+          "p_pick": 0.004,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/max",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.775,
+          "points": 0.09958,
+          "minutes": 154.1,
+          "p_pick": 0.0035,
           "forced": false
         },
         {
@@ -404,15 +940,37 @@
             "rejected": 0
           },
           "usable": 0.785,
-          "points": 0.02023,
-          "minutes": 151.9,
-          "p_pick": 0.0465,
+          "points": 0.1921,
+          "minutes": 145.5,
+          "p_pick": 0.003,
+          "forced": false
+        }
+      ]
+    },
+    "review": {
+      "status": "leaning",
+      "arms": [
+        {
+          "arm": "sol/gpt-6.1-sol/xhigh",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 21,
+          "outcomes": {
+            "accepted": 21,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.974,
+          "points": 0.00795,
+          "minutes": 16.4,
+          "p_pick": 0.4675,
           "forced": false
         },
         {
-          "arm": "sonnet/claude-sonnet-5-5/max",
-          "lane": "sonnet",
-          "where": "subagent",
+          "arm": "sol/gpt-6.1-sol/medium",
+          "lane": "sol",
+          "where": "local",
           "reviewed": 1,
           "outcomes": {
             "accepted": 1,
@@ -420,16 +978,16 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.844,
-          "points": 0.01474,
-          "minutes": 330.5,
-          "p_pick": 0.017,
+          "usable": 0.892,
+          "points": 0.00786,
+          "minutes": 7.4,
+          "p_pick": 0.245,
           "forced": false
         },
         {
-          "arm": "opus/claude-opus-5-5/max",
-          "lane": "opus",
-          "where": "subagent",
+          "arm": "luna/gpt-6-luna/xhigh",
+          "lane": "luna",
+          "where": "local",
           "reviewed": 0,
           "outcomes": {
             "accepted": 0,
@@ -437,49 +995,146 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.776,
-          "points": 0.0315,
-          "minutes": 154.7,
-          "p_pick": 0.009,
+          "usable": 0.876,
+          "points": 0.00803,
+          "minutes": 9.6,
+          "p_pick": 0.108,
           "forced": false
-        }
-      ]
-    },
-    "review": {
-      "status": "locked",
-      "arms": [
+        },
         {
-          "arm": "haiku/claude-haiku-5-5/low",
-          "lane": "haiku",
-          "where": "subagent",
-          "reviewed": 30,
+          "arm": "luna/gpt-6-luna/max",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 4,
           "outcomes": {
-            "accepted": 30,
+            "accepted": 4,
             "fixed": 0,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.979,
-          "points": 0.00511,
+          "usable": 0.863,
+          "points": 0.00803,
+          "minutes": 9.5,
+          "p_pick": 0.0585,
+          "forced": false
+        },
+        {
+          "arm": "haiku/claude-haiku-5-5/low",
+          "lane": "haiku",
+          "where": "subagent",
+          "reviewed": 33,
+          "outcomes": {
+            "accepted": 32,
+            "fixed": 1,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.981,
+          "points": 0.01079,
           "minutes": 3.7,
-          "p_pick": 0.8275,
+          "p_pick": 0.018,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/low",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.669,
+          "points": 0.00861,
+          "minutes": 2.5,
+          "p_pick": 0.0155,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/medium",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 1,
+          "outcomes": {
+            "accepted": 1,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.862,
+          "points": 0.01233,
+          "minutes": 3.5,
+          "p_pick": 0.0135,
           "forced": false
         },
         {
           "arm": "haiku/claude-haiku-5-5/medium",
           "lane": "haiku",
           "where": "subagent",
-          "reviewed": 37,
+          "reviewed": 40,
           "outcomes": {
-            "accepted": 37,
+            "accepted": 40,
             "fixed": 0,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.982,
-          "points": 0.00569,
+          "usable": 0.983,
+          "points": 0.02003,
           "minutes": 5.0,
-          "p_pick": 0.045,
+          "p_pick": 0.013,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/high",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.704,
+          "points": 0.00905,
+          "minutes": 3.3,
+          "p_pick": 0.0115,
+          "forced": false
+        },
+        {
+          "arm": "sol/gpt-6.1-sol/high",
+          "lane": "sol",
+          "where": "local",
+          "reviewed": 3,
+          "outcomes": {
+            "accepted": 3,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.896,
+          "points": 0.0108,
+          "minutes": 7.2,
+          "p_pick": 0.0085,
+          "forced": false
+        },
+        {
+          "arm": "sonnet/claude-sonnet-5-5/high",
+          "lane": "sonnet",
+          "where": "subagent",
+          "reviewed": 6,
+          "outcomes": {
+            "accepted": 6,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.935,
+          "points": 0.03173,
+          "minutes": 5.7,
+          "p_pick": 0.007,
           "forced": false
         },
         {
@@ -494,9 +1149,60 @@
             "rejected": 0
           },
           "usable": 0.878,
-          "points": 0.00824,
-          "minutes": 9.4,
-          "p_pick": 0.036,
+          "points": 0.04518,
+          "minutes": 10.1,
+          "p_pick": 0.0065,
+          "forced": false
+        },
+        {
+          "arm": "sonnet/claude-sonnet-5-5/xhigh",
+          "lane": "sonnet",
+          "where": "subagent",
+          "reviewed": 2,
+          "outcomes": {
+            "accepted": 2,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.877,
+          "points": 0.03277,
+          "minutes": 10.2,
+          "p_pick": 0.006,
+          "forced": false
+        },
+        {
+          "arm": "astra/gpt-6-astra/max",
+          "lane": "astra",
+          "where": "local",
+          "reviewed": 2,
+          "outcomes": {
+            "accepted": 2,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.926,
+          "points": 0.01062,
+          "minutes": 17.7,
+          "p_pick": 0.0055,
+          "forced": false
+        },
+        {
+          "arm": "opus/claude-opus-5-5/medium",
+          "lane": "opus",
+          "where": "subagent",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.881,
+          "points": 0.0336,
+          "minutes": 6.9,
+          "p_pick": 0.0055,
           "forced": false
         },
         {
@@ -510,44 +1216,27 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.859,
-          "points": 0.00736,
-          "minutes": 4.5,
-          "p_pick": 0.023,
+          "usable": 0.86,
+          "points": 0.05705,
+          "minutes": 4.6,
+          "p_pick": 0.005,
           "forced": false
         },
         {
-          "arm": "sonnet/claude-sonnet-5-5/high",
-          "lane": "sonnet",
-          "where": "subagent",
-          "reviewed": 5,
+          "arm": "astra/gpt-6-astra/xhigh",
+          "lane": "astra",
+          "where": "local",
+          "reviewed": 4,
           "outcomes": {
-            "accepted": 5,
+            "accepted": 4,
             "fixed": 0,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.929,
-          "points": 0.00738,
-          "minutes": 5.6,
-          "p_pick": 0.0195,
-          "forced": false
-        },
-        {
-          "arm": "sonnet/claude-sonnet-5-5/xhigh",
-          "lane": "sonnet",
-          "where": "subagent",
-          "reviewed": 0,
-          "outcomes": {
-            "accepted": 0,
-            "fixed": 0,
-            "rework": 0,
-            "rejected": 0
-          },
-          "usable": 0.812,
-          "points": 0.00803,
-          "minutes": 9.7,
-          "p_pick": 0.017,
+          "usable": 0.94,
+          "points": 0.01043,
+          "minutes": 11.8,
+          "p_pick": 0.003,
           "forced": false
         },
         {
@@ -562,26 +1251,9 @@
             "rejected": 1
           },
           "usable": 0.892,
-          "points": 0.00816,
-          "minutes": 7.0,
-          "p_pick": 0.0155,
-          "forced": false
-        },
-        {
-          "arm": "opus/claude-opus-5-5/medium",
-          "lane": "opus",
-          "where": "subagent",
-          "reviewed": 0,
-          "outcomes": {
-            "accepted": 0,
-            "fixed": 0,
-            "rework": 0,
-            "rejected": 0
-          },
-          "usable": 0.88,
-          "points": 0.00721,
-          "minutes": 6.5,
-          "p_pick": 0.011,
+          "points": 0.04693,
+          "minutes": 7.4,
+          "p_pick": 0.002,
           "forced": false
         },
         {
@@ -595,49 +1267,117 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.967,
-          "points": 0.02023,
+          "usable": 0.966,
+          "points": 0.1921,
           "minutes": 10.9,
-          "p_pick": 0.0055,
+          "p_pick": 0.0005,
           "forced": false
         }
       ]
     },
     "research": {
-      "status": "leaning",
+      "status": "exploring",
       "arms": [
         {
-          "arm": "haiku/claude-haiku-5-5/medium",
-          "lane": "haiku",
-          "where": "subagent",
+          "arm": "sol/gpt-6.1-sol/medium",
+          "lane": "sol",
+          "where": "local",
           "reviewed": 7,
           "outcomes": {
-            "accepted": 7,
+            "accepted": 4,
+            "fixed": 3,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.941,
+          "points": 0.00786,
+          "minutes": 10.8,
+          "p_pick": 0.418,
+          "forced": false
+        },
+        {
+          "arm": "luna/gpt-6-luna/high",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 5,
+          "outcomes": {
+            "accepted": 3,
+            "fixed": 1,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.735,
+          "points": 0.00685,
+          "minutes": 9.4,
+          "p_pick": 0.2705,
+          "forced": false
+        },
+        {
+          "arm": "luna/gpt-6-luna/xhigh",
+          "lane": "luna",
+          "where": "local",
+          "reviewed": 5,
+          "outcomes": {
+            "accepted": 5,
             "fixed": 0,
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.935,
-          "points": 0.00569,
-          "minutes": 9.8,
-          "p_pick": 0.8355,
+          "usable": 0.913,
+          "points": 0.00803,
+          "minutes": 13.7,
+          "p_pick": 0.214,
           "forced": false
         },
         {
-          "arm": "haiku/claude-haiku-5-5/high",
+          "arm": "haiku/claude-haiku-5-5/medium",
           "lane": "haiku",
           "where": "subagent",
-          "reviewed": 3,
+          "reviewed": 12,
+          "outcomes": {
+            "accepted": 12,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.957,
+          "points": 0.02003,
+          "minutes": 8.5,
+          "p_pick": 0.0255,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/low",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 1,
           "outcomes": {
             "accepted": 0,
-            "fixed": 2,
+            "fixed": 0,
             "rework": 1,
             "rejected": 0
           },
-          "usable": 0.728,
-          "points": 0.00764,
-          "minutes": 19.7,
-          "p_pick": 0.047,
+          "usable": 0.392,
+          "points": 0.00861,
+          "minutes": 2.6,
+          "p_pick": 0.0245,
+          "forced": false
+        },
+        {
+          "arm": "terra/gpt-6.1-terra/medium",
+          "lane": "terra",
+          "where": "local",
+          "reviewed": 0,
+          "outcomes": {
+            "accepted": 0,
+            "fixed": 0,
+            "rework": 0,
+            "rejected": 0
+          },
+          "usable": 0.744,
+          "points": 0.01233,
+          "minutes": 4.5,
+          "p_pick": 0.0155,
           "forced": false
         },
         {
@@ -651,10 +1391,10 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.791,
-          "points": 0.00824,
+          "usable": 0.792,
+          "points": 0.04518,
           "minutes": 12.8,
-          "p_pick": 0.0435,
+          "p_pick": 0.01,
           "forced": false
         },
         {
@@ -668,10 +1408,27 @@
             "rework": 0,
             "rejected": 0
           },
-          "usable": 0.93,
-          "points": 0.00738,
-          "minutes": 8.2,
-          "p_pick": 0.0415,
+          "usable": 0.929,
+          "points": 0.03173,
+          "minutes": 8.1,
+          "p_pick": 0.0095,
+          "forced": false
+        },
+        {
+          "arm": "haiku/claude-haiku-5-5/high",
+          "lane": "haiku",
+          "where": "subagent",
+          "reviewed": 4,
+          "outcomes": {
+            "accepted": 1,
+            "fixed": 2,
+            "rework": 1,
+            "rejected": 0
+          },
+          "usable": 0.768,
+          "points": 0.04359,
+          "minutes": 19.3,
+          "p_pick": 0.0085,
           "forced": false
         },
         {
@@ -686,9 +1443,9 @@
             "rejected": 0
           },
           "usable": 0.844,
-          "points": 0.00736,
-          "minutes": 7.3,
-          "p_pick": 0.0325,
+          "points": 0.05705,
+          "minutes": 7.1,
+          "p_pick": 0.004,
           "forced": false
         }
       ]
