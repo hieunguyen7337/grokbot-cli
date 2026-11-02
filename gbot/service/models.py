@@ -12,6 +12,7 @@ Card = PendingItem
 
 
 def awaiting_flag(value: object) -> bool:
+    """Whether a roster `awaitingUserResponse` value means the bot waits on the user: anything but absent, None or False."""
     return value is not None and value is not False
 
 
