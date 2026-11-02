@@ -401,12 +401,20 @@ class _Catalog(ListPanel):
         super().on_key(event)
 
 
+def _split_args(args: str) -> list[str]:
+    """Split slash arguments on spaces, honouring quotes but keeping backslashes (Windows paths)."""
+    lexer = shlex.shlex(args, posix=True)
+    lexer.whitespace_split = True
+    lexer.escape = ""
+    return list(lexer)
+
+
 def skills(ctx: SlashContext, args: str) -> None:
     if args.strip():
         bot = ctx.app.state.bots.get(ctx.bot_id or "")
         if bot is None:
             raise ValueError("Select a bot to manage its skills.")
-        parts = shlex.split(args)
+        parts = _split_args(args)
         if not parts or parts[0] not in {
             "add-agent-skill",
             "update-agent-skill",

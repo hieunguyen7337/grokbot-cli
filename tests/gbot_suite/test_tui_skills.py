@@ -329,3 +329,17 @@ def test_read_only_all_actions_and_error_notice(tmp_path, monkeypatch):
             assert notices[-1][1] == {"severity": "error", "markup": False}
 
     asyncio.run(exercise())
+
+
+def test_skill_slash_arguments_keep_windows_backslashes():
+    from gbot.tui.slash.skills import _split_args
+
+    assert _split_args(r"add-agent-skill Demo C:\Users\me\skill.md") == [
+        "add-agent-skill",
+        "Demo",
+        r"C:\Users\me\skill.md",
+    ]
+    assert _split_args(r'add-agent-skill "C:\My Skills\a.md"') == [
+        "add-agent-skill",
+        r"C:\My Skills\a.md",
+    ]
