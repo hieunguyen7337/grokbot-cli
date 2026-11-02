@@ -249,6 +249,7 @@ def test_command_outputs(fake, capsys, command, json_mode):
         elif command == "ask":
             assert value == {"bot": {"id": "a", "name": "Alpha"}, "reply": "reply ?"}
         elif command == "send":
+            assert isinstance(value.pop("nonce"), str)
             assert value == {
                 "accepted": False,
                 "bot": {"id": "a", "name": "Alpha"},

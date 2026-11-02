@@ -1,5 +1,7 @@
 """Read public templates and import them without fetching recipe blobs."""
 
+from __future__ import annotations
+
 import json
 import uuid
 from collections.abc import Mapping

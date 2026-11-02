@@ -100,7 +100,9 @@ def test_send_cursor(monkeypatch, capsys):
     ]:
         manager.entries = entries
         assert cli.main(["send", "--bot", "Alpha", "--json", "hello"]) == 0
-        assert json.loads(capsys.readouterr().out) == {
+        value = json.loads(capsys.readouterr().out)
+        assert isinstance(value.pop("nonce"), str)
+        assert value == {
             "accepted": True,
             "bot": {"id": "a", "name": "Alpha"},
             "last_seq": expected,

@@ -355,7 +355,7 @@ def transport(monkeypatch, tmp_path):
 
 CASES = [
     ("bots", ["bots"]),
-    ("send", ["send", "hi"]),
+    ("send", ["send", "--nonce", "golden-nonce", "hi"]),
     ("tail-five", ["tail", "-n", "5"]),
     ("tail-after", ["tail", "--after", "4"]),
     ("approvals", ["approvals"]),

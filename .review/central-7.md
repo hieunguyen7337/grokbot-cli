@@ -4,7 +4,7 @@ All four units ran on the local session (Codex luna) and came back as lane-resul
 merged into the mirror branch with a merge commit, fixed where needed, and checked by the full gates on Linux. A Haiku
 second reader tried to refute 7b, 7c and 7d (no secret-leak path found); another read 7a earlier. The merges also left
 six basedpyright errors (an iterable type in secrets, avatar keyword typing, two tests); they are fixed. Gates on the
-mirror branch: pytest 2285 passed in four shards, ruff and format clean, basedpyright 0 errors. 7e (send path) is still out.
+mirror branch: pytest 2285 passed in four shards, ruff and format clean, basedpyright 0 errors. 7e follows below.
 
 ## Rows marked done (16)
 
@@ -80,3 +80,57 @@ mirror branch: pytest 2285 passed in four shards, ruff and format clean, basedpy
 - An owner `--avatar` edit asks for confirmation, then fails with a plain message.
 - A routine list with no `routinePolicy` returns the whole reply as raw data.
 - A second reader for 7a made a session-tool call that auto mode denied; nothing changed.
+
+# central-7e: send path (SendGrokBotUserMessage, GetGrokBotSendStatus, promptAcceptanceStatus, ListGrokBotAgentSessions)
+
+The local hand-off had no result after the take-back limit, so 7e was taken back (STATUS 5) and built by an opus/medium
+subagent in its own worktree. Its tests were written failing first (20 failed, 21 errors). It was read in full, merged
+into the mirror branch with a merge commit, and given to a Haiku second reader. Gates after the fixes: pytest 2343
+passed in four shards (112 files), ruff and format clean, basedpyright 0 errors.
+
+## Routing (checked by reading and by the second reader's probes)
+
+- A known temporal bot's `sendPrompt` and `promptAcceptanceStatus` go only to the backend RPCs. A refusal, a
+  ConnectError or a transport error raises; nothing falls back to the gateway.
+- A box bot's send and status go only to the gateway.
+- The client nonce is sent as `messageId`, so a retry with the same nonce is counted once; the 401 refresh resends the
+  same body.
+
+## Outcome: fixed
+
+- `--nonce ""` (and spaces) was sent as an empty key to a box bot; blank nonces are refused before any call.
+- The send JSON did not carry the nonce, so a send made without `--nonce` could never be checked with `--status`.
+  JSON now has `nonce` (docs/gbot.md); the golden case pins `--nonce golden-nonce`.
+- `_send_reply` accepted when any uppercase field ended in ACCEPTED or DUPLICATE, even beside a REFUSED delivery.
+  The documented `delivery` field now decides alone; other fields are read only without it.
+- Enum suffix matching read `..._NOT_ACCEPTED` as ACCEPTED; a `_NOT_` suffix no longer matches.
+- NaN and infinite times in a send request raised before sending; they are dropped, as the docstring said.
+- A status reply with a float, bool or unreadable `acceptedAtMs` crashed `gbot send --status`; it reads as a number
+  or 0.
+- `gbot sessions`: a float time read as 0, a null `lastActivityAtMs` hid `updatedAtMs`, and an out-of-range time
+  crashed the whole listing; all three are handled.
+- Found while fixing: `test_golden_cli.py` failed when run alone, because it patches `httpx.Client` before
+  `gbot.service.templates` (7a) is first imported, and that module's annotations then evaluated the patch.
+  templates.py now defers annotations. The earlier gate runs also used stale shard lists; the shards are regenerated
+  from the file list on every run now.
+
+## Windows-only behaviour
+
+- None known; the send path has no platform branch.
+
+## Owner live checks (not done here: no live API)
+
+- The backend reply field names (`delivery`, `outcome`, `status`, optional `record`) are inferred, not documented.
+  An unknown send reply is treated as a refusal and an unknown status reply as unknown durability.
+- `source`, `initiator` and `sendSource` are not forwarded (their enum names are not documented); the desktop app
+  sends `source=DESKTOP`.
+- `gbot sessions` calls ListGrokBotAgentSessions for every bot, box bots included.
+
+## Notes left as they are
+
+- A temporal bot is known only after a `listAgents` reply that is a bare list; a wrapped `{"agents": [...]}` reply
+  would leave it unknown, and its send would go to the gateway. The protocol notes say the reply is a list
+  (docs/protocol-tui.md), and every other temporal route has the same rule.
+- Nothing resends after an unclear network failure; the desktop app's check-then-resend is not built.
+- A negative `enterEpochMs` is forwarded as given.
+- No TUI surface for send status or sessions.

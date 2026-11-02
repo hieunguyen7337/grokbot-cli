@@ -44,8 +44,28 @@ errors as failed. Deleted temporal IDs get a separate background gateway cleanup
 Mirror failures never change backend success. Service mirrors use its background
 transport; context and service shutdown drain pending mirrors. No sleeps are used.
 
-`sendPrompt` and `promptAcceptanceStatus` stay on the gateway until a live comparison
-on a test bot establishes parity. `setGroupMembers` stays with `rooms.set_members`,
+## Send path
+
+For known temporal targets (by `agentId`), `sendPrompt` and `promptAcceptanceStatus`
+use the backend and never fall back to the gateway. Box and unknown targets keep the
+gateway commands unchanged. int64 fields are sent as decimal strings.
+
+| Command | RPC | Request mapping | Gateway reply |
+|---|---|---|---|
+| sendPrompt | SendGrokBotUserMessage | agentId; clientNonce→messageId (required); prompt→text; sentAtMs=now; richText?, replyToId?, replyQuote?, traceparent?, mcpConfigJson?, taskId?, language?; isFork only if true; attachmentPaths/attachmentNames default []; enterEpochMs?/composedAtMs?→int64; S; nonempty machineId; onePasswordAppInstalled/rendersMcpElicitationForms only if true; firstSentAtMs→firstSentAgeMs=max(0, floor(now−firstSentAtMs)) | ACCEPTED_BOX, ACCEPTED_TEMPORAL or DUPLICATE → `{accepted: true}`; REFUSED, an unknown delivery or a refusal → `ValueError("Send refused: ...")` |
+| promptAcceptanceStatus | GetGrokBotSendStatus | agentId; clientNonce→messageId; S; taskId?; firstSentAgeMs as above | NOT_FOUND → `{outcome: not-found}`; FOUND with status ACCEPTED/REJECTED/PENDING → record (accountSlot=host, clientNonce, agentId, inputDigest "", status, acceptedAtMs or 0, echoEntryId or null, rejectionCode only for rejected); anything else → `{outcome: unknown-durability}` |
+
+Not forwarded: `source`, `initiator` and `sendSource`, because their protobuf enum
+names are not documented, and `directAddressedAcceptance`. The reply field names
+`delivery`, `outcome`, `status` and an optional nested `record` are inferred, and enum
+values are matched by their documented suffix, so the unknown prefix does not matter.
+Retries keep the same `messageId`; a 401 refreshes once and resends the same body.
+
+`ListGrokBotAgentSessions` (`conversation.list_sessions`, `gbot sessions`) is a plain
+backend read for any bot: agentId in, sessions out with kind (prefix
+`GROK_BOT_AGENT_SESSION_KIND_` stripped, lower case, unknown → unspecified) and integer times.
+
+`setGroupMembers` stays with `rooms.set_members`,
 which already chooses the backend for temporal groups. Creation and templates remain
 on their existing paths for later units; their replies still teach the registry.
 Every other command remains on the gateway because this unit only verifies the

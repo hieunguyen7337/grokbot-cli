@@ -17,25 +17,56 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "--attach", action="append", type=Path, default=[], metavar="PATH"
     )
+    parser.add_argument(
+        "--nonce", metavar="ID", help="Idempotency key; reuse it to retry safely"
+    )
+    parser.add_argument(
+        "--status", metavar="NONCE", help="Read a send's status instead of sending"
+    )
     parser.add_argument("text", nargs="*")
     parser.set_defaults(func=run)
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
+    if args.status is not None:
+        return status(args, ctx)
     text = prompt_text(args)
     bot_id, name = resolve_bot(ctx, args.bot)
     files = upload_files(args, ctx, bot_id)
     result = conversation.send(
-        ContextTransport(ctx), bot_id, text, session_id=args.session, attachments=files
+        ContextTransport(ctx),
+        bot_id,
+        text,
+        session_id=args.session,
+        nonce=args.nonce,
+        attachments=files,
     )
     ctx.out.write(
         {
             "accepted": result.accepted,
             "bot": {"id": bot_id, "name": name},
             "last_seq": result.last_seq,
+            "nonce": result.nonce,
             **({"attachments": attachment_json(files)} if files else {}),
         },
         f"Sent to {name}.",
+    )
+    return 0
+
+
+def status(args: argparse.Namespace, ctx: Context) -> int:
+    if args.text or args.attach or args.nonce is not None:
+        raise ValueError(
+            "--status reads a status; do not pass text, --attach or --nonce."
+        )
+    bot_id, name = resolve_bot(ctx, args.bot)
+    value = conversation.send_status(
+        ContextTransport(ctx), bot_id, args.status, session_id=args.session
+    )
+    label = value.get("status", value.get("outcome", "unknown"))
+    ctx.out.write(
+        {"bot": {"id": bot_id, "name": name}, "nonce": args.status, "status": value},
+        f"{name}: send {args.status} is {label}.",
     )
     return 0
 
