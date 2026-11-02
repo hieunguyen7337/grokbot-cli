@@ -17,6 +17,7 @@ RPCS = (
     "GetOnePasswordState",
     "SyncOnePasswordConnections",
     "DeleteOnePasswordConnection",
+    "NudgeOnePasswordAccessRequest",
 )
 
 
@@ -326,8 +327,23 @@ def delete_onepassword(transport: Transport, connection_id: str) -> OnePassword:
     return _onepassword(transport.rpc(RPCS[8], {"connectionId": _id(connection_id)}))
 
 
+def nudge_onepassword_access_request(
+    transport: Transport, access_request_id: str, agent_id: str, entry_id: str
+) -> bool:
+    reply = transport.rpc(
+        "NudgeOnePasswordAccessRequest",
+        {
+            "accessRequestId": access_request_id,
+            "agentId": agent_id,
+            "entryId": entry_id,
+        },
+    )
+    return reply.get("nudged") is True
+
+
 DEMO_RPCS: dict[str, object] = {
     **{name: {} for name in RPCS},
+    "NudgeOnePasswordAccessRequest": {"nudged": True},
     RPCS[0]: {
         "credentials": [
             {

@@ -1,5 +1,6 @@
 """Account vault, passkeys and 1Password metadata panels."""
 
+import shlex
 from collections.abc import Callable
 from datetime import UTC, datetime
 
@@ -104,6 +105,26 @@ class _LoginForm(FormPanel):
 
 
 def vault(ctx: SlashContext, args: str) -> None:
+    if args.strip():
+        if not _writable(ctx):
+            return
+        try:
+            request_id, agent_id, entry_id = shlex.split(args)
+        except ValueError:
+            raise ValueError(
+                "Use /vault REQUEST_ID AGENT_ID ENTRY_ID to nudge access."
+            ) from None
+        if not all((request_id, agent_id, entry_id)):
+            raise ValueError("Use /vault REQUEST_ID AGENT_ID ENTRY_ID to nudge access.")
+        _confirm(
+            ctx,
+            "Send a 1Password access request reminder?",
+            lambda: service.nudge_onepassword_access_request(
+                ctx.service.transport, request_id, agent_id, entry_id
+            ),
+            lambda: ctx.app.notify("Access request reminder sent", markup=False),
+        )
+        return
     items: dict[str, service.VaultItem] = {}
 
     def load() -> list[PanelRow]:

@@ -16,10 +16,13 @@ to 4,096 UTF-8 bytes. Values are sent only in the put request and are never disp
 
 In a bot session, `/secrets` lists metadata with a computer status footer. Press `a`
 to add or replace, `d` to delete the selected name, or `c` to select computer names
-with toggles. Use Tab between fields, Ctrl+S to validate and review, and Escape to
+with toggles. Press `r` to replace the computer secret map from a UTF-8 JSON file
+containing a JSON object of string values. Its confirmation shows no values. Use Tab
+between fields, Ctrl+S to validate and review, and Escape to
 go back. Confirmations focus Cancel. The password input clears on submission or
 cancellation. Read-only mode refuses all mutations.
 
 Bot operations resolve the gateway bot ID to its backend identity. Missing identities
 require the desktop app; writes require ownership. Computer copying reports gateway
-outcomes. Replacing the computer's entire secret map (`setBoxSecrets`) stays planned.
+outcomes. Computer secret replacement uses `setBoxSecrets`; values never appear in
+output, errors or logs.

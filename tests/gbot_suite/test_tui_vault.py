@@ -199,6 +199,24 @@ def test_card_rows_never_show_card_numbers(tmp_path, monkeypatch):
     asyncio.run(exercise())
 
 
+def test_nudge_access_request_slash_confirmation(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await session(app, pilot)
+            run(ctx, "/vault request agent entry")
+            await settle(app, pilot)
+            await accept(app, pilot)
+            assert calls(service, "NudgeOnePasswordAccessRequest") == [
+                {"accessRequestId": "request", "agentId": "agent", "entryId": "entry"}
+            ]
+
+    asyncio.run(exercise())
+
+
 def test_passkeys_onepassword(tmp_path, monkeypatch):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
 

@@ -1,5 +1,8 @@
 """Confirmed, write-only secret management for the selected bot."""
 
+import json
+from pathlib import Path
+
 from rich.text import Text
 from textual import events
 from textual.widgets import Input, Static, Switch
@@ -15,12 +18,21 @@ from gbot.tui.slash.search import _age
 
 
 class _SecretForm(FormPanel):
-    def __init__(self, panel: "_SecretsPanel", *, copy: bool = False) -> None:
+    def __init__(
+        self,
+        panel: "_SecretsPanel",
+        *,
+        copy: bool = False,
+        replace_computer: bool = False,
+    ) -> None:
         self.panel, self.ctx, self.copy = panel, panel.ctx, copy
+        self.replace_computer = replace_computer
         self.outcomes: list[tuple[str, str]] = []
         fields = (
             tuple(FormField(name, name, "toggle") for name in panel.box.keys)
             if copy
+            else (FormField("file", "UTF-8 JSON file", required=True),)
+            if replace_computer
             else (
                 FormField("name", "Name"),
                 FormField("description", "Description"),
@@ -28,7 +40,13 @@ class _SecretForm(FormPanel):
             )
         )
         super().__init__(
-            "Copy computer secrets" if copy else "Save secret", fields, self.save
+            "Copy computer secrets"
+            if copy
+            else "Replace computer secrets"
+            if replace_computer
+            else "Save secret",
+            fields,
+            self.save,
         )
 
     def action_submit(self) -> None:
@@ -43,6 +61,8 @@ class _SecretForm(FormPanel):
                 self._submit_error("Select at least one computer secret")
                 return
             title = f"Copy {count} computer secrets to {self.panel.bot_label}?"
+        elif self.replace_computer:
+            title = "Replace all computer secrets from this file?"
         else:
             try:
                 name = service.normalize_name(self.query_one("#form-0", Input).value)
@@ -60,7 +80,7 @@ class _SecretForm(FormPanel):
         def confirmed(ok: bool | None) -> None:
             if ok and _writable(self.ctx):
                 super(_SecretForm, self).action_submit()
-            elif not self.copy:
+            elif not self.copy and not self.replace_computer:
                 self.query_one("#form-2", Input).value = ""
 
         self.ctx.app.push_screen(ConfirmScreen(title, "", "Save"), confirmed)
@@ -75,6 +95,21 @@ class _SecretForm(FormPanel):
                     self.panel.bot_id,
                     [name for name, enabled in values.items() if enabled is True],
                 )
+            elif self.replace_computer:
+                try:
+                    raw = Path(str(values["file"])).read_text(encoding="utf-8")
+                    payload = json.loads(raw)
+                    if not isinstance(payload, dict) or not all(
+                        isinstance(key, str) and isinstance(value, str)
+                        for key, value in payload.items()
+                    ):
+                        raise ValueError
+                except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+                    raise ValueError(
+                        "Choose a UTF-8 JSON object of string values."
+                    ) from None
+                service.set_box_secrets(self.ctx.service.transport, payload)
+                payload.clear()
             else:
                 service.put_secret(
                     self.ctx.service.transport,
@@ -87,7 +122,7 @@ class _SecretForm(FormPanel):
             values.clear()
 
     def action_back(self) -> None:
-        if not self.copy:
+        if not self.copy and not self.replace_computer:
             self.query_one("#form-2", Input).value = ""
         super().action_back()
 
@@ -121,6 +156,9 @@ class _SecretsPanel(ListPanel):
                 PanelAction("a", "Add", self.add),
                 PanelAction("d", "Delete", self.delete),
                 PanelAction("c", "Copy from computer", self.copy),
+                PanelAction(
+                    "r", "Replace computer secrets", self.replace_computer_secrets
+                ),
             ),
         )
 
@@ -161,13 +199,15 @@ class _SecretsPanel(ListPanel):
         widget.update(text)
 
     def on_key(self, event: events.Key) -> None:
-        if event.key in {"a", "c", "d"}:
+        if event.key in {"a", "c", "d", "r"}:
             if not _writable(self.ctx):
                 pass
             elif event.key == "a":
                 self.add()
             elif event.key == "c":
                 self.copy()
+            elif event.key == "r":
+                self.replace_computer_secrets()
             elif self.visible_rows:
                 self.delete(self.visible_rows[self.index])
             event.stop()
@@ -182,6 +222,10 @@ class _SecretsPanel(ListPanel):
     def copy(self) -> None:
         if _writable(self.ctx):
             self.ctx.app.push_screen(_SecretForm(self, copy=True))
+
+    def replace_computer_secrets(self) -> None:
+        if _writable(self.ctx):
+            self.ctx.app.push_screen(_SecretForm(self, replace_computer=True))
 
     def delete(self, row: PanelRow) -> None:
         _confirm(

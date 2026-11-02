@@ -1,9 +1,11 @@
 import argparse
 import getpass
+import json
 import sys
 import warnings
 from dataclasses import asdict
 from datetime import UTC, datetime
+from pathlib import Path
 
 from gbot.bots import resolve_bot
 from gbot.commands.approvals import _confirm, _require_confirmation
@@ -20,6 +22,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--computer", action="store_true")
     actions.add_argument("--set", metavar="NAME")
+    actions.add_argument(
+        "--set-computer",
+        metavar="FILE|-",
+        help="replace the computer secret map from a UTF-8 JSON object",
+    )
     actions.add_argument("--delete", metavar="NAME")
     actions.add_argument("--copy-from-computer", metavar="NAME", nargs="+")
     parser.add_argument("--description", default="")
@@ -38,6 +45,7 @@ def _when(stamp_ms: int) -> str:
 def run(args: argparse.Namespace, ctx: Context) -> int:
     mutation = (
         args.set is not None
+        or args.set_computer is not None
         or args.delete is not None
         or args.copy_from_computer is not None
     )
@@ -47,9 +55,33 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
             raise ValueError("Re-run with --yes to confirm")
     if args.computer and args.bot:
         raise ValueError("Use --computer without BOT.")
-    if not args.computer and not args.bot:
+    if not args.computer and not args.bot and args.set_computer is None:
         raise ValueError("Specify BOT or --computer.")
     transport = ContextTransport(ctx)
+    if args.set_computer is not None:
+        if args.bot or args.computer:
+            raise ValueError("Use --set-computer without BOT or --computer.")
+        source = (
+            sys.stdin.read()
+            if args.set_computer == "-"
+            else Path(args.set_computer).read_text(encoding="utf-8")
+        )
+        try:
+            values = json.loads(source)
+        except (json.JSONDecodeError, UnicodeError):
+            raise ValueError(
+                "Computer secrets input must be a UTF-8 JSON object."
+            ) from None
+        if not isinstance(values, dict) or not all(
+            isinstance(name, str) and isinstance(value, str)
+            for name, value in values.items()
+        ):
+            raise ValueError(
+                "Computer secrets input must be a JSON object of string values."
+            )
+        status = secrets.set_box_secrets(transport, values)
+        ctx.out.write(asdict(status), "Computer secrets saved.")
+        return 0
     if args.computer:
         box = secrets.box_secrets(transport)
         ctx.out.write(

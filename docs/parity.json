@@ -1742,8 +1742,8 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The replacement map and status-only reply are documented, so fake values can test writes without revealing stored secrets."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "setCloudAgentAppSecrets",
@@ -2254,8 +2254,8 @@
       ],
       "area": "plugins-skills",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The skill fields and response envelope are documented and fit the existing skill and plugin projections."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "AddGrokBotRoomPeople",
@@ -5476,8 +5476,8 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The access-request reminder takes three references and returns a boolean, so fake success and failure need no credentials."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "OpenGrokBotUserComputerRequest",
@@ -5917,8 +5917,8 @@
       ],
       "area": "plugins-skills",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The skill-name request and plugin response envelope are documented and can use fake skill removal results."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "RemoveGrokBotRoomPeople",
@@ -7006,8 +7006,8 @@
       ],
       "area": "plugins-skills",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The skill-name and content update plus response envelope are documented and fit existing skill projections."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "UpdateGrokBotChangelogInternal",
