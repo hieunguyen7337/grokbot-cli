@@ -4029,7 +4029,7 @@
       "area": "internal",
       "milestone": "M1",
       "status": "planned",
-      "note": "triage (b): Establishing a sandbox returns gateway tokens and computer credentials, so the owner must check the session path."
+      "note": "triage (c): gbot already reaches it through groken's GatewayManager (groken/gateway.py:718), which mints the gateway session; no separate surface is needed."
     },
     {
       "name": "EnsureSandBoxWindow",

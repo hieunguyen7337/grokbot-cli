@@ -28,7 +28,7 @@ The Windows checkout used CRLF; the required Python serializer writes UTF-8 with
 | BeginOnePasswordConnection | M4 | secrets-vault | (b) | Starting this connection consumes a service-account token and returns a sensitive mint ticket. | docs/protocol-m4b.md:248 |
 | CompleteOnePasswordConnection | M4 | secrets-vault | (b) | Completing the connection consumes a mint ticket and service-account token and requires the owner account. | docs/protocol-m4b.md:249 |
 | CompleteOnePasswordOAuth | M4 | secrets-vault | (b) | Completing password-manager OAuth requires the owner browser callback and its sensitive state and code. | docs/protocol-m4b.md:251 |
-| EnsureSandBox | M1 | internal | (b) | Establishing a sandbox returns gateway tokens and computer credentials, so the owner must check the session path. | docs/protocol-tui.md:275 |
+| EnsureSandBox | M1 | internal | (c) | gbot already reaches it through groken's GatewayManager (groken/gateway.py:718), which mints the gateway session; no separate surface is needed. Changed from (b) in review. | docs/protocol-tui.md:275 |
 | GetGrokBotSendStatus | M1 | conversation | (a) | The documented request mapping and delivery outcomes can be faked without sending a real message. | docs/protocol-temporal.md:31 |
 | GetGrokBotTemplateVersion | M3 | templates | (b) | The raw backend reply returns a secret temporary recipe link, so the owner must check download and redaction handling. | docs/protocol-m5b.md:51 |
 | GetGrokBotUserMcpSettings | M4 | connectors | (a) | The empty request and settings fields are documented and fit the existing connector settings service. | docs/protocol-m4a.md:20 |
@@ -52,7 +52,7 @@ The Windows checkout used CRLF; the required Python serializer writes UTF-8 with
 | UpdateGrokBotAgent | M3 | bots | (a) | The partial identity update and avatar oneof are documented, so fakes can cover managed nonowner rows. | docs/protocol-m3.md:147 |
 | UpdateGrokBotAgentSkill | M4 | plugins-skills | (a) | The skill-name and content update plus response envelope are documented and fit existing skill projections. | docs/protocol-m4a.md:168 |
 
-Counts: (a) 20; (b) 21; (c) 2. Total: 43.
+Counts: (a) 20; (b) 20; (c) 3. Total: 43.
 
 Suggested group (a) batch order by area, smallest first (row count; ties alphabetical):
 
@@ -67,3 +67,5 @@ Suggested group (a) batch order by area, smallest first (row count; ties alphabe
 9. conversation (4): promptAcceptanceStatus, GetGrokBotSendStatus, ListGrokBotAgentSessions, SendGrokBotUserMessage.
 
 All rows have a decision. Group (b) records the remaining owner checks; no such check was performed in this unit.
+
+Review (main session): accepted with one change, EnsureSandBox moved from (b) to (c). setBoxSecrets stays (a): build it against fakes only, its CLI verb needs --yes, and it never prints a value.
