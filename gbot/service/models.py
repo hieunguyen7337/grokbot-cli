@@ -11,6 +11,10 @@ from gbot.pending import PendingItem
 Card = PendingItem
 
 
+def awaiting_flag(value: object) -> bool:
+    return value is not None and value is not False
+
+
 def _text(value: object) -> str:
     return value if isinstance(value, str) else ""
 
@@ -97,7 +101,8 @@ class Bot:
             return None
         awaiting_raw = data.get("awaitingUserResponse")
         awaiting = None
-        if isinstance(awaiting_raw, Mapping):
+        if awaiting_flag(awaiting_raw):
+            awaiting_raw = _record(awaiting_raw)
             tab = awaiting_raw.get("tabId")
             awaiting = Awaiting(
                 _text(awaiting_raw.get("reason")) or "awaiting",
