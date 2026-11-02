@@ -2,7 +2,9 @@
 
 All four units ran on the local session (Codex luna) and came back as lane-result branches. Each was read in full,
 merged into the mirror branch with a merge commit, fixed where needed, and checked by the full gates on Linux. A Haiku
-second reader tried to refute 7b, 7c and 7d; another read 7a earlier. 7e (send path) is still out.
+second reader tried to refute 7b, 7c and 7d (no secret-leak path found); another read 7a earlier. The merges also left
+six basedpyright errors (an iterable type in secrets, avatar keyword typing, two tests); they are fixed. Gates on the
+mirror branch: pytest 2285 passed in four shards, ruff and format clean, basedpyright 0 errors. 7e (send path) is still out.
 
 ## Rows marked done (16)
 
@@ -21,7 +23,12 @@ second reader tried to refute 7b, 7c and 7d; another read 7a earlier. 7e (send p
   - A malformed share link raised `httpx.InvalidURL` as a traceback; it is now a plain error.
   - The TUI templates panel was changed to download the recipe blob on every open and to block on errors. That change
     was reverted; the CLI verb covers the row.
-- 7b (luna/xhigh): accepted. Read-only paths need no `--yes`; routine toggles and settings writes need `--yes` and a
+- 7b (luna/xhigh): fixed after the second reader.
+  - `--routine-on ""` and `--routine-off ""` slipped past the routine branch; they are refused now.
+  - `--off ID` combined with a routine action was silently ignored; it is refused now.
+  - `--time-zone` went to the routine RPCs unchecked; it now uses the same zone check as schedules.
+  - `--set-user-settings` accepted NaN and Infinity, which failed only after confirmation; they are refused at parse.
+  - Read-only paths need no `--yes`; routine toggles and settings writes need `--yes` and a
   confirmation in both CLI and TUI. User MCP settings carry server ids, instructions and disabled tool names only
   (docs/protocol-m4a.md:20), so printing them reveals no credential.
 - 7c (luna/high): fixed.
@@ -29,6 +36,11 @@ second reader tried to refute 7b, 7c and 7d; another read 7a earlier. 7e (send p
     Windows path such as `C:\Users\me\skill.md` broke (the local Windows run failed
     `test_agent_skill_rpc_slash_confirmation`). Arguments now split with quotes honoured and backslashes kept, on every
     platform; a new test pins it.
+  - Second reader: secret names that normalize alike (`token` and `TOKEN`) collapsed silently, dropping one value;
+    they are refused now, without echoing either value.
+  - Second reader: the TUI nudge said "reminder sent" even when the reply said not nudged; it now reports the refusal.
+  - Second reader: `--nudge-access-request ""`, `--remove-agent-skill ""` and `--update-agent-skill ""` fell through to
+    a listing; they are refused now, and the skill service refuses blank names for every caller (the TUI sent them).
   - setBoxSecrets takes values only from a UTF-8 JSON file or stdin (`gbot secrets --set-computer FILE|-`), needs
     `--yes`, prints key names only, and replaces any transport error with a fixed message so no value can surface.
     Built against fakes only, as central-6 required.
@@ -56,6 +68,12 @@ second reader tried to refute 7b, 7c and 7d; another read 7a earlier. 7e (send p
   it.
 
 ## Notes left as they are
+
+- Secret values are stripped of surrounding spaces before saving, as PutGrokBotSecret already does.
+- `--set-computer {}` and `--set-user-settings {}` replace everything with nothing; `--yes` is the only gate, as for
+  other replacing writes.
+- A 404 from ListGrokBotAgentRoutines reads as "unsupported for this account", even for a stale bot id.
+- The TUI computer-secrets form reads its path without the `~` expansion the skills form uses.
 
 - An owner `bot edit` makes two ListGrokBotAgents calls.
 - `bot open` marks the bot read without `--yes` (documented as a read).

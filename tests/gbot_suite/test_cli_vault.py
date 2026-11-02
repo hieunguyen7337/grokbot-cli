@@ -160,3 +160,10 @@ def test_nudge_access_request_needs_yes_and_returns_boolean(monkeypatch, capsys)
         "agentId": "agent",
         "entryId": "entry",
     }
+
+
+def test_blank_nudge_request_id_is_refused(monkeypatch, capsys):
+    transport = setup_cli(monkeypatch)
+    argv = ["vault", "--nudge-access-request", "", "--agent-id", "a", "--entry-id", "e"]
+    assert cli.main([*argv, "--json"]) != 0
+    assert transport.calls == []

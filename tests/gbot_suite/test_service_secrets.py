@@ -178,3 +178,11 @@ def test_set_box_secrets_sends_replacement_map_and_returns_status_only():
     with pytest.raises(ValueError) as error:
         secrets.set_box_secrets(fake, values)
     assert "another-placeholder" not in str(error.value)
+
+
+def test_set_box_secrets_refuses_names_that_normalize_alike():
+    fake = FakeTransport(secrets.DEMO_COMMANDS, {})
+    with pytest.raises(ValueError, match="more than once") as raised:
+        secrets.set_box_secrets(fake, {"token": "one", " TOKEN": "two"})
+    assert "one" not in str(raised.value) and "two" not in str(raised.value)
+    assert fake.calls == []

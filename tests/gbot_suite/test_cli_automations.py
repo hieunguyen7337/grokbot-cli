@@ -198,3 +198,22 @@ def test_invalid_options(monkeypatch, capsys, argv):
     assert cli.main(["automations", "Helper", *argv, "--yes", "--json"]) == 1
     assert capsys.readouterr().err
     assert not fake.calls
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--routine-on", ""],
+        ["--routine-off", ""],
+        ["--routine-on", "demo-routine", "--off", "other"],
+        ["--routines", "--off", "other"],
+        ["--routines", "--time-zone", ""],
+        ["--routine-on", "demo-routine", "--time-zone", "Not a zone!"],
+    ],
+)
+def test_bad_routine_arguments_send_nothing(monkeypatch, capsys, argv):
+    fake = setup_cli(monkeypatch)
+    assert cli.main(["automations", "Helper", *argv, "--yes", "--json"]) != 0
+    assert "Routine" not in json.dumps(fake.calls)
+    captured = capsys.readouterr()
+    assert json.loads(captured.out or captured.err)["error"]["message"]

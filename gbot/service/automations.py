@@ -138,6 +138,7 @@ def list_agent_routines(
     """List backend routines; NotFound means this account does not support them."""
     payload: dict[str, object] = {"agentId": agent_id}
     if time_zone is not None:
+        _check_zone(time_zone)
         payload["timeZone"] = time_zone
     try:
         reply = transport.rpc("ListGrokBotAgentRoutines", payload)
@@ -177,6 +178,7 @@ def set_agent_routine_enabled(
         "isEnabled": is_enabled,
     }
     if time_zone is not None:
+        _check_zone(time_zone)
         payload["timeZone"] = time_zone
     reply = transport.rpc("SetGrokBotAgentRoutineEnabled", payload)
     return _routine(reply.get("routine"))

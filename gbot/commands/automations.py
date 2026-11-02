@@ -46,7 +46,13 @@ def _row(item: service.Automation) -> dict[str, object]:
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
-    routine_action = args.routines or args.routine_on or args.routine_off
+    routine_action = (
+        args.routines or args.routine_on is not None or args.routine_off is not None
+    )
+    if "" in (args.routine_on, args.routine_off):
+        raise ValueError("Give the routine's automation ID.")
+    if routine_action and args.off is not None:
+        raise ValueError("Use --routine-off ID to turn a routine off, not --off.")
     mutation = args.new or any(
         v is not None
         for v in (
@@ -116,7 +122,7 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
             routine = service.set_agent_routine_enabled(
                 transport,
                 bot.id,
-                automation_id,
+                matches[0].automation_id,
                 bool(args.routine_on),
                 time_zone=args.time_zone,
             )

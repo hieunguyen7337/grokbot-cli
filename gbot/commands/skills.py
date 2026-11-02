@@ -46,6 +46,8 @@ def _body(path: str) -> str:
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
+    if "" in (args.update_agent_skill, args.remove_agent_skill):
+        raise ValueError("Give the agent skill's name.")
     mutation = bool(
         args.new
         or args.edit

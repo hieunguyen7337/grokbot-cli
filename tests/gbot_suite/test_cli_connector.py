@@ -180,3 +180,10 @@ def test_terminal_confirmation_cancel_and_accept(monkeypatch, capsys):
     monkeypatch.setattr("builtins.input", lambda _: "yes")
     assert cli.main(argv) == 0
     assert any(name == "setMcpCustomInstructions" for _, name, _ in fake.calls)
+
+
+def test_user_mcp_settings_refuse_non_json_constants(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    argv = ["connector", "--set-user-settings", '{"a": NaN}', "--yes", "--json"]
+    assert cli.main(argv) != 0
+    assert "SetGrokBotUserMcpSettings" not in json.dumps(fake.calls)

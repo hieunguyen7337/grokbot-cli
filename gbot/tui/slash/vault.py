@@ -104,6 +104,13 @@ class _LoginForm(FormPanel):
         self.done()
 
 
+def _nudge(ctx: SlashContext, request_id: str, agent_id: str, entry_id: str) -> None:
+    if not service.nudge_onepassword_access_request(
+        ctx.service.transport, request_id, agent_id, entry_id
+    ):
+        raise ValueError("Access request reminder was not sent.")
+
+
 def vault(ctx: SlashContext, args: str) -> None:
     if args.strip():
         if not _writable(ctx):
@@ -119,9 +126,7 @@ def vault(ctx: SlashContext, args: str) -> None:
         _confirm(
             ctx,
             "Send a 1Password access request reminder?",
-            lambda: service.nudge_onepassword_access_request(
-                ctx.service.transport, request_id, agent_id, entry_id
-            ),
+            lambda: _nudge(ctx, request_id, agent_id, entry_id),
             lambda: ctx.app.notify("Access request reminder sent", markup=False),
         )
         return

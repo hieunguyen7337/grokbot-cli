@@ -310,3 +310,24 @@ def test_payment_status(tmp_path, monkeypatch):
             )
 
     asyncio.run(exercise())
+
+
+def test_refused_nudge_is_not_reported_as_sent(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+
+    async def exercise():
+        service = load_fake()
+        service.transport.rpcs["NudgeOnePasswordAccessRequest"] = {"nudged": False}
+        app = GbotApp(service, animate=False)
+        notices = []
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await session(app, pilot)
+            monkeypatch.setattr(app, "notify", lambda text, **kw: notices.append(text))
+            run(ctx, "/vault request agent entry")
+            await settle(app, pilot)
+            await accept(app, pilot)
+            await settle(app, pilot)
+        assert "Access request reminder was not sent." in notices
+        assert "Access request reminder sent" not in notices
+
+    asyncio.run(exercise())

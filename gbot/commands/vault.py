@@ -101,6 +101,8 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         or args.onepassword_disconnect
         or args.nudge_access_request
     )
+    if args.nudge_access_request == "":
+        raise ValueError("Give the access request ID.")
     if mutation and not args.yes:
         raise ValueError("Re-run with --yes to confirm")
     transport = ContextTransport(ctx)

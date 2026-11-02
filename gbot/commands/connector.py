@@ -45,6 +45,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(func=run)
 
 
+def _no_constant(name: str) -> object:
+    raise ValueError(f"{name} is not valid JSON.")
+
+
 def run(args: argparse.Namespace, ctx: Context) -> int:
     settings_action = args.user_settings or args.set_user_settings is not None
     mutations = (
@@ -96,8 +100,8 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
             else args.set_user_settings
         )
         try:
-            decoded = json.loads(raw_settings)
-        except json.JSONDecodeError as error:
+            decoded = json.loads(raw_settings, parse_constant=_no_constant)
+        except (json.JSONDecodeError, ValueError) as error:
             raise ValueError("--set-user-settings requires a JSON object.") from error
         if not isinstance(decoded, Mapping):
             raise ValueError("--set-user-settings requires a JSON object.")

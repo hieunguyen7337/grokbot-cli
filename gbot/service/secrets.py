@@ -147,9 +147,12 @@ def box_secrets(transport: Transport) -> BoxSecrets:
 
 
 def set_box_secrets(transport: Transport, values: Mapping[str, str]) -> BoxSecrets:
-    secrets = {
-        normalize_name(name): check_value(value) for name, value in values.items()
-    }
+    secrets: dict[str, str] = {}
+    for name, value in values.items():
+        key = normalize_name(name)
+        if key in secrets:
+            raise ValueError(f"Secret name {key} appears more than once.")
+        secrets[key] = check_value(value)
     try:
         reply = _record(transport.command("setBoxSecrets", {"secrets": secrets}))
     except Exception:  # noqa: BLE001 - secret transport redaction boundary

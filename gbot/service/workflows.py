@@ -159,6 +159,12 @@ def skills(transport: Transport, bot_id: str) -> list[Skill]:
     )
 
 
+def _skill_name(name: str) -> str:
+    if not name.strip():
+        raise ValueError("Agent skill names must not be blank.")
+    return name
+
+
 def add_agent_skill(
     transport: Transport,
     bot_id: str,
@@ -169,6 +175,7 @@ def add_agent_skill(
 ) -> dict[str, object]:
     payload: dict[str, object] = {"agentId": bot_id, "content": content}
     if name is not None:
+        _skill_name(name)
         payload["name"] = name
     if description is not None:
         payload["description"] = description
@@ -183,7 +190,11 @@ def update_agent_skill(
     content: str,
     description: str | None = None,
 ) -> dict[str, object]:
-    payload: dict[str, object] = {"agentId": bot_id, "name": name, "content": content}
+    payload: dict[str, object] = {
+        "agentId": bot_id,
+        "name": _skill_name(name),
+        "content": content,
+    }
     if description is not None:
         payload["description"] = description
     return dict(transport.rpc("UpdateGrokBotAgentSkill", payload))
@@ -193,7 +204,9 @@ def remove_agent_skill(
     transport: Transport, bot_id: str, *, name: str
 ) -> dict[str, object]:
     return dict(
-        transport.rpc("RemoveGrokBotAgentSkill", {"agentId": bot_id, "name": name})
+        transport.rpc(
+            "RemoveGrokBotAgentSkill", {"agentId": bot_id, "name": _skill_name(name)}
+        )
     )
 
 
