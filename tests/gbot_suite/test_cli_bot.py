@@ -1,6 +1,4 @@
 import json
-import uuid
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -165,11 +163,9 @@ def test_new_bot_writes_require_yes(monkeypatch, capsys, argv):
     assert not transport.calls
 
 
-def test_description_file_and_avatar(monkeypatch, capsys):
+def test_description_file_and_avatar(tmp_path, monkeypatch, capsys):
     transport = setup_cli(monkeypatch)
-    temp_dir = Path(__file__).resolve().parents[2] / ".tmp"
-    temp_dir.mkdir(exist_ok=True)
-    file = temp_dir / f"instructions-{uuid.uuid4().hex}.txt"
+    file = tmp_path / "instructions.txt"
     file.write_text("new instructions", encoding="utf-8")
     assert (
         cli.main(
@@ -180,15 +176,13 @@ def test_description_file_and_avatar(monkeypatch, capsys):
     profile = transport.calls[-1][2]["profile"]
     assert isinstance(profile, dict) and profile["description"] == "new instructions"
     capsys.readouterr()
-    file.unlink()
-    avatar = temp_dir / f"avatar-{uuid.uuid4().hex}.png"
+    avatar = tmp_path / "avatar.png"
     avatar.write_bytes(b"\x89PNG\r\n\x1a\n")
     assert (
         cli.main(["bot", "new", "New", "--avatar", str(avatar), "--yes", "--json"]) == 0
     )
     assert transport.calls[-2][2]["avatarPngBase64"] == "iVBORw0KGgo="
     capsys.readouterr()
-    avatar.unlink()
 
 
 def test_delete_partial_and_confirmation(monkeypatch, capsys):

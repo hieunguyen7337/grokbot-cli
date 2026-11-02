@@ -414,3 +414,15 @@ def test_demo_and_parity():
         assert row["milestone"] in {"M1", "M3"}
         assert row["area"] in {"bots", "roster", "rooms"}
     assert index["seedConversationName"]["status"] == "done"
+
+
+@pytest.mark.parametrize("manage", [False, None])
+def test_nonowner_bot_that_cannot_be_managed_is_refused(manage):
+    transport = make_transport()
+    row: dict[str, object] = {"id": "server-a", "agentId": "a", "viewerIsOwner": False}
+    if manage is not None:
+        row["viewerCanManage"] = manage
+    transport.rpcs["ListGrokBotAgents"] = {"agents": [row]}
+    with pytest.raises(ValueError):
+        bots.update(transport, Bot("a", "Alpha"), name="Beta")
+    assert not any(call[1] == "UpdateGrokBotAgent" for call in transport.calls)
