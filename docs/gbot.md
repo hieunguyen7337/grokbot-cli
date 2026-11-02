@@ -346,17 +346,21 @@ An entry without files exits 1. JSON returns `saved` paths and `links` URLs.
 Submit a prompt without waiting for a reply.
 
 ```text
-usage: gbot send [-h] [--bot BOT] [--session ID] [--json] [--attach PATH] [text ...]
+usage: gbot send [-h] [--bot BOT] [--session ID] [--json] [--attach PATH]
+                 [--nonce ID] [--status NONCE]
+                 [text ...]
 
 positional arguments:
   text
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help      show this help message and exit
   --bot BOT
   --session ID
   --json
   --attach PATH
+  --nonce ID      Idempotency key; reuse it to retry safely
+  --status NONCE  Read a send's status instead of sending
 ```
 
 Example: `gbot send --bot "Research" "Prepare a summary"`.
@@ -369,6 +373,40 @@ Repeat `--attach PATH` to upload local files before sending; text may be omitted
 files are attached. JSON adds `attachments` with each file's `name` and committed `path`.
 Upload errors exit 1 without sending a prompt. Upload progress appears only on terminal stderr.
 Files must be nonempty and at most 25 MiB (200 MiB for mp4, mov, m4v, webm, mkv and avi).
+
+`--nonce ID` sets the client nonce, the send's idempotency key. Sending again with the same
+nonce is a safe retry: the server counts it once. Without `--nonce` a fresh key is made.
+Box bots get the gateway `sendPrompt`. Temporal bots get the backend `SendGrokBotUserMessage`
+with the nonce as `messageId`, and never fall back to the gateway. A temporal refusal exits 1
+with `Send refused: ...`.
+
+`--status NONCE` reads whether a send was accepted and sends nothing; it takes no text,
+`--attach` or `--nonce`, and honours `--session`. Box bots use the gateway
+`promptAcceptanceStatus` and the reply is shown as the gateway returns it. Temporal bots use
+`GetGrokBotSendStatus`; the reply is `{"outcome": "not-found"}`, `{"outcome": "unknown-durability"}`,
+or a record with `status` (accepted, rejected or pending), `acceptedAtMs` (0 if none),
+`echoEntryId` and `rejectionCode` (only for rejected). JSON: object with `bot`, `nonce` and `status`.
+
+## sessions
+
+List a bot's sessions, the routing contexts a prompt can go to (`ListGrokBotAgentSessions`).
+
+```text
+usage: gbot sessions [-h] [--bot BOT] [--json]
+
+options:
+  -h, --help  show this help message and exit
+  --bot BOT
+  --json
+```
+
+Example: `gbot sessions --bot "Research" --json`.
+
+`--json`: object with `bot` (id, name) and `sessions`, each with `agentId`, `sessionId` (empty
+for the default session), `kind` (main, slack_dm, slack_thread, dm, group, teams_dm,
+teams_thread, teams_group_chat or unspecified), `createdAtMs`, `updatedAtMs` and, when known,
+`lastActivityAtMs`. Text output shows kind, last activity (UTC) and session ID per line.
+Pass a `sessionId` to the send command's session flag. Read only; exit 0, or 1 on errors.
 
 ## status
 

@@ -13,6 +13,61 @@ COMMANDS = {
     "getAgentTranscriptTail": "object",
     "sendPrompt": "object",
     "getForeverBoxStatus": "object",
+    "promptAcceptanceStatus": "object",
+}
+RPCS = ("ListGrokBotAgentSessions",)
+
+_KIND_PREFIX = "GROK_BOT_AGENT_SESSION_KIND_"
+_KINDS = {
+    "MAIN",
+    "SLACK_DM",
+    "SLACK_THREAD",
+    "DM",
+    "GROUP",
+    "TEAMS_DM",
+    "TEAMS_THREAD",
+    "TEAMS_GROUP_CHAT",
+}
+
+# Invented placeholders for demos and tests.
+DEMO_COMMANDS: dict[str, object] = {
+    "promptAcceptanceStatus": lambda args: {
+        "accountSlot": "host",
+        "clientNonce": args.get("clientNonce"),
+        "agentId": args.get("agentId"),
+        "inputDigest": "",
+        "status": "accepted",
+        "acceptedAtMs": 1_800_000_000_000,
+        "echoEntryId": "demo-entry",
+        "rejectionCode": None,
+    },
+}
+DEMO_RPCS: dict[str, object] = {
+    "GetGrokBotSendStatus": {
+        "outcome": "GROK_BOT_SEND_STATUS_OUTCOME_FOUND",
+        "status": "GROK_BOT_SEND_STATUS_ACCEPTED",
+        "acceptedAtMs": "1800000000000",
+        "echoEntryId": "demo-entry",
+    },
+    "ListGrokBotAgentSessions": lambda args: {
+        "sessions": [
+            {
+                "agentId": args.get("agentId"),
+                "sessionId": "",
+                "kind": _KIND_PREFIX + "MAIN",
+                "createdAtMs": "1790000000000",
+                "updatedAtMs": "1800000000000",
+                "lastActivityAtMs": "1800000000000",
+            },
+            {
+                "agentId": args.get("agentId"),
+                "sessionId": "demo-dm-session",
+                "kind": _KIND_PREFIX + "DM",
+                "createdAtMs": "1795000000000",
+                "updatedAtMs": "1799000000000",
+            },
+        ]
+    },
 }
 
 
@@ -98,6 +153,66 @@ def send(
         bool(reply.get("accepted", False)) if isinstance(reply, Mapping) else False
     )
     return SendResult(accepted, nonce, max((e.seq for e in page.entries), default=None))
+
+
+def send_status(
+    transport: Transport,
+    bot_id: str,
+    nonce: str,
+    *,
+    session_id: str | None = None,
+    task_id: str | None = None,
+) -> dict[str, object]:
+    """Whether a send with this client nonce was accepted, without sending anything.
+
+    Box bots use the gateway's promptAcceptanceStatus and return its reply as is; temporal bots use
+    GetGrokBotSendStatus through the router, which returns `{"outcome": "not-found"}`,
+    `{"outcome": "unknown-durability"}` or the found record (docs/protocol-temporal.md section 1).
+    """
+    if not nonce.strip():
+        raise ValueError("A send status needs the send's nonce.")
+    args: dict[str, object] = {"agentId": bot_id, "clientNonce": nonce}
+    if session_id is not None:
+        args["sessionId"] = session_id
+    if task_id is not None:
+        args["taskId"] = task_id
+    reply = transport.command("promptAcceptanceStatus", args)
+    return (
+        dict(reply) if isinstance(reply, Mapping) else {"outcome": "unknown-durability"}
+    )
+
+
+def _ms(value: object) -> int:
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return 0
+
+
+def list_sessions(transport: Transport, bot_id: str) -> list[dict[str, object]]:
+    """A bot's sessions (routing contexts) from ListGrokBotAgentSessions, docs/protocol-tui.md section 4."""
+    reply = transport.rpc("ListGrokBotAgentSessions", {"agentId": bot_id})
+    rows = reply.get("sessions")
+    sessions: list[dict[str, object]] = []
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, Mapping):
+            continue
+        kind = row.get("kind")
+        short = kind.removeprefix(_KIND_PREFIX) if isinstance(kind, str) else ""
+        item: dict[str, object] = {
+            "agentId": row.get("agentId") or bot_id,
+            "sessionId": row.get("sessionId") or "",
+            "kind": short.lower() if short in _KINDS else "unspecified",
+            "createdAtMs": _ms(row.get("createdAtMs")),
+            "updatedAtMs": _ms(row.get("updatedAtMs")),
+        }
+        if "lastActivityAtMs" in row:
+            item["lastActivityAtMs"] = _ms(row["lastActivityAtMs"])
+        sessions.append(item)
+    return sessions
 
 
 def box_state(transport: Transport, bot_id: str) -> str | None:

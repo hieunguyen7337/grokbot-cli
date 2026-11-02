@@ -1,8 +1,10 @@
 """Desktop-compatible backend routing for known temporal bots."""
 
 import json
+import math
 import re
 import threading
+import time
 from collections.abc import Callable, Iterable, Mapping
 from typing import TYPE_CHECKING
 
@@ -70,7 +72,16 @@ ROUTES = {
     "startFreshConversation": ("StartFreshGrokBotConversation", ""),
     "rollBackConversation": ("RollBackGrokBotConversation", ""),
 }
-RPCS = tuple(dict.fromkeys(rpc for rpc, _ in ROUTES.values())) + ("DeleteGrokBotAgent",)
+# The send path: a temporal send goes only to the backend, a box send only to the gateway.
+SEND_ROUTES = {
+    "sendPrompt": "SendGrokBotUserMessage",
+    "promptAcceptanceStatus": "GetGrokBotSendStatus",
+}
+RPCS = (
+    tuple(dict.fromkeys(rpc for rpc, _ in ROUTES.values()))
+    + ("DeleteGrokBotAgent",)
+    + tuple(SEND_ROUTES.values())
+)
 _SESSION = {"voteFeedback", "reactToMessage", "resolveConnectorGrant"}
 _RUNS = {"interruptAgentRun", "startFreshConversation", "rollBackConversation"}
 _TASKS = {
@@ -176,6 +187,147 @@ def _reply(name: str, reply: Mapping[str, object]) -> object:
     return None
 
 
+def now_ms() -> int:
+    return int(time.time() * 1000)
+
+
+def _int64(value: object) -> str | None:
+    """A JSON number as a protobuf JSON int64 (a decimal string); anything else is dropped."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return str(math.floor(value))
+
+
+def _age(args: Mapping[str, object], now: int) -> dict[str, str]:
+    sent = args.get("firstSentAtMs")
+    if isinstance(sent, bool) or not isinstance(sent, int | float):
+        return {}
+    return {"firstSentAgeMs": str(max(0, math.floor(now - sent)))}
+
+
+def _nonce(args: Mapping[str, object]) -> str:
+    nonce = args.get("clientNonce")
+    if not isinstance(nonce, str) or not nonce:
+        raise ValueError("A temporal bot send needs a clientNonce.")
+    return nonce
+
+
+def _send_request(args: Mapping[str, object], now: int) -> dict[str, object]:
+    """sendPrompt arguments as SendGrokBotUserMessage (docs/protocol-temporal.md section 1).
+
+    source, initiator and sendSource are not forwarded: their protobuf enum names are not documented.
+    """
+    payload: dict[str, object] = {
+        "agentId": args.get("agentId"),
+        "messageId": _nonce(args),
+        "text": args.get("prompt", ""),
+        "sentAtMs": str(now),
+    }
+    for key in (
+        "richText",
+        "replyToId",
+        "replyQuote",
+        "traceparent",
+        "mcpConfigJson",
+        "taskId",
+        "language",
+    ):
+        if args.get(key) is not None:
+            payload[key] = args[key]
+    if args.get("isFork") is True:
+        payload["isFork"] = True
+    for key in ("attachmentPaths", "attachmentNames"):
+        value = args.get(key)
+        payload[key] = list(value) if isinstance(value, list | tuple) else []
+    for key in ("enterEpochMs", "composedAtMs"):
+        number = _int64(args.get(key))
+        if number is not None:
+            payload[key] = number
+    for key in ("sessionId", "machineId"):
+        if args.get(key):
+            payload[key] = args[key]
+    for key in ("onePasswordAppInstalled", "rendersMcpElicitationForms"):
+        if args.get(key) is True:
+            payload[key] = True
+    payload.update(_age(args, now))
+    return payload
+
+
+def _status_request(args: Mapping[str, object], now: int) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "agentId": args.get("agentId"),
+        "messageId": _nonce(args),
+    }
+    if args.get("sessionId"):
+        payload["sessionId"] = args["sessionId"]
+    if args.get("taskId") is not None:
+        payload["taskId"] = args["taskId"]
+    payload.update(_age(args, now))
+    return payload
+
+
+def _enum(value: object, *names: str) -> str | None:
+    """The documented short name an enum value ends with; the full protobuf prefix is not documented."""
+    if not isinstance(value, str):
+        return None
+    return next(
+        (name for name in names if value == name or value.endswith("_" + name)), None
+    )
+
+
+def _enums(reply: Mapping[str, object]) -> list[str]:
+    return [
+        value
+        for value in reply.values()
+        if isinstance(value, str) and re.fullmatch(r"[A-Z][A-Z0-9_]*", value)
+    ]
+
+
+def _send_reply(reply: Mapping[str, object]) -> dict[str, object]:
+    refusal = reply.get("refusal")
+    if isinstance(refusal, Mapping):
+        detail = f"Send refused: {refusal.get('failureCode') or 'unknown'}"
+        if refusal.get("message"):
+            detail += f": {refusal['message']}"
+        raise ValueError(detail)  # noqa: TRY004 - a refusal is a service error
+    values = _enums(reply)
+    if any(_enum(v, "ACCEPTED_BOX", "ACCEPTED_TEMPORAL", "DUPLICATE") for v in values):
+        return {"accepted": True}
+    delivery = next((v for v in values if _enum(v, "REFUSED")), None)
+    if delivery is None:
+        named = reply.get("delivery")
+        delivery = named if isinstance(named, str) and named else "unknown delivery"
+    raise ValueError(f"Send refused: {delivery}")
+
+
+def _status_reply(
+    reply: Mapping[str, object], args: Mapping[str, object]
+) -> dict[str, object]:
+    outcome = reply.get("outcome")
+    if _enum(outcome, "NOT_FOUND"):
+        return {"outcome": "not-found"}
+    nested = reply.get("record")
+    record = nested if isinstance(nested, Mapping) else reply
+    status = _enum(record.get("status"), "ACCEPTED", "REJECTED", "PENDING")
+    if not _enum(outcome, "FOUND") or status is None:
+        return {"outcome": "unknown-durability"}
+    status = status.lower()
+    echo = record.get("echoEntryId")
+    code = record.get("rejectionCode")
+    return {
+        "accountSlot": "host",
+        "clientNonce": args.get("clientNonce"),
+        "agentId": args.get("agentId"),
+        "inputDigest": "",
+        "status": status,
+        "acceptedAtMs": _number(record.get("acceptedAtMs")),
+        "echoEntryId": echo if isinstance(echo, str) and echo else None,
+        "rejectionCode": code
+        if status == "rejected" and isinstance(code, str) and code
+        else None,
+    }
+
+
 class Router:
     """Transport wrapper; only explicit temporal routes use backend twins."""
 
@@ -205,6 +357,14 @@ class Router:
             and any(self.harness.temporal(identity) for identity in ids)
         ):
             return self._delete(ids)
+        if name in SEND_ROUTES and self.harness.temporal(sent.get("agentId")):
+            now = now_ms()
+            if name == "sendPrompt":
+                return _send_reply(
+                    self.rpc(SEND_ROUTES[name], _send_request(sent, now))
+                )
+            payload = _status_request(sent, now)
+            return _status_reply(self.rpc(SEND_ROUTES[name], payload), sent)
         if name in ROUTES and self.harness.temporal(
             sent.get("agentId", sent.get("id"))
         ):
