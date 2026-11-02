@@ -141,13 +141,9 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
     if action == "edit" and args.description_file is not None:
         description = args.description_file.read_text(encoding="utf-8")
     png = None
-    if action == "new" and args.avatar is not None:
-        png = args.avatar.read_bytes()
-        if not png.startswith(b"\x89PNG\r\n\x1a\n"):
-            raise ValueError("Avatar must be a PNG file.")
     if action == "edit" and args.clear_avatar and args.avatar is not None:
         raise ValueError("Choose either --avatar or --clear-avatar.")
-    if action == "edit" and args.avatar is not None:
+    if action in {"new", "edit"} and args.avatar is not None:
         png = args.avatar.read_bytes()
         if not png.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValueError("Avatar must be a PNG file.")
