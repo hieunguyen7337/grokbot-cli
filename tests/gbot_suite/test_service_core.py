@@ -17,6 +17,19 @@ def bots_by_name() -> dict[str, Bot]:
     return {bot.name: bot for bot in load_fake().roster()}
 
 
+@pytest.mark.parametrize("value", [True, "waiting", 0, "", [], {}, None, False])
+def test_awaiting_flag_matches_card_discovery(value):
+    from gbot.service.cards import waiting
+    from gbot.service.models import Awaiting
+
+    row = {"id": "b", "name": "B", "awaitingUserResponse": value}
+    bot = Bot.from_row(row)
+    assert bot is not None
+    expected = value is not None and value is not False
+    assert waiting(row) is expected
+    assert bot.awaiting == (Awaiting("awaiting", None, None) if expected else None)
+
+
 def test_roster_rows_parse_state():
     bots = bots_by_name()
     assert len(bots) == 8

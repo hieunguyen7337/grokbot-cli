@@ -55,6 +55,59 @@ async def wait_until(pilot, condition, message: str) -> None:
         await pilot.pause()
 
 
+@pytest.mark.parametrize("finish_first", [False, True])
+def test_reinstall_replaces_sweep(home_env, finish_first):
+
+    async def exercise():
+        service = sweep_service(1)
+        original = service.pending
+        entered = [threading.Event(), threading.Event()]
+        release = [threading.Event(), threading.Event()]
+        calls = 0
+
+        def pending(
+            bot_ids=None, *, bots=None, recent_pages=None, waiting_in_full=True
+        ):
+            nonlocal calls
+            index = calls
+            calls += 1
+            entered[index].set()
+            assert release[index].wait(5)
+            return call_original(original, bot_ids, bots, recent_pages, waiting_in_full)
+
+        service.pending = pending
+        app = GbotApp(service, animate=False)
+        try:
+            async with app.run_test() as pilot:
+                await wait_until(pilot, entered[0].is_set, "the first sweep")
+                old_worker = next(w for w in app.workers if w.group == "card-sweep")
+                old_sweep = app._sweep
+                if finish_first:
+                    release[0].set()
+                    await wait_until(pilot, lambda: app.settled, "the first completion")
+                app._install(service.roster())
+                assert not app.settled
+                await wait_until(pilot, entered[1].is_set, "the replacement sweep")
+                if not finish_first:
+                    assert old_worker.is_cancelled
+                assert not app._install_sweep_cards("idle-00", [], [], old_sweep)
+                release[0].set()
+                await wait_until(
+                    pilot, lambda: old_worker.is_finished, "the old worker"
+                )
+                assert not app.settled
+                assert app.load_stage is not None
+                release[1].set()
+                await wait_until(
+                    pilot, lambda: app.settled, "the replacement completion"
+                )
+        finally:
+            for event in release:
+                event.set()
+
+    asyncio.run(exercise())
+
+
 def test_card_checks_run_in_parallel(home_env):
     async def exercise():
         service = sweep_service(12)
