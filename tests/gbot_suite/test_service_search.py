@@ -99,3 +99,19 @@ def test_places_area_mapping_outcomes_and_raw_card():
     }
     result = search.places_area(fake, "bot", "entry", 0)
     assert result.outcome == "rate_limited" and result.card is None
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        {"outcome": "FOUND"},
+        {"outcome": "FOUND", "placesCardJson": ""},
+        {"outcome": "FOUND", "placesCardJson": 5},
+        {"outcome": "FOUND", "placesCardJson": "[1]"},
+        {"outcome": "FOUND", "placesCardJson": "{"},
+    ],
+)
+def test_places_found_without_a_card_is_failed(reply):
+    transport = FakeTransport(rpcs={"SearchGrokBotPlacesArea": reply})
+    result = search.places_area(transport, "a", "e", 0)
+    assert (result.outcome, result.card) == ("failed", None)

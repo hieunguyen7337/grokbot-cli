@@ -228,6 +228,7 @@ def places_area(
         else:
             if isinstance(parsed, Mapping):
                 card = dict(parsed)
-            else:
-                outcome = "failed"
+    # A found outcome without a readable card is no result an agent can use.
+    if outcome == "found" and card is None:
+        outcome = "failed"
     return PlacesAreaSearch(outcome, card)

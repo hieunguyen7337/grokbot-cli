@@ -263,6 +263,8 @@ def get_version(
     *,
     client: httpx.Client | None = None,
 ) -> dict[str, object]:
+    if not 0 <= version <= 0xFFFFFFFF:
+        raise ValueError("Template version must be between 0 and 4294967295.")
     reply = _record(
         transport.command(
             "getBotTemplateVersion", {"shareId": share_id, "version": version}
@@ -284,7 +286,7 @@ def get_version(
                 response = client.get(download_url, timeout=30)
             response.raise_for_status()
             decoded = json.loads(response.content)
-        except (httpx.HTTPError, ValueError, TypeError):
+        except (httpx.HTTPError, httpx.InvalidURL, ValueError, TypeError):
             raise ValueError(
                 "Could not download or decode the template recipe."
             ) from None

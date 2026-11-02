@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 
 from gbot.service import templates as t
@@ -53,7 +54,6 @@ def test_marketplace_paging():
 
 
 def test_template_version_decodes_recipe_without_exposing_download_url():
-    import httpx
 
     fake = FakeTransport(
         commands={
@@ -192,3 +192,27 @@ def test_read_only_routing_and_demo():
     assert all(
         e["status"] == "done" for e in entries if e["name"] in {*t.COMMANDS, *t.RPCS}
     )
+
+
+@pytest.mark.parametrize(
+    "link", ["https://[::1/x", "https://a.example/\x00", "http://a.example/x"]
+)
+def test_version_bad_link_is_a_plain_error(link):
+    fake = FakeTransport({"getBotTemplateVersion": {"version": 2, "blobGetUrl": link}})
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=b"{}")
+        )
+    )
+    with pytest.raises(ValueError) as caught:
+        t.get_version(fake, "share", 2, client=client)
+    assert "example" not in str(caught.value)
+    client.close()
+
+
+@pytest.mark.parametrize("version", [-1, 2**32])
+def test_version_out_of_range_is_refused(version):
+    fake = FakeTransport({"getBotTemplateVersion": {}})
+    with pytest.raises(ValueError):
+        t.get_version(fake, "share", version)
+    assert fake.calls == []
