@@ -24,13 +24,21 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "onepassword-sync",
     ):
         action.add_argument("--" + flag, action="store_true")
-    for flag in ("update-login", "delete", "revoke-passkey", "onepassword-disconnect"):
+    for flag in (
+        "update-login",
+        "delete",
+        "revoke-passkey",
+        "onepassword-disconnect",
+        "nudge-access-request",
+    ):
         action.add_argument("--" + flag, metavar="ID")
     # None means "not given": an update keeps the login's current value.
     parser.add_argument("--title")
     parser.add_argument("--username")
     parser.add_argument("--site", action="append")
     parser.add_argument("--notes")
+    parser.add_argument("--agent-id")
+    parser.add_argument("--entry-id")
     parser.add_argument("--yes", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.set_defaults(func=run)
@@ -91,11 +99,28 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         or args.revoke_passkey
         or args.onepassword_sync
         or args.onepassword_disconnect
+        or args.nudge_access_request
     )
+    if args.nudge_access_request == "":
+        raise ValueError("Give the access request ID.")
     if mutation and not args.yes:
         raise ValueError("Re-run with --yes to confirm")
     transport = ContextTransport(ctx)
-    if args.add_login or args.update_login:
+    if args.nudge_access_request:
+        if not args.agent_id or not args.entry_id:
+            raise ValueError(
+                "--nudge-access-request requires --agent-id and --entry-id."
+            )
+        nudged = vault.nudge_onepassword_access_request(
+            transport, args.nudge_access_request, args.agent_id, args.entry_id
+        )
+        ctx.out.write(
+            {"nudged": nudged},
+            "Access request reminder sent."
+            if nudged
+            else "Access request reminder was not sent.",
+        )
+    elif args.add_login or args.update_login:
         _save(args, transport)
         ctx.out.write({"saved": True}, "Login saved.")
     elif args.delete:

@@ -140,3 +140,49 @@ def test_edit_without_changes_sends_nothing(monkeypatch, capsys):
     assert cli.main(["skills", "Alpha", "--edit", "demo-notes", "--yes"]) != 0
     assert "Nothing to change" in capsys.readouterr().err
     assert transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "argv,rpc",
+    [
+        (
+            ["--add-agent-skill", "--name", "Added", "--body", "-"],
+            "AddGrokBotAgentSkill",
+        ),
+        (
+            ["--update-agent-skill", "Existing", "--body", "-"],
+            "UpdateGrokBotAgentSkill",
+        ),
+        (["--remove-agent-skill", "Existing"], "RemoveGrokBotAgentSkill"),
+    ],
+)
+def test_agent_skill_rpc_verbs(monkeypatch, capsys, argv, rpc):
+    transport = setup_cli(monkeypatch)
+    monkeypatch.setattr("sys.stdin", io.StringIO("skill content"))
+    assert cli.main(["skills", "Alpha", *argv, "--yes", "--json"]) == 0
+    output = capsys.readouterr().out
+    assert json.loads(output) == {"response_fields": sorted(w.DEMO_RPCS[rpc])}
+    assert transport.calls[-1][1] == rpc
+    assert "skill content" not in output
+
+
+@pytest.mark.parametrize(
+    "argv", [["--remove-agent-skill", ""], ["--update-agent-skill", "", "--body", "-"]]
+)
+def test_blank_agent_skill_name_is_refused(monkeypatch, capsys, argv):
+    transport = setup_cli(monkeypatch)
+    monkeypatch.setattr("sys.stdin", io.StringIO("skill content"))
+    assert cli.main(["skills", "Alpha", *argv, "--yes", "--json"]) != 0
+    assert transport.calls == []
+
+
+def test_blank_agent_skill_name_is_refused_by_the_service():
+    transport = FakeTransport({}, w.DEMO_RPCS)
+    for call in (
+        lambda: w.remove_agent_skill(transport, "bot", name=" "),
+        lambda: w.update_agent_skill(transport, "bot", name="", content="x"),
+        lambda: w.add_agent_skill(transport, "bot", name="", content="x"),
+    ):
+        with pytest.raises(ValueError, match="blank"):
+            call()
+    assert transport.calls == []

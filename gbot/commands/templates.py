@@ -16,9 +16,11 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--yes", action="store_true")
     parser.set_defaults(func=run)
     children = parser.add_subparsers(dest="template_action")
-    for name in ("show", "use"):
+    for name in ("show", "use", "version"):
         child = children.add_parser(name)
         child.add_argument("share_id", metavar="SHARE_ID")
+        if name == "version":
+            child.add_argument("version", type=int)
         child.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
         if name == "use":
             child.add_argument("--yes", action="store_true", default=argparse.SUPPRESS)
@@ -39,6 +41,14 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         return 0
     if args.template_action == "use":
         _require_confirmation(args.yes)
+    if args.template_action == "version":
+        result = templates.get_version(transport, args.share_id, args.version)
+        ctx.out.write(
+            result,
+            f"{result['share_id']} version {result['version']}\n"
+            f"Download link: {'available' if result['download_link_exists'] else 'none'}",
+        )
+        return 0
     detail = templates.details(transport, args.share_id)
     if args.template_action == "show":
         ctx.out.write(

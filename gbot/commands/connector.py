@@ -1,7 +1,9 @@
 """Inspect or change one account connector."""
 
 import argparse
+import json
 import sys
+from collections.abc import Mapping
 from dataclasses import asdict
 
 from gbot.commands.approvals import _confirm, _require_confirmation
@@ -27,6 +29,9 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         parser.add_argument(f"--{option}")
     parser.add_argument("--rename-account", nargs=2, metavar=("OLD", "NEW"))
     parser.add_argument("--shared-spaces", choices=("on", "off"))
+    parser.add_argument("--user-settings", action="store_true")
+    parser.add_argument("--set-user-settings", metavar="JSON")
+    parser.add_argument("--keep-disabled-tools", action="store_true")
     for option in (
         "remove",
         "sign-in",
@@ -40,7 +45,12 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(func=run)
 
 
+def _no_constant(name: str) -> object:
+    raise ValueError(f"{name} is not valid JSON.")
+
+
 def run(args: argparse.Namespace, ctx: Context) -> int:
+    settings_action = args.user_settings or args.set_user_settings is not None
     mutations = (
         args.disable_tool,
         args.enable_tool,
@@ -57,7 +67,20 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         or args.remove
         or args.sign_in
         or args.clear_always_allow
+        or args.set_user_settings is not None
     )
+    if args.user_settings and args.set_user_settings is not None:
+        raise ValueError("Use either --user-settings or --set-user-settings.")
+    if args.keep_disabled_tools and args.set_user_settings is None:
+        raise ValueError("Use --keep-disabled-tools with --set-user-settings.")
+    if settings_action and (
+        args.server
+        or any(v is not None for v in mutations)
+        or args.remove
+        or args.sign_in
+        or args.clear_always_allow
+    ):
+        raise ValueError("User MCP settings are account-wide and run by themselves.")
     if (args.account or args.reauth or args.no_browser) and not args.sign_in:
         raise ValueError("Use --account, --reauth and --no-browser with --sign-in.")
     if args.clear_always_allow and (
@@ -67,8 +90,22 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         or args.sign_in
     ):
         raise ValueError("Use --clear-always-allow by itself.")
-    if not args.server and not args.clear_always_allow:
+    if not args.server and not args.clear_always_allow and not settings_action:
         raise ValueError("Specify SERVER or --clear-always-allow.")
+    settings_payload: dict[str, object] | None = None
+    if args.set_user_settings is not None:
+        raw_settings = (
+            sys.stdin.read()
+            if args.set_user_settings == "-"
+            else args.set_user_settings
+        )
+        try:
+            decoded = json.loads(raw_settings, parse_constant=_no_constant)
+        except (json.JSONDecodeError, ValueError) as error:
+            raise ValueError("--set-user-settings requires a JSON object.") from error
+        if not isinstance(decoded, Mapping):
+            raise ValueError("--set-user-settings requires a JSON object.")
+        settings_payload = dict(decoded)
     if mutation:
         _require_confirmation(args.yes)
     permission = None
@@ -81,6 +118,29 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         if label is not None:
             service.normalize(label)
     transport = ContextTransport(ctx)
+    if args.user_settings:
+        settings = service.user_mcp_settings(transport)
+        ctx.out.write(
+            {"settings": asdict(settings) if settings is not None else None},
+            json.dumps(settings.raw, indent=2)
+            if settings is not None
+            else "No user MCP settings were returned.",
+        )
+        return 0
+    if settings_payload is not None:
+        _confirm(args.yes, json_mode=args.json)
+        settings = service.set_user_mcp_settings(
+            transport,
+            settings_payload,
+            keep_disabled_tools=args.keep_disabled_tools,
+        )
+        ctx.out.write(
+            {"settings": asdict(settings) if settings is not None else None},
+            "User MCP settings updated."
+            if settings is not None
+            else "User MCP settings were updated; the server returned no settings.",
+        )
+        return 0
     if args.clear_always_allow:
         _confirm(args.yes, json_mode=args.json)
         count = service.clear_always_allow(transport)

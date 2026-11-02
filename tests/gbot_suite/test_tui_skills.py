@@ -92,6 +92,30 @@ def test_groups_detail_events_and_snapshots(tmp_path, monkeypatch):
     asyncio.run(exercise())
 
 
+def test_agent_skill_rpc_slash_confirmation(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path))
+    body = tmp_path / "agent-skill.md"
+    body.write_text("Demo RPC skill content", encoding="utf-8")
+
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await session(app, pilot)
+            run(ctx, f"/skills add-agent-skill Demo {body}")
+            await settle(app, pilot)
+            await accept(app, pilot)
+            assert calls(service, "AddGrokBotAgentSkill") == [
+                {
+                    "agentId": "demo-helper",
+                    "name": "Demo",
+                    "content": "Demo RPC skill content",
+                }
+            ]
+
+    asyncio.run(exercise())
+
+
 @pytest.mark.parametrize("edit", [False, True])
 def test_forms_confirm_cancel_and_read_only(tmp_path, monkeypatch, edit):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
@@ -305,3 +329,17 @@ def test_read_only_all_actions_and_error_notice(tmp_path, monkeypatch):
             assert notices[-1][1] == {"severity": "error", "markup": False}
 
     asyncio.run(exercise())
+
+
+def test_skill_slash_arguments_keep_windows_backslashes():
+    from gbot.tui.slash.skills import _split_args
+
+    assert _split_args(r"add-agent-skill Demo C:\Users\me\skill.md") == [
+        "add-agent-skill",
+        "Demo",
+        r"C:\Users\me\skill.md",
+    ]
+    assert _split_args(r'add-agent-skill "C:\My Skills\a.md"') == [
+        "add-agent-skill",
+        r"C:\My Skills\a.md",
+    ]

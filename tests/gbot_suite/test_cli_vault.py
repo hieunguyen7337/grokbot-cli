@@ -119,3 +119,51 @@ def test_getpass_warning(monkeypatch, capsys):
     monkeypatch.setattr(getpass, "getpass", unsafe)
     assert cli.main(["vault", "--add-login", "--title", "T", "--yes"]) == 1
     assert "cannot hide input" in capsys.readouterr().err
+
+
+def test_nudge_access_request_needs_yes_and_returns_boolean(monkeypatch, capsys):
+    t = setup_cli(monkeypatch)
+    assert (
+        cli.main(
+            [
+                "vault",
+                "--nudge-access-request",
+                "request",
+                "--agent-id",
+                "agent",
+                "--entry-id",
+                "entry",
+            ]
+        )
+        == 1
+    )
+    assert "--yes" in capsys.readouterr().err and not t.calls
+    assert (
+        cli.main(
+            [
+                "vault",
+                "--nudge-access-request",
+                "request",
+                "--agent-id",
+                "agent",
+                "--entry-id",
+                "entry",
+                "--yes",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out) == {"nudged": True}
+    assert t.calls[-1][2] == {
+        "accessRequestId": "request",
+        "agentId": "agent",
+        "entryId": "entry",
+    }
+
+
+def test_blank_nudge_request_id_is_refused(monkeypatch, capsys):
+    transport = setup_cli(monkeypatch)
+    argv = ["vault", "--nudge-access-request", "", "--agent-id", "a", "--entry-id", "e"]
+    assert cli.main([*argv, "--json"]) != 0
+    assert transport.calls == []

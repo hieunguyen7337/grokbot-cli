@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 
 from gbot.service import templates as t
@@ -50,6 +51,35 @@ def test_marketplace_paging():
         {"category": "Work", "pageSize": 100, "pageToken": ""},
         {"category": "Work", "pageSize": 100, "pageToken": "next"},
     ]
+
+
+def test_template_version_decodes_recipe_without_exposing_download_url():
+
+    fake = FakeTransport(
+        commands={
+            "getBotTemplateVersion": {
+                "active": True,
+                "blobGetUrl": "https://secret.example/download?token=secret",
+                "createdAtMs": 123,
+                "visibility": "PUBLIC",
+            }
+        }
+    )
+    fake_blob = b'{"profile":{"name":"Helper","avatarShape":"blob","avatarColor":"blue","description":"  Useful  "},"memory":"notes","skills":["skill-a"],"routines":[],"plugins":[]}'
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=fake_blob)
+        )
+    )
+    result = t.get_version(fake, "share", 2, client=client)
+    assert result["recipe"]["profile"]["name"] == "Helper"  # type: ignore[index]
+    assert result["download_link_exists"] is True
+    assert "secret" not in json.dumps(result)
+    assert result["created_at_ms"] == 123
+    assert fake.calls == [
+        ("command", "getBotTemplateVersion", {"shareId": "share", "version": 2})
+    ]
+    client.close()
 
 
 def test_marketplace_page_limit():
@@ -162,3 +192,27 @@ def test_read_only_routing_and_demo():
     assert all(
         e["status"] == "done" for e in entries if e["name"] in {*t.COMMANDS, *t.RPCS}
     )
+
+
+@pytest.mark.parametrize(
+    "link", ["https://[::1/x", "https://a.example/\x00", "http://a.example/x"]
+)
+def test_version_bad_link_is_a_plain_error(link):
+    fake = FakeTransport({"getBotTemplateVersion": {"version": 2, "blobGetUrl": link}})
+    client = httpx.Client(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=b"{}")
+        )
+    )
+    with pytest.raises(ValueError) as caught:
+        t.get_version(fake, "share", 2, client=client)
+    assert "example" not in str(caught.value)
+    client.close()
+
+
+@pytest.mark.parametrize("version", [-1, 2**32])
+def test_version_out_of_range_is_refused(version):
+    fake = FakeTransport({"getBotTemplateVersion": {}})
+    with pytest.raises(ValueError):
+        t.get_version(fake, "share", version)
+    assert fake.calls == []

@@ -8,7 +8,7 @@ from typing import Literal
 
 from . import conversation
 from .demo import demo_state
-from .models import Bot
+from .models import Bot, Entry
 from .transport import Transport
 
 COMMANDS = {
@@ -20,6 +20,9 @@ COMMANDS = {
     "setAgentNotifyOnUpdates": "object",
     "setAgentDraftingDisabled": "object",
     "readMainAgentContext": "object",
+    "countAgents": "none",
+    "openAgent": "object",
+    "seedConversationName": "object",
 }
 RPCS = (
     "GetGrokBotRuntimeCapabilities",
@@ -28,6 +31,8 @@ RPCS = (
     "SetGrokBotMainAgent",
     "EnsureGrokBotDefaultMainAgent",
     "ListGrokBotAgents",
+    "SetGrokBotAgentAllowCollaboratorAutomationCreation",
+    "UpdateGrokBotAgent",
 )
 SHAPES = (
     "blob",
@@ -255,6 +260,8 @@ def update(
     title: str | None = None,
     shape: str | None = None,
     color: str | None = None,
+    avatar_data_url: str | None = None,
+    clear_avatar: bool = False,
 ) -> Bot | None:
     if (shape is not None and shape not in SHAPES) or (
         color is not None and color not in COLORS
@@ -272,9 +279,24 @@ def update(
         if value is not None and value != old:
             profile[key] = value
             edited.append(key)
-    if not edited:
+    if not edited and avatar_data_url is None and not clear_avatar:
         raise ValueError("No bot fields changed.")
+    rows = server_bots(transport)
+    server = rows.get(bot.id)
+    if server is not None and not server.owner:
+        if not server.server_id or server.can_manage is not True:
+            raise ValueError(_OWNER_ERROR)
+        args: dict[str, object] = {"id": server.server_id, "partialUpdate": True}
+        args.update({key: profile[key] for key in edited})
+        if avatar_data_url is not None:
+            args["avatarDataUrl"] = avatar_data_url
+        elif clear_avatar:
+            args["clearAvatar"] = {}
+        reply = transport.rpc("UpdateGrokBotAgent", args)
+        return server_bot(_record(reply.get("agent")))
     _owned(transport, [bot.id])
+    if avatar_data_url is not None or clear_avatar:
+        raise ValueError("Avatar image changes are available only for managed bots.")
     return Bot.from_row(
         transport.command(
             "updateAgent", {"id": bot.id, "profile": profile, "editedFields": edited}
@@ -358,6 +380,46 @@ def main_context(transport: Transport, bot_id: str) -> MainContext:
     return MainContext(_text(data.get("agentId")), data.get("isWorking") is True)
 
 
+def count_agents(transport: Transport) -> int:
+    value = transport.command("countAgents")
+    if type(value) is not int:
+        raise TypeError("Invalid bot count from gateway.")
+    return value
+
+
+def open_agent(transport: Transport, bot_id: str) -> tuple[Entry, ...]:
+    value = transport.command("openAgent", {"id": bot_id})
+    if not isinstance(value, list):
+        raise TypeError("Invalid transcript entries from gateway.")
+    return tuple(
+        entry for row in value if (entry := Entry.from_raw(bot_id, row)) is not None
+    )
+
+
+def seed_conversation_name(
+    transport: Transport, bot_id: str, prompt: str
+) -> Mapping[str, object]:
+    if not prompt.strip():
+        raise ValueError("Naming prompt must not be empty.")
+    reply = _record(
+        transport.command("seedConversationName", {"id": bot_id, "prompt": prompt})
+    )
+    if reply.get("outcome") not in ("kept", "seeded"):
+        raise ValueError("Invalid conversation name result from gateway.")
+    return reply
+
+
+def set_collaborator_automation_creation(
+    transport: Transport, bot_id: str, allow: bool
+) -> Mapping[str, object]:
+    reply = transport.rpc(
+        "SetGrokBotAgentAllowCollaboratorAutomationCreation",
+        {"id": bot_id, "allow": allow},
+    )
+    policy = reply.get("routinePolicy")
+    return policy if isinstance(policy, Mapping) else reply
+
+
 DEMO_COMMANDS: dict[str, object] = {name: None for name in COMMANDS}
 DEMO_COMMANDS.update(
     {
@@ -366,6 +428,17 @@ DEMO_COMMANDS.update(
         "updateAgent": {"id": "demo-helper", "name": "Helper"},
         "deleteAgents": {"transcript": [], "refusedAgentIds": [], "failedAgentIds": []},
         "readMainAgentContext": {"agentId": "demo-helper", "isWorking": False},
+        "countAgents": 3,
+        "openAgent": [
+            {
+                "id": "t1u",
+                "seq": 1,
+                "kind": "message",
+                "role": "user",
+                "content": "Hello",
+            }
+        ],
+        "seedConversationName": {"agent": None, "outcome": "kept"},
     }
 )
 DEMO_RPCS: dict[str, object] = {name: {} for name in RPCS}
@@ -383,5 +456,12 @@ DEMO_RPCS.update(
                 "harness": "temporal",
             }
         },
+        "SetGrokBotAgentAllowCollaboratorAutomationCreation": {
+            "routinePolicy": {
+                "allowCollaboratorCreation": False,
+                "viewerAllowedActions": [],
+            }
+        },
+        "UpdateGrokBotAgent": {"agent": {"agentId": "demo-helper", "name": "Helper"}},
     }
 )

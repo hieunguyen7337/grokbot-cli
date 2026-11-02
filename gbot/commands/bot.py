@@ -1,6 +1,7 @@
 """Manage bots and their sidebar settings."""
 
 import argparse
+import base64
 import sys
 from dataclasses import asdict
 from pathlib import Path
@@ -18,6 +19,10 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("bot", help="Create, edit and configure bots")
     actions = parser.add_subparsers(dest="bot_action", required=True)
     for action in (
+        "count",
+        "open",
+        "seed-name",
+        "collaborator-automation",
         "new",
         "edit",
         "delete",
@@ -40,6 +45,18 @@ def register(subparsers: argparse._SubParsersAction) -> None:
             command.add_argument("--avatar", type=Path, metavar="FILE.png")
         elif action == "delete":
             command.add_argument("bot", nargs="+", metavar="BOT")
+        elif action in {
+            "count",
+        }:
+            pass
+        elif action == "seed-name":
+            command.add_argument("bot")
+            command.add_argument("prompt", nargs="+")
+        elif action == "collaborator-automation":
+            command.add_argument("bot")
+            command.add_argument("value", choices=("on", "off"))
+        elif action == "open":
+            command.add_argument("bot")
         else:
             command.add_argument(
                 "bot", nargs="?" if action == "main" else None, metavar="BOT"
@@ -52,6 +69,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
                 description.add_argument(
                     "--description-file", type=Path, metavar="FILE"
                 )
+                command.add_argument("--avatar", type=Path, metavar="FILE.png")
+                command.add_argument("--clear-avatar", action="store_true")
             elif action in {"notify", "drafting"}:
                 command.add_argument("value", choices=("on", "off"))
 
@@ -66,7 +85,11 @@ def _selected(ctx: Context, transport: ContextTransport, requested: str) -> Bot:
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
     action = args.bot_action
-    reading = action == "info" or (action == "main" and args.bot is None)
+    if action == "count":
+        count = bots.count_agents(ContextTransport(ctx))
+        ctx.out.write({"count": count}, str(count))
+        return 0
+    reading = action in {"info", "open"} or (action == "main" and args.bot is None)
     if not reading:
         _require_confirmation(args.yes)
     transport = ContextTransport(ctx)
@@ -109,11 +132,18 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         }
         ctx.out.write(data, "\n".join(f"{key}: {value}" for key, value in data.items()))
         return 0
+    if action == "open":
+        entries = bots.open_agent(transport, selected[0].id)
+        data = [dict(entry.raw) for entry in entries]
+        ctx.out.write(data, "\n".join(entry.text for entry in entries))
+        return 0
     description = getattr(args, "description", None)
     if action == "edit" and args.description_file is not None:
         description = args.description_file.read_text(encoding="utf-8")
     png = None
-    if action == "new" and args.avatar is not None:
+    if action == "edit" and args.clear_avatar and args.avatar is not None:
+        raise ValueError("Choose either --avatar or --clear-avatar.")
+    if action in {"new", "edit"} and args.avatar is not None:
         png = args.avatar.read_bytes()
         if not png.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValueError("Avatar must be a PNG file.")
@@ -130,6 +160,10 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         ):
             if value is not None:
                 print(f"{key}: {value}", file=preview)
+        if args.avatar is not None:
+            print(f"avatar: {args.avatar}", file=preview)
+        elif args.clear_avatar:
+            print("clear avatar", file=preview)
     elif action in {"notify", "drafting"}:
         print(args.value, file=preview)
     _confirm(args.yes, json_mode=ctx.out.json_mode)
@@ -163,6 +197,12 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
                 name=args.name,
                 title=args.title,
                 description=description,
+                avatar_data_url=(
+                    "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+                    if action == "edit" and args.avatar is not None and png is not None
+                    else None
+                ),
+                clear_avatar=action == "edit" and args.clear_avatar,
             )
             result["bot"] = dict(updated.raw) if updated else None
         elif action in {"hide", "show"}:
@@ -177,5 +217,15 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         elif action == "main":
             bots.set_main(transport, bot.id)
             result["main_agent_id"] = bot.id
+        elif action == "seed-name":
+            result["result"] = dict(
+                bots.seed_conversation_name(transport, bot.id, " ".join(args.prompt))
+            )
+        elif action == "collaborator-automation":
+            result["routine_policy"] = dict(
+                bots.set_collaborator_automation_creation(
+                    transport, bot.id, args.value == "on"
+                )
+            )
     ctx.out.write(result, "Done.")
     return 0

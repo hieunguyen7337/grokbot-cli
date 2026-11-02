@@ -18,6 +18,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     action = parser.add_mutually_exclusive_group()
     for flag in ("catalog", "new"):
         action.add_argument(f"--{flag}", action="store_true")
+    action.add_argument("--add-agent-skill", action="store_true")
     for flag in (
         "show",
         "edit",
@@ -26,6 +27,8 @@ def register(subparsers: argparse._SubParsersAction) -> None:
         "import-file",
         "import-url",
         "install",
+        "update-agent-skill",
+        "remove-agent-skill",
     ):
         action.add_argument(f"--{flag}")
     for flag in ("name", "description", "body", "schedule", "search"):
@@ -43,6 +46,8 @@ def _body(path: str) -> str:
 
 
 def run(args: argparse.Namespace, ctx: Context) -> int:
+    if "" in (args.update_agent_skill, args.remove_agent_skill):
+        raise ValueError("Give the agent skill's name.")
     mutation = bool(
         args.new
         or args.edit
@@ -51,6 +56,9 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         or args.import_file
         or args.import_url
         or args.install
+        or args.add_agent_skill
+        or args.update_agent_skill
+        or args.remove_agent_skill
     )
     if args.catalog and args.bot:
         raise ValueError("Use --catalog without BOT.")
@@ -60,14 +68,22 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         raise ValueError("--search requires --catalog.")
     if any(
         value is not None for value in (args.description, args.body, args.schedule)
-    ) and not (args.new or args.edit):
+    ) and not (
+        args.new or args.edit or args.add_agent_skill or args.update_agent_skill
+    ):
         raise ValueError(
             "--description, --body and --schedule require --new or --edit."
         )
     if args.name is not None and not (
-        args.new or args.edit or args.import_file or args.import_url
+        args.new
+        or args.edit
+        or args.import_file
+        or args.import_url
+        or args.add_agent_skill
     ):
         raise ValueError("--name requires --new, --edit or an import.")
+    if args.schedule is not None and (args.add_agent_skill or args.update_agent_skill):
+        raise ValueError("--schedule applies only to workflow skills.")
     if (args.unschedule or args.pause or args.resume) and not args.edit:
         raise ValueError("--unschedule, --pause and --resume require --edit.")
     if args.unschedule and args.schedule is not None:
@@ -113,7 +129,41 @@ def run(args: argparse.Namespace, ctx: Context) -> int:
         return 0
     bot_id, _ = resolve_bot(ctx, args.bot)
     result: object
-    if args.new:
+    if args.add_agent_skill or args.update_agent_skill or args.remove_agent_skill:
+        if args.remove_agent_skill:
+            if args.body is not None or args.description is not None:
+                raise ValueError(
+                    "--remove-agent-skill does not take --body or --description."
+                )
+            reply = service.remove_agent_skill(
+                transport, bot_id, name=args.remove_agent_skill
+            )
+        else:
+            if args.body is None:
+                raise ValueError("Agent skill writes require --body FILE|-.")
+            body = _body(args.body)
+            if args.update_agent_skill:
+                if args.name is not None:
+                    raise ValueError("--update-agent-skill uses its NAME argument.")
+                reply = service.update_agent_skill(
+                    transport,
+                    bot_id,
+                    name=args.update_agent_skill,
+                    content=body,
+                    description=args.description,
+                )
+            else:
+                reply = service.add_agent_skill(
+                    transport,
+                    bot_id,
+                    name=args.name,
+                    description=args.description,
+                    content=body,
+                )
+        keys = sorted(reply)
+        ctx.out.write({"response_fields": keys}, "Skill request completed.")
+        return 0
+    elif args.new:
         if args.name is None or args.description is None or args.body is None:
             raise ValueError("--new requires --name, --description and --body.")
         rows = service.create(

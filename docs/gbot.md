@@ -41,6 +41,10 @@ Create, edit, delete and configure bots. BOT accepts a name or ID.
 
 ```text
 gbot bot new NAME
+gbot bot count
+gbot bot open BOT
+gbot bot seed-name BOT PROMPT [PROMPT...]
+gbot bot collaborator-automation BOT on|off
 gbot bot edit BOT
 gbot bot delete BOT [BOT...]
 gbot bot hide BOT
@@ -52,7 +56,10 @@ gbot bot info BOT
 ```
 
 See [bot management](tui/bots.md#cli-options-and-results) for action options,
-confirmation, JSON results, avatar input and instruction files. Mutations need
+confirmation, JSON results, avatar input and instruction files. `count` returns
+the gateway roster count; `open` returns transcript entries and marks the bot read.
+`seed-name` asks the gateway to keep or seed a conversation name. The collaborator
+automation switch returns the backend routine policy. Mutations need
 confirmation; deletion removes conversation history and protects the current main
 bot. Drafting off disables drafting. Main without BOT reads the server pointer;
 info displays identity, ownership, sidebar settings, drafting, voice and main state.
@@ -508,6 +515,9 @@ gbot automations BOT --on ID [--yes] [--json]
 gbot automations BOT --off ID [--yes] [--json]
 gbot automations BOT --delete ID [--yes] [--json]
 gbot automations BOT --run ID [--no-wait] [--yes] [--json]
+gbot automations BOT --routines [--time-zone Z] [--json]
+gbot automations BOT --routine-on AUTOMATION_ID [--time-zone Z] [--yes] [--json]
+gbot automations BOT --routine-off AUTOMATION_ID [--time-zone Z] [--yes] [--json]
 ```
 
 Omit BOT to list the account. `--show` includes prompt and recent runs.
@@ -519,6 +529,11 @@ reads stdin. `--on ID` and `--off ID` enable or disable; `--delete` removes.
 `--no-wait` returns after the request. Every mutation requires terminal
 confirmation or `--yes`. `--help` shows command help.
 
+`--routines` lists backend agent routines for one bot. Use the exact
+`automationId` with `--routine-on` or `--routine-off`; those changes require
+confirmation. `--time-zone` is sent to the routine RPC. If the account returns
+NotFound for routine listing, the command reports `supported: false` and exits 2.
+
 Schedules support numeric five-field cron, lists/ranges/steps, macros
 `@hourly`, `@daily`, `@midnight`, `@weekly`, `@monthly`, `@yearly`, `@annually`,
 and `@every` durations (ms/s/m/h/d, including combined/decimal durations and
@@ -529,7 +544,10 @@ on edit; change their trigger in the Grok Bot app.
 `--json`: listing returns record objects including bot_id, server_id and
 allowed actions. Show returns one record; create/edit/toggle/delete return
 an automations object; run returns id, status and the new run (or null).
-Exit 0 on success, 1 on error, cancellation or run-start timeout.
+Routine listing returns supported, routines, routine_policy and raw. Opaque
+routine and policy message fields remain raw mappings. Routine toggles return
+the optional routine mapping. Exit 0 on success, 1 on error, cancellation or
+run-start timeout, and 2 when routine listing is unsupported for the account.
 
 ## plugins
 
@@ -597,6 +615,9 @@ gbot skills BOT --run SKILL [--yes] [--json]
 gbot skills BOT --import-file PATH [--name N] [--yes] [--json]
 gbot skills BOT --import-url URL [--name N] [--yes] [--json]
 gbot skills BOT --install CATALOG_ID [--yes] [--json]
+gbot skills BOT --add-agent-skill [--name N] --body FILE|- [--description D] --yes [--json]
+gbot skills BOT --update-agent-skill NAME --body FILE|- [--description D] --yes [--json]
+gbot skills BOT --remove-agent-skill NAME --yes [--json]
 gbot skills --catalog [--search TEXT] [--json]
 ```
 
@@ -620,6 +641,10 @@ Imports/install return added_count and workflow_count, based only on before/afte
 workflow counts. Catalog returns id, name, description, publisher and install_kind.
 `--help` (or `-h`) shows command usage.
 
+The `*-agent-skill` verbs call the agent-skill RPCs directly. Add and update read
+content from a UTF-8 file or stdin. Their service replies stay raw; CLI JSON reports
+only reply field names because plugin messages are not projected here.
+
 ## connector
 
 ```text
@@ -629,6 +654,8 @@ gbot connector SERVER [--disable-tool T] [--enable-tool T] [--permission T=LEVEL
   [--remove-account KEY] [--remove] [--shared-spaces on|off] [--yes] [--json]
 gbot connector SERVER --sign-in [--account KEY] [--reauth] [--no-browser] [--yes] [--json]
 gbot connector --clear-always-allow [--yes] [--json]
+gbot connector --user-settings [--json]
+gbot connector --set-user-settings JSON|- [--keep-disabled-tools] [--yes] [--json]
 ```
 
 Show one connector's status, account, transport, tools, permission defaults,
@@ -646,6 +673,12 @@ one, and `--remove` removes the connector. Team connectors are managed by admins
 `--shared-spaces on|off` controls availability in group chats.
 `--clear-always-allow` forgets all saved always-allow answers for connector tools.
 
+`--user-settings` reads account-wide MCP settings. `--set-user-settings JSON`
+replaces them; pass `-` to read a JSON object from stdin. This write requires
+terminal confirmation or `--yes`. `--keep-disabled-tools` sends the documented
+keepDisabledTools flag. Settings and unknown nested message fields are retained
+as mappings in JSON output.
+
 Every mutation requires terminal confirmation or `--yes`. `--sign-in` starts
 browser authentication, optionally for `--account KEY`; `--reauth` forces a new
 sign-in. The handoff link prints only on stderr. `--no-browser` displays the
@@ -659,18 +692,35 @@ to open the Grok Bot app, finish there: gbot cannot receive that callback.
 ```text
 gbot templates [--category C] [--json]
 gbot templates show SHARE_ID [--json]
+gbot templates version SHARE_ID VERSION [--json]
 gbot templates use SHARE_ID [--yes] [--json]
 ```
 
 Browse featured and public listings, inspect a template's summary and active
 version, or create a bot from that version. Import requires terminal confirmation
 or `--yes`. When the server has not handled setup, finish the recipe in the Grok
-Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetched.
+Bot app. Browsing stops after 20 pages of 100 listings. The `version` action
+fetches and decodes the recipe. It reports whether a download link exists but
+never returns the link itself.
 
 `--json`: Browsing returns featured_listings, listings and category_order; show
 returns template, expected_active_version and creator_display_name; use returns
-bot, setup_handled_by_server and note. Publishing a template and listing a bot in
-the marketplace are under `gbot publish`.
+bot, setup_handled_by_server and note; version returns the profile, memory,
+skills, routines, plugins, share URL, publication state and version metadata.
+Publishing a template and listing a bot in the marketplace are under `gbot publish`.
+
+## search
+
+```text
+gbot search places AGENT_ID ENTRY_ID CARD_INDEX [--south-west LAT,LONG]
+  [--north-east LAT,LONG] [--session-id ID] [--language LANG] [--json]
+```
+
+Searches a places card in a map area through the backend. Bounds are optional;
+coordinates use latitude,longitude order. Outcomes are `found`, `empty`,
+`unavailable`, `failed`, `rate_limited`, `not_searchable` and `unspecified`.
+Exit code 0 means found or empty; other outcomes return 2. A found card is
+returned as a raw mapping because its fields are not fully documented.
 
 ## secrets
 
@@ -680,6 +730,7 @@ gbot secrets --computer [--json]
 gbot secrets BOT --set NAME [--description TEXT] --yes [--json]
 gbot secrets BOT --delete NAME --yes [--json]
 gbot secrets BOT --copy-from-computer NAME [NAME ...] --yes [--json]
+gbot secrets --set-computer FILE|- --yes [--json]
 ```
 
 List a bot's secret names, descriptions and update times, or the secret names on
@@ -689,6 +740,9 @@ not a terminal; no option takes a value. Names are uppercased and must start wit
 a letter; reserved names such as PATH and prefixes such as CURSOR_ are refused.
 Values are at most 4,096 bytes. Changes need `--yes`, and only the bot's owner can
 change its secrets.
+`--set-computer` replaces the full computer secret map with a UTF-8 JSON object of
+string values read from FILE or stdin. Values never come from argv or appear in
+output or errors; output contains only status and secret names.
 
 `--json`: List rows have name, description and updated_at_ms; `--computer` returns
 keys, card_keys, is_applied and last_applied_at_ms; `--set` and `--delete` return
@@ -739,6 +793,7 @@ gbot vault --revoke-passkey ID --yes [--json]
 gbot vault --onepassword [--json]
 gbot vault --onepassword-sync --yes [--json]
 gbot vault --onepassword-disconnect ID --yes [--json]
+gbot vault --nudge-access-request ID --agent-id ID --entry-id ID --yes [--json]
 ```
 
 List the account's vault logins, cards and contacts (cards as brand and last four
@@ -749,6 +804,8 @@ the login's current values. Sites must be hosts or HTTP URLs. Also lists saved
 payment methods, lists and revokes passkeys, and shows, syncs or disconnects
 1Password connections. Changes need `--yes`. Cards, payment methods, passkey
 enrollment and connecting 1Password stay in the Grok Bot app.
+`--nudge-access-request` sends a reminder for a pending 1Password access request;
+its JSON result is `nudged`.
 
 `--json`: Items have id, kind, title, username, notes, sites, created_at_ms,
 updated_at_ms, card, contact and managed_by; the other options return their

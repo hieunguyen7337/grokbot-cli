@@ -1,5 +1,6 @@
 """Bot skills and the shared skill catalog."""
 
+import shlex
 from collections.abc import Callable, Mapping
 
 from rich.text import Text
@@ -400,7 +401,57 @@ class _Catalog(ListPanel):
         super().on_key(event)
 
 
+def _split_args(args: str) -> list[str]:
+    """Split slash arguments on spaces, honouring quotes but keeping backslashes (Windows paths)."""
+    lexer = shlex.shlex(args, posix=True)
+    lexer.whitespace_split = True
+    lexer.escape = ""
+    return list(lexer)
+
+
 def skills(ctx: SlashContext, args: str) -> None:
+    if args.strip():
+        bot = ctx.app.state.bots.get(ctx.bot_id or "")
+        if bot is None:
+            raise ValueError("Select a bot to manage its skills.")
+        parts = _split_args(args)
+        if not parts or parts[0] not in {
+            "add-agent-skill",
+            "update-agent-skill",
+            "remove-agent-skill",
+        }:
+            raise ValueError(
+                "Use /skills add-agent-skill [NAME] FILE, update-agent-skill NAME FILE, or remove-agent-skill NAME."
+            )
+        if not _writable(ctx):
+            return
+        action, *values = parts
+        if action == "remove-agent-skill" and len(values) == 1:
+            name = values[0]
+            operation = lambda: service.remove_agent_skill(
+                ctx.service.transport, bot.id, name=name
+            )
+        elif action == "add-agent-skill" and len(values) in {1, 2}:
+            name, path = (None, values[0]) if len(values) == 1 else values
+            content = file_path(path).read_text(encoding="utf-8")
+            operation = lambda: service.add_agent_skill(
+                ctx.service.transport, bot.id, name=name, content=content
+            )
+        elif action == "update-agent-skill" and len(values) == 2:
+            name, path = values
+            content = file_path(path).read_text(encoding="utf-8")
+            operation = lambda: service.update_agent_skill(
+                ctx.service.transport, bot.id, name=name, content=content
+            )
+        else:
+            raise ValueError("Invalid skill arguments. See /skills help.")
+        _confirm(
+            ctx,
+            f"Confirm {action.replace('-', ' ')}?",
+            operation,
+            lambda: ctx.app.notify("Skill request completed", markup=False),
+        )
+        return
     ctx.app.push_screen(_Skills(ctx))
 
 

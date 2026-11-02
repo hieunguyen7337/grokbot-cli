@@ -160,3 +160,29 @@ def test_empty_identity_box_metadata_and_carry_outcomes():
         (str(i), outcome) for i, outcome in enumerate(outcomes)
     ]
     assert fake.calls[-1][2] == {"serverId": "backend", "names": ["TOKEN"]}
+
+
+def test_set_box_secrets_sends_replacement_map_and_returns_status_only():
+    fake = transport()
+    values = {"DEMO_TOKEN": "fake-placeholder", "DEMO_KEY": "another-placeholder"}
+    fake.commands["setBoxSecrets"] = {
+        "keys": ["DEMO_TOKEN", "DEMO_KEY"],
+        "isApplied": True,
+        "lastAppliedAtMs": 123,
+    }
+    result = secrets.set_box_secrets(fake, values)
+    assert result == secrets.BoxSecrets(("DEMO_TOKEN", "DEMO_KEY"), (), True, 123)
+    assert fake.calls[-1] == ("command", "setBoxSecrets", {"secrets": values})
+    assert "fake-placeholder" not in repr(result)
+    fake.commands["setBoxSecrets"] = RuntimeError("another-placeholder")
+    with pytest.raises(ValueError) as error:
+        secrets.set_box_secrets(fake, values)
+    assert "another-placeholder" not in str(error.value)
+
+
+def test_set_box_secrets_refuses_names_that_normalize_alike():
+    fake = FakeTransport(secrets.DEMO_COMMANDS, {})
+    with pytest.raises(ValueError, match="more than once") as raised:
+        secrets.set_box_secrets(fake, {"token": "one", " TOKEN": "two"})
+    assert "one" not in str(raised.value) and "two" not in str(raised.value)
+    assert fake.calls == []

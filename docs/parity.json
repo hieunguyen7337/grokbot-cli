@@ -154,8 +154,8 @@
       "args": [],
       "area": "roster",
       "milestone": "M1",
-      "status": "planned",
-      "note": "triage (a): The no-argument request and numeric reply are documented and can be tested with a fake roster count."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "createAgent",
@@ -658,8 +658,8 @@
       ],
       "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The normalized recipe reply and download mapping are documented, so fake transport and recipe data can cover it."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "getBoxSecretsStatus",
@@ -1087,8 +1087,8 @@
       ],
       "area": "roster",
       "milestone": "M1",
-      "status": "planned",
-      "note": "triage (a): The documented entry-array reply can reuse transcript parsing and fake the read acknowledgement side effect."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "openAgentTail",
@@ -1567,8 +1567,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The prompt request and kept-or-seeded reply are documented and can reuse bot parsing with fakes."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "sendDraft",
@@ -1742,8 +1742,8 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The replacement map and status-only reply are documented, so fake values can test writes without revealing stored secrets."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "setCloudAgentAppSecrets",
@@ -2254,8 +2254,8 @@
       ],
       "area": "plugins-skills",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The skill fields and response envelope are documented and fit the existing skill and plugin projections."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "AddGrokBotRoomPeople",
@@ -4551,8 +4551,8 @@
       "args": [],
       "area": "connectors",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The empty request and settings fields are documented and fit the existing connector settings service."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "GetGrokBotUserRuntimeSettings",
@@ -4905,8 +4905,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): Routine fields and policy are documented, so fakes can cover both routine lists and the observed unsupported-account error."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "ListGrokBotAgentSessions",
@@ -5476,8 +5476,8 @@
       ],
       "area": "secrets-vault",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The access-request reminder takes three references and returns a boolean, so fake success and failure need no credentials."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "OpenGrokBotUserComputerRequest",
@@ -5917,8 +5917,8 @@
       ],
       "area": "plugins-skills",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The skill-name request and plugin response envelope are documented and can use fake skill removal results."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "RemoveGrokBotRoomPeople",
@@ -6288,8 +6288,8 @@
       ],
       "area": "search",
       "milestone": "M2",
-      "status": "planned",
-      "note": "triage (a): The map bounds, card context and outcome enum are documented and can be tested with fake places cards."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "SendGrokBotAgentMessage",
@@ -6382,8 +6382,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The boolean update and routine-policy reply are documented and can be tested with fake permission results."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "SetGrokBotAgentAutomationEnabled",
@@ -6465,8 +6465,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The routine toggle request and optional routine reply are documented and can reuse fake automation permission cases."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "SetGrokBotAgentTaskPinned",
@@ -6638,8 +6638,8 @@
       ],
       "area": "connectors",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The settings update and keep-disabled-tools flag are documented and can be tested alongside connector settings reads."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "ShareGrokBotAgentInPlace",
@@ -6952,8 +6952,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The partial identity update and avatar oneof are documented, so fakes can cover managed nonowner rows."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "UpdateGrokBotAgentAccess",
@@ -7006,8 +7006,8 @@
       ],
       "area": "plugins-skills",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The skill-name and content update plus response envelope are documented and fit existing skill projections."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "UpdateGrokBotChangelogInternal",
