@@ -1,4 +1,6 @@
 import json
+import uuid
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -122,9 +124,52 @@ def test_info(monkeypatch, capsys):
     assert "description: instructions" in capsys.readouterr().out
 
 
-def test_description_file_and_avatar(tmp_path, monkeypatch, capsys):
+def test_roster_and_policy_verbs(monkeypatch, capsys):
     transport = setup_cli(monkeypatch)
-    file = tmp_path / "instructions.txt"
+    transport.commands["countAgents"] = 2
+    assert cli.main(["bot", "count", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == {"count": 2}
+    transport.commands["openAgent"] = [
+        {"id": "t1u", "seq": 1, "kind": "message", "content": "Hello"}
+    ]
+    assert cli.main(["bot", "open", "Alpha", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)[0]["content"] == "Hello"
+    transport.commands["seedConversationName"] = {"outcome": "seeded", "agent": None}
+    assert (
+        cli.main(["bot", "seed-name", "Alpha", "name", "this", "--yes", "--json"]) == 0
+    )
+    assert json.loads(capsys.readouterr().out)["result"]["outcome"] == "seeded"
+    transport.rpcs["SetGrokBotAgentAllowCollaboratorAutomationCreation"] = {
+        "routinePolicy": {"allowCollaboratorCreation": True, "viewerAllowedActions": []}
+    }
+    assert (
+        cli.main(["bot", "collaborator-automation", "Alpha", "on", "--yes", "--json"])
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)["routine_policy"][
+        "allowCollaboratorCreation"
+    ]
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["seed-name", "Alpha", "name", "this"],
+        ["collaborator-automation", "Alpha", "on"],
+    ],
+)
+def test_new_bot_writes_require_yes(monkeypatch, capsys, argv):
+    transport = setup_cli(monkeypatch)
+    assert cli.main(["bot", *argv, "--json"]) == 1
+    assert "--yes" in json.loads(capsys.readouterr().err)["error"]["message"]
+    assert not transport.calls
+
+
+def test_description_file_and_avatar(monkeypatch, capsys):
+    transport = setup_cli(monkeypatch)
+    temp_dir = Path(__file__).resolve().parents[2] / ".tmp"
+    temp_dir.mkdir(exist_ok=True)
+    file = temp_dir / f"instructions-{uuid.uuid4().hex}.txt"
     file.write_text("new instructions", encoding="utf-8")
     assert (
         cli.main(
@@ -135,13 +180,15 @@ def test_description_file_and_avatar(tmp_path, monkeypatch, capsys):
     profile = transport.calls[-1][2]["profile"]
     assert isinstance(profile, dict) and profile["description"] == "new instructions"
     capsys.readouterr()
-    avatar = tmp_path / "avatar.png"
+    file.unlink()
+    avatar = temp_dir / f"avatar-{uuid.uuid4().hex}.png"
     avatar.write_bytes(b"\x89PNG\r\n\x1a\n")
     assert (
         cli.main(["bot", "new", "New", "--avatar", str(avatar), "--yes", "--json"]) == 0
     )
     assert transport.calls[-2][2]["avatarPngBase64"] == "iVBORw0KGgo="
     capsys.readouterr()
+    avatar.unlink()
 
 
 def test_delete_partial_and_confirmation(monkeypatch, capsys):
