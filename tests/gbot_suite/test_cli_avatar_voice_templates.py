@@ -54,6 +54,33 @@ def test_read_json(monkeypatch, capsys, argv, key):
     assert key in result
 
 
+def test_template_version_json_hides_download_link(monkeypatch, capsys):
+    fake = setup_cli(monkeypatch)
+    fake.commands["getBotTemplateVersion"] = {
+        "active": True,
+        "version": 2,
+        "blobGetUrl": "https://secret.example/file?token=private",
+        "recipe": {
+            "profile": {"name": "Helper", "description": "  useful  "},
+            "memory": "notes",
+            "skills": [],
+            "routines": [],
+            "plugins": [],
+        },
+    }
+    assert cli.main(["templates", "version", "share", "2", "--json"]) == 0
+    output = capsys.readouterr().out
+    result = json.loads(output)
+    assert result["download_link_exists"] is True
+    assert result["recipe"]["profile"]["description"] == "useful"
+    assert "secret" not in output and "private" not in output
+    assert fake.calls[-1] == (
+        "command",
+        "getBotTemplateVersion",
+        {"shareId": "share", "version": 2},
+    )
+
+
 @pytest.mark.parametrize(
     "argv",
     [

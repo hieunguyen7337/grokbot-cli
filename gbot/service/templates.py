@@ -5,6 +5,8 @@ import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+import httpx
+
 from groken.client import ConnectError
 
 from . import conversation
@@ -15,6 +17,7 @@ COMMANDS = {
     "createAgentFromTemplate": "object",
     "getBotTemplateForSourceAgent": "object",
     "getBotTemplateExportPolicy": "none",
+    "getBotTemplateVersion": "object",
 }
 RPCS = (
     "ListPublicGrokBotMarketplaceListings",
@@ -31,6 +34,24 @@ _TEMPLATE = {
     "avatarColor": "blue",
 }
 DEMO_COMMANDS = {
+    "getBotTemplateVersion": {
+        "active": True,
+        "version": 1,
+        "shareUrl": "https://example.invalid/template/demo-template",
+        "recipe": {
+            "profile": {
+                "name": "Helper",
+                "avatarShape": "blob",
+                "avatarColor": "blue",
+                "description": "A helpful bot",
+            },
+            "memory": "",
+            "skills": [],
+            "routines": [],
+            "plugins": [],
+        },
+        "downloadLinkExists": True,
+    },
     "createAgentFromTemplate": lambda args: {
         "agent": {"id": args["agentId"], "name": args["name"], "harness": "box"},
         "setup": {"kind": "unavailable"},
@@ -233,3 +254,69 @@ def export_policy(transport: Transport) -> object:
     ):
         return transport.rpc("GetGrokBotTemplateExportPolicy", {})
     return transport.command("getBotTemplateExportPolicy")
+
+
+def get_version(
+    transport: Transport,
+    share_id: str,
+    version: int,
+    *,
+    client: httpx.Client | None = None,
+) -> dict[str, object]:
+    reply = _record(
+        transport.command(
+            "getBotTemplateVersion", {"shareId": share_id, "version": version}
+        )
+    )
+    recipe_value = reply.get("recipe")
+    download_url = reply.get("blobGetUrl")
+    if isinstance(recipe_value, Mapping):
+        recipe = dict(recipe_value)
+    else:
+        if not isinstance(download_url, str) or not download_url.strip():
+            raise ValueError("Template version has no recipe download link.")
+        if not download_url.startswith("https://"):
+            raise ValueError("Template version download link must use HTTPS.")
+        try:
+            if client is None:
+                response = httpx.get(download_url, timeout=30)
+            else:
+                response = client.get(download_url, timeout=30)
+            response.raise_for_status()
+            decoded = json.loads(response.content)
+        except (httpx.HTTPError, ValueError, TypeError):
+            raise ValueError(
+                "Could not download or decode the template recipe."
+            ) from None
+        if not isinstance(decoded, Mapping):
+            raise TypeError("Template recipe must be a JSON object.")
+        recipe = dict(decoded)
+    profile = _record(recipe.get("profile"))
+    result: dict[str, object] = {
+        "share_id": share_id,
+        "recipe": {
+            "profile": {
+                "name": _text(profile.get("name")),
+                "avatar_shape": _text(profile.get("avatarShape")),
+                "avatar_color": _text(profile.get("avatarColor")),
+                "description": _text(profile.get("description")).strip(),
+            },
+            "memory": recipe.get("memory", ""),
+            "skills": recipe.get("skills", []),
+            "routines": recipe.get("routines", []),
+            "plugins": recipe.get("plugins", []),
+        },
+        "share_url": _text(reply.get("shareUrl")),
+        "download_link_exists": bool(download_url)
+        or reply.get("downloadLinkExists") is True,
+        "published": reply.get("active") is True,
+        "version": version,
+        "active": reply.get("active") is True,
+    }
+    created = reply.get("createdAtMs")
+    if type(created) is int and created > 0:
+        result["created_at_ms"] = created
+    visibility = reply.get("visibility")
+    if visibility in ("PUBLIC", "TEAM", "public", "team"):
+        result["visibility"] = str(visibility).lower()
+    return result

@@ -1,5 +1,6 @@
 """Search gateway messages and media."""
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, cast
@@ -9,6 +10,7 @@ from .transport import Transport
 COMMANDS = dict.fromkeys(
     ("searchAgents", "searchMedia", "searchConversation"), "object"
 )
+RPCS = ("SearchGrokBotPlacesArea",)
 DEMO_COMMANDS = {
     "searchAgents": [
         {
@@ -33,6 +35,12 @@ DEMO_COMMANDS = {
         }
     ],
     "searchConversation": {"matches": [], "isComplete": True},
+}
+DEMO_RPCS = {
+    "SearchGrokBotPlacesArea": {
+        "outcome": "EMPTY",
+        "placesCardJson": "",
+    }
 }
 
 
@@ -71,6 +79,12 @@ class ConversationMatch:
 class ConversationSearch:
     matches: list[ConversationMatch]
     complete: bool
+
+
+@dataclass(frozen=True)
+class PlacesAreaSearch:
+    outcome: str
+    card: Mapping[str, object] | None
 
 
 def _number(value: object) -> bool:
@@ -164,3 +178,56 @@ def conversation(
                 )
             )
     return ConversationSearch(matches, reply["isComplete"])
+
+
+def places_area(
+    transport: Transport,
+    agent_id: str,
+    entry_id: str,
+    card_index: int,
+    *,
+    south_west: Mapping[str, object] | None = None,
+    north_east: Mapping[str, object] | None = None,
+    language: str = "",
+    session_id: str = "",
+) -> PlacesAreaSearch:
+    area: dict[str, object] = {}
+    if south_west is not None:
+        area["southWest"] = dict(south_west)
+    if north_east is not None:
+        area["northEast"] = dict(north_east)
+    payload: dict[str, object] = {
+        "agentId": agent_id,
+        "entryId": entry_id,
+        "sessionId": session_id,
+        "language": language,
+        "cardIndex": card_index,
+    }
+    if south_west is not None or north_east is not None:
+        payload["area"] = area
+    reply = transport.rpc("SearchGrokBotPlacesArea", payload)
+    raw_outcome = reply.get("outcome", "UNSPECIFIED")
+    outcome = str(raw_outcome).strip().lower()
+    if outcome not in {
+        "found",
+        "empty",
+        "unavailable",
+        "failed",
+        "rate_limited",
+        "not_searchable",
+        "unspecified",
+    }:
+        outcome = "failed"
+    card = None
+    card_json = reply.get("placesCardJson")
+    if outcome == "found" and isinstance(card_json, str) and card_json:
+        try:
+            parsed = json.loads(card_json)
+        except (ValueError, TypeError):
+            outcome = "failed"
+        else:
+            if isinstance(parsed, Mapping):
+                card = dict(parsed)
+            else:
+                outcome = "failed"
+    return PlacesAreaSearch(outcome, card)

@@ -53,3 +53,49 @@ def test_search_shapes_and_parsing():
         transport.commands[command] = None
         with pytest.raises(ValueError, match=f"Unexpected reply to {command}"):
             call()
+
+
+def test_places_area_mapping_outcomes_and_raw_card():
+    fake = FakeTransport(
+        rpcs={
+            "SearchGrokBotPlacesArea": {
+                "outcome": "FOUND",
+                "placesCardJson": '{"title":"Nearby","futureField":true}',
+            }
+        }
+    )
+    result = search.places_area(
+        fake,
+        "bot",
+        "entry",
+        3,
+        south_west={"latitude": 1.0, "longitude": 2.0},
+        north_east={"latitude": 4.0, "longitude": 5.0},
+        language="en",
+        session_id="session",
+    )
+    assert result.outcome == "found"
+    assert result.card == {"title": "Nearby", "futureField": True}
+    assert fake.calls == [
+        (
+            "rpc",
+            "SearchGrokBotPlacesArea",
+            {
+                "agentId": "bot",
+                "entryId": "entry",
+                "sessionId": "session",
+                "language": "en",
+                "cardIndex": 3,
+                "area": {
+                    "southWest": {"latitude": 1.0, "longitude": 2.0},
+                    "northEast": {"latitude": 4.0, "longitude": 5.0},
+                },
+            },
+        )
+    ]
+    fake.rpcs["SearchGrokBotPlacesArea"] = {
+        "outcome": "RATE_LIMITED",
+        "placesCardJson": "",
+    }
+    result = search.places_area(fake, "bot", "entry", 0)
+    assert result.outcome == "rate_limited" and result.card is None

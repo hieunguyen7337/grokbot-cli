@@ -658,8 +658,8 @@
       ],
       "area": "templates",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The normalized recipe reply and download mapping are documented, so fake transport and recipe data can cover it."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "getBoxSecretsStatus",
@@ -6288,8 +6288,8 @@
       ],
       "area": "search",
       "milestone": "M2",
-      "status": "planned",
-      "note": "triage (a): The map bounds, card context and outcome enum are documented and can be tested with fake places cards."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "SendGrokBotAgentMessage",

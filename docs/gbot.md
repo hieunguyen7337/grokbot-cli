@@ -659,18 +659,35 @@ to open the Grok Bot app, finish there: gbot cannot receive that callback.
 ```text
 gbot templates [--category C] [--json]
 gbot templates show SHARE_ID [--json]
+gbot templates version SHARE_ID VERSION [--json]
 gbot templates use SHARE_ID [--yes] [--json]
 ```
 
 Browse featured and public listings, inspect a template's summary and active
 version, or create a bot from that version. Import requires terminal confirmation
 or `--yes`. When the server has not handled setup, finish the recipe in the Grok
-Bot app. Browsing stops after 20 pages of 100 listings. No recipe blob is fetched.
+Bot app. Browsing stops after 20 pages of 100 listings. The `version` action
+fetches and decodes the recipe. It reports whether a download link exists but
+never returns the link itself.
 
 `--json`: Browsing returns featured_listings, listings and category_order; show
 returns template, expected_active_version and creator_display_name; use returns
-bot, setup_handled_by_server and note. Publishing a template and listing a bot in
-the marketplace are under `gbot publish`.
+bot, setup_handled_by_server and note; version returns the profile, memory,
+skills, routines, plugins, share URL, publication state and version metadata.
+Publishing a template and listing a bot in the marketplace are under `gbot publish`.
+
+## search
+
+```text
+gbot search places AGENT_ID ENTRY_ID CARD_INDEX [--south-west LAT,LONG]
+  [--north-east LAT,LONG] [--session-id ID] [--language LANG] [--json]
+```
+
+Searches a places card in a map area through the backend. Bounds are optional;
+coordinates use latitude,longitude order. Outcomes are `found`, `empty`,
+`unavailable`, `failed`, `rate_limited`, `not_searchable` and `unspecified`.
+Exit code 0 means found or empty; other outcomes return 2. A found card is
+returned as a raw mapping because its fields are not fully documented.
 
 ## secrets
 
