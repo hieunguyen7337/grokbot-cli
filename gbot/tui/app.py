@@ -487,7 +487,8 @@ class GbotApp(App[None]):
             self.call_from_thread(self.bot_error, bot_id, error, notify=False)
 
     def _check_failed(self, sweep: _CardSweep, bot_id: str, error: Exception) -> None:
-        if self._service_closing:
+        # A replaced sweep reports nothing: the newer sweep owns the badges and the auth notice.
+        if self._service_closing or sweep is not self._sweep:
             return
         if isinstance(error, ConnectError) and error.status == 401:
             # One notice for the whole sweep; the other checks in flight end quietly.
