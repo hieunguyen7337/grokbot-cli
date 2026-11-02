@@ -154,8 +154,8 @@
       "args": [],
       "area": "roster",
       "milestone": "M1",
-      "status": "planned",
-      "note": "triage (a): The no-argument request and numeric reply are documented and can be tested with a fake roster count."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "createAgent",
@@ -1087,8 +1087,8 @@
       ],
       "area": "roster",
       "milestone": "M1",
-      "status": "planned",
-      "note": "triage (a): The documented entry-array reply can reuse transcript parsing and fake the read acknowledgement side effect."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "openAgentTail",
@@ -1567,8 +1567,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The prompt request and kept-or-seeded reply are documented and can reuse bot parsing with fakes."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "sendDraft",
@@ -6382,8 +6382,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The boolean update and routine-policy reply are documented and can be tested with fake permission results."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "SetGrokBotAgentAutomationEnabled",
@@ -6952,8 +6952,8 @@
       ],
       "area": "bots",
       "milestone": "M3",
-      "status": "planned",
-      "note": "triage (a): The partial identity update and avatar oneof are documented, so fakes can cover managed nonowner rows."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "UpdateGrokBotAgentAccess",

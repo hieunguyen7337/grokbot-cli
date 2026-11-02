@@ -41,6 +41,10 @@ Create, edit, delete and configure bots. BOT accepts a name or ID.
 
 ```text
 gbot bot new NAME
+gbot bot count
+gbot bot open BOT
+gbot bot seed-name BOT PROMPT [PROMPT...]
+gbot bot collaborator-automation BOT on|off
 gbot bot edit BOT
 gbot bot delete BOT [BOT...]
 gbot bot hide BOT
@@ -52,7 +56,10 @@ gbot bot info BOT
 ```
 
 See [bot management](tui/bots.md#cli-options-and-results) for action options,
-confirmation, JSON results, avatar input and instruction files. Mutations need
+confirmation, JSON results, avatar input and instruction files. `count` returns
+the gateway roster count; `open` returns transcript entries and marks the bot read.
+`seed-name` asks the gateway to keep or seed a conversation name. The collaborator
+automation switch returns the backend routine policy. Mutations need
 confirmation; deletion removes conversation history and protects the current main
 bot. Drafting off disables drafting. Main without BOT reads the server pointer;
 info displays identity, ownership, sidebar settings, drafting, voice and main state.

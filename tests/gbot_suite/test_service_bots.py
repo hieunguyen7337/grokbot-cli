@@ -314,6 +314,88 @@ def test_main_settings_and_context():
     assert transport.calls[-1] == ("command", "readMainAgentContext", {"id": "a"})
 
 
+def test_new_roster_and_identity_operations():
+    transport = make_transport()
+    transport.commands.update(
+        {
+            "countAgents": 4,
+            "openAgent": [{"id": "t1u", "seq": 1, "kind": "message", "content": "Hi"}],
+            "seedConversationName": {"agent": None, "outcome": "seeded"},
+        }
+    )
+    assert bots.count_agents(transport) == 4
+    entries = bots.open_agent(transport, "a")
+    assert entries[0].text == "Hi" and entries[0].bot_id == "a"
+    assert bots.seed_conversation_name(transport, "a", "name this") == {
+        "agent": None,
+        "outcome": "seeded",
+    }
+    assert transport.calls[-3:] == [
+        ("command", "countAgents", {}),
+        ("command", "openAgent", {"id": "a"}),
+        ("command", "seedConversationName", {"id": "a", "prompt": "name this"}),
+    ]
+    transport.rpcs["SetGrokBotAgentAllowCollaboratorAutomationCreation"] = {
+        "routinePolicy": {
+            "allowCollaboratorCreation": True,
+            "viewerAllowedActions": [1],
+        }
+    }
+    assert bots.set_collaborator_automation_creation(transport, "a", True) == {
+        "allowCollaboratorCreation": True,
+        "viewerAllowedActions": [1],
+    }
+    assert transport.calls[-1] == (
+        "rpc",
+        "SetGrokBotAgentAllowCollaboratorAutomationCreation",
+        {"id": "a", "allow": True},
+    )
+
+
+def test_managed_nonowner_identity_update_uses_backend_rpc():
+    transport = make_transport()
+    transport.rpcs["ListGrokBotAgents"] = {
+        "agents": [
+            {
+                "id": "server-a",
+                "agentId": "a",
+                "viewerIsOwner": False,
+                "viewerCanManage": True,
+            }
+        ]
+    }
+    transport.rpcs["UpdateGrokBotAgent"] = {
+        "agent": {
+            "id": "server-a",
+            "agentId": "a",
+            "name": "Beta",
+            "harness": "temporal",
+        }
+    }
+    assert bots.update(transport, Bot("a", "Alpha"), name="Beta") is not None
+    assert transport.calls[-1] == (
+        "rpc",
+        "UpdateGrokBotAgent",
+        {"id": "server-a", "partialUpdate": True, "name": "Beta"},
+    )
+    bots.update(
+        transport,
+        Bot("a", "Beta"),
+        avatar_data_url="data:image/png;base64,cG5n",
+    )
+    assert transport.calls[-1][2] == {
+        "id": "server-a",
+        "partialUpdate": True,
+        "avatarDataUrl": "data:image/png;base64,cG5n",
+    }
+    bots.update(transport, Bot("a", "Beta"), clear_avatar=True)
+    assert transport.calls[-1][2] == {
+        "id": "server-a",
+        "partialUpdate": True,
+        "clearAvatar": {},
+    }
+
+
 def test_demo_and_parity():
     transport = load_fake().transport
     assert set(bots.COMMANDS) <= transport.commands.keys()
@@ -328,6 +410,7 @@ def test_demo_and_parity():
     index = {row["name"]: row for row in entries}
     for name in set(bots.COMMANDS) | set(bots.RPCS) | {"CreateGrokBotRoom"}:
         row = index[name]
-        assert row["status"] == "done" and row["milestone"] == "M3"
+        assert row["status"] == "done"
+        assert row["milestone"] in {"M1", "M3"}
         assert row["area"] in {"bots", "roster", "rooms"}
-    assert index["seedConversationName"]["status"] == "planned"
+    assert index["seedConversationName"]["status"] == "done"
