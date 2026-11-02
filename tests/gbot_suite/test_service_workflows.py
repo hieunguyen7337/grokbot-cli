@@ -224,3 +224,28 @@ def test_imports_catalog_and_unknown_kind():
     with pytest.raises(ValueError, match="Add this skill in the Grok Bot app."):
         w.install(transport, "bot", replace(entry, install_kind="unknown"))
     assert not transport.calls
+
+
+def test_agent_skill_rpc_writes_preserve_raw_reply():
+    transport = fake()
+    reply = {"plugins": [{"pluginId": "12"}], "skill": {"name": "Demo"}}
+    for name, operation, args in (
+        (
+            "AddGrokBotAgentSkill",
+            w.add_agent_skill,
+            {"name": "Demo", "content": "body"},
+        ),
+        (
+            "UpdateGrokBotAgentSkill",
+            w.update_agent_skill,
+            {"name": "Demo", "content": "new body"},
+        ),
+        ("RemoveGrokBotAgentSkill", w.remove_agent_skill, {"name": "Demo"}),
+    ):
+        transport.rpcs[name] = reply
+        assert operation(transport, "bot", **args) == reply
+        assert transport.calls[-1] == (
+            "rpc",
+            name,
+            {"agentId": "bot", **args},
+        )

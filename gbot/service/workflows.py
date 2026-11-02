@@ -20,7 +20,12 @@ COMMANDS = {
     "importAgentWorkflowUrl": "object",
     "skillsCatalog": "none",
 }
-RPCS = ("ListGrokBotAgentSkills",)
+RPCS = (
+    "ListGrokBotAgentSkills",
+    "AddGrokBotAgentSkill",
+    "RemoveGrokBotAgentSkill",
+    "UpdateGrokBotAgentSkill",
+)
 _DEMO_ROWS = [
     {
         "id": "demo-notes",
@@ -68,7 +73,12 @@ DEMO_COMMANDS = {
         }
     ],
 }
-DEMO_RPCS = {"ListGrokBotAgentSkills": {}}
+DEMO_RPCS = {
+    "ListGrokBotAgentSkills": {},
+    "AddGrokBotAgentSkill": {"plugins": [], "skill": {"name": "Demo"}},
+    "RemoveGrokBotAgentSkill": {"plugins": []},
+    "UpdateGrokBotAgentSkill": {"plugins": [], "skill": {"name": "Demo"}},
+}
 
 
 @dataclass(frozen=True)
@@ -146,6 +156,44 @@ def skills(transport: Transport, bot_id: str) -> list[Skill]:
         merged[row.id] = row
     return sorted(
         merged.values(), key=lambda row: (not row.editable, row.name.casefold(), row.id)
+    )
+
+
+def add_agent_skill(
+    transport: Transport,
+    bot_id: str,
+    *,
+    content: str,
+    name: str | None = None,
+    description: str | None = None,
+) -> dict[str, object]:
+    payload: dict[str, object] = {"agentId": bot_id, "content": content}
+    if name is not None:
+        payload["name"] = name
+    if description is not None:
+        payload["description"] = description
+    return dict(transport.rpc("AddGrokBotAgentSkill", payload))
+
+
+def update_agent_skill(
+    transport: Transport,
+    bot_id: str,
+    *,
+    name: str,
+    content: str,
+    description: str | None = None,
+) -> dict[str, object]:
+    payload: dict[str, object] = {"agentId": bot_id, "name": name, "content": content}
+    if description is not None:
+        payload["description"] = description
+    return dict(transport.rpc("UpdateGrokBotAgentSkill", payload))
+
+
+def remove_agent_skill(
+    transport: Transport, bot_id: str, *, name: str
+) -> dict[str, object]:
+    return dict(
+        transport.rpc("RemoveGrokBotAgentSkill", {"agentId": bot_id, "name": name})
     )
 
 

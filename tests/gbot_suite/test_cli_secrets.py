@@ -107,3 +107,29 @@ def test_confirmation_delete_copy_and_errors(monkeypatch, tmp_path, capsys):
     assert cli.main(["secrets", "Alpha", "--set", "TOKEN", "--yes", "--json"]) == 1
     output = capsys.readouterr()
     assert "private-test-value" not in output.out + output.err
+
+
+def test_set_computer_reads_json_and_never_outputs_values(
+    monkeypatch, tmp_path, capsys
+):
+    fake = setup_cli(monkeypatch, tmp_path)
+    value = "private-computer-secret"
+    source = io.StringIO('{"DEMO_TOKEN":"' + value + '"}')
+    monkeypatch.setattr("sys.stdin", source)
+    assert cli.main(["secrets", "--set-computer", "-", "--yes", "--json"]) == 0
+    output = capsys.readouterr()
+    assert value not in output.out + output.err
+    assert fake.calls[-1] == (
+        "command",
+        "setBoxSecrets",
+        {"secrets": {"DEMO_TOKEN": value}},
+    )
+    fake.commands["setBoxSecrets"] = RuntimeError(value)
+    source = io.StringIO('{"DEMO_TOKEN":"' + value + '"}')
+    monkeypatch.setattr("sys.stdin", source)
+    assert cli.main(["secrets", "--set-computer", "-", "--yes"]) == 1
+    output = capsys.readouterr()
+    assert value not in output.out + output.err
+    fake.calls.clear()
+    assert cli.main(["secrets", "--set-computer", "-", "--json"]) == 1
+    assert "--yes" in capsys.readouterr().err and not fake.calls

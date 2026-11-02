@@ -167,3 +167,15 @@ def test_onepassword():
     assert t.calls[-1][2] == {"trigger": 1}
     assert v.delete_onepassword(t, "id") == state
     assert t.calls[-1][2] == {"connectionId": "id"}
+
+
+@pytest.mark.parametrize("nudged", [True, False])
+def test_nudge_onepassword_access_request(nudged):
+    t = fake()
+    t.rpcs["NudgeOnePasswordAccessRequest"] = {"nudged": nudged}
+    assert v.nudge_onepassword_access_request(t, "request", "agent", "entry") is nudged
+    assert t.calls[-1] == (
+        "rpc",
+        "NudgeOnePasswordAccessRequest",
+        {"accessRequestId": "request", "agentId": "agent", "entryId": "entry"},
+    )

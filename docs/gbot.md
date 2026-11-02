@@ -597,6 +597,9 @@ gbot skills BOT --run SKILL [--yes] [--json]
 gbot skills BOT --import-file PATH [--name N] [--yes] [--json]
 gbot skills BOT --import-url URL [--name N] [--yes] [--json]
 gbot skills BOT --install CATALOG_ID [--yes] [--json]
+gbot skills BOT --add-agent-skill [--name N] --body FILE|- [--description D] --yes [--json]
+gbot skills BOT --update-agent-skill NAME --body FILE|- [--description D] --yes [--json]
+gbot skills BOT --remove-agent-skill NAME --yes [--json]
 gbot skills --catalog [--search TEXT] [--json]
 ```
 
@@ -619,6 +622,10 @@ skill; run returns id and started (request acknowledged, not run completion).
 Imports/install return added_count and workflow_count, based only on before/after
 workflow counts. Catalog returns id, name, description, publisher and install_kind.
 `--help` (or `-h`) shows command usage.
+
+The `*-agent-skill` verbs call the agent-skill RPCs directly. Add and update read
+content from a UTF-8 file or stdin. Their service replies stay raw; CLI JSON reports
+only reply field names because plugin messages are not projected here.
 
 ## connector
 
@@ -680,6 +687,7 @@ gbot secrets --computer [--json]
 gbot secrets BOT --set NAME [--description TEXT] --yes [--json]
 gbot secrets BOT --delete NAME --yes [--json]
 gbot secrets BOT --copy-from-computer NAME [NAME ...] --yes [--json]
+gbot secrets --set-computer FILE|- --yes [--json]
 ```
 
 List a bot's secret names, descriptions and update times, or the secret names on
@@ -689,6 +697,9 @@ not a terminal; no option takes a value. Names are uppercased and must start wit
 a letter; reserved names such as PATH and prefixes such as CURSOR_ are refused.
 Values are at most 4,096 bytes. Changes need `--yes`, and only the bot's owner can
 change its secrets.
+`--set-computer` replaces the full computer secret map with a UTF-8 JSON object of
+string values read from FILE or stdin. Values never come from argv or appear in
+output or errors; output contains only status and secret names.
 
 `--json`: List rows have name, description and updated_at_ms; `--computer` returns
 keys, card_keys, is_applied and last_applied_at_ms; `--set` and `--delete` return
@@ -739,6 +750,7 @@ gbot vault --revoke-passkey ID --yes [--json]
 gbot vault --onepassword [--json]
 gbot vault --onepassword-sync --yes [--json]
 gbot vault --onepassword-disconnect ID --yes [--json]
+gbot vault --nudge-access-request ID --agent-id ID --entry-id ID --yes [--json]
 ```
 
 List the account's vault logins, cards and contacts (cards as brand and last four
@@ -749,6 +761,8 @@ the login's current values. Sites must be hosts or HTTP URLs. Also lists saved
 payment methods, lists and revokes passkeys, and shows, syncs or disconnects
 1Password connections. Changes need `--yes`. Cards, payment methods, passkey
 enrollment and connecting 1Password stay in the Grok Bot app.
+`--nudge-access-request` sends a reminder for a pending 1Password access request;
+its JSON result is `nudged`.
 
 `--json`: Items have id, kind, title, username, notes, sites, created_at_ms,
 updated_at_ms, card, contact and managed_by; the other options return their

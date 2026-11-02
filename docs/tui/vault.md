@@ -4,6 +4,9 @@ These account-level panels work from the home screen or a bot session. They do n
 
 `/vault` groups Logins, Cards and Contacts, followed by saved Payment methods. Login rows show the username and first site; card rows show only the brand, last four digits and expiry. Payment authentication and availability states appear as dim text.
 
+`/vault REQUEST_ID AGENT_ID ENTRY_ID` sends a confirmed 1Password access-request
+reminder. Use the references shown for the pending request in the app.
+
 - `a`: add a login with Title, Username, Password, comma-separated Sites and Notes.
 - `e`: edit the selected login. Enter the password again to update this login. Card editing points to the Grok Bot app.
 - `d`: delete the selected vault item after confirmation.

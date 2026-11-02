@@ -1,14 +1,18 @@
 """Write-only bot secret values and computer secret name metadata."""
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from . import bots
 from .models import _record
 from .transport import Transport
 
-COMMANDS = {"getBoxSecretsStatus": "none", "carryBoxSecretsToBot": "object"}
+COMMANDS = {
+    "getBoxSecretsStatus": "none",
+    "carryBoxSecretsToBot": "object",
+    "setBoxSecrets": "object",
+}
 RPCS = ("ListGrokBotSecrets", "PutGrokBotSecret", "DeleteGrokBotSecret")
 _RESERVED = {
     "PATH",
@@ -142,6 +146,30 @@ def box_secrets(transport: Transport) -> BoxSecrets:
     )
 
 
+def set_box_secrets(transport: Transport, values: Mapping[str, str]) -> BoxSecrets:
+    secrets = {
+        normalize_name(name): check_value(value) for name, value in values.items()
+    }
+    try:
+        reply = _record(transport.command("setBoxSecrets", {"secrets": secrets}))
+    except Exception:  # noqa: BLE001 - secret transport redaction boundary
+        raise ValueError(
+            "Computer secrets were not saved; no value is displayed."
+        ) from None
+    return BoxSecrets(
+        tuple(row for row in reply.get("keys", []) if isinstance(row, str))
+        if isinstance(reply.get("keys"), list)
+        else (),
+        tuple(row for row in reply.get("cardKeys", []) if isinstance(row, str))
+        if isinstance(reply.get("cardKeys"), list)
+        else (),
+        reply.get("isApplied") is True,
+        int(str(reply["lastAppliedAtMs"]))
+        if reply.get("lastAppliedAtMs") is not None
+        else None,
+    )
+
+
 def carry_to_bot(
     transport: Transport, bot_id: str, names: Sequence[str]
 ) -> list[tuple[str, str]]:
@@ -164,6 +192,12 @@ def carry_to_bot(
 
 
 DEMO_COMMANDS: dict[str, object] = {
+    "setBoxSecrets": {
+        "keys": ["DEMO_TOKEN", "DEMO_KEY"],
+        "cardKeys": [],
+        "isApplied": True,
+        "lastAppliedAtMs": None,
+    },
     "getBoxSecretsStatus": {
         "keys": ["DEMO_TOKEN", "DEMO_KEY"],
         "cardKeys": [],

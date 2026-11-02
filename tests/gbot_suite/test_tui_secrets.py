@@ -176,6 +176,39 @@ def test_empty_errors_and_readonly_forms(tmp_path, monkeypatch):
     asyncio.run(exercise())
 
 
+def test_replace_computer_secrets_uses_file_and_hides_values(tmp_path, monkeypatch):
+    monkeypatch.setenv("GBOT_HOME", str(tmp_path / "home"))
+    source = tmp_path / "secrets.json"
+    value = "private-tui-computer-secret"
+    source.write_text('{"DEMO_TOKEN":"' + value + '"}', encoding="utf-8")
+
+    async def exercise():
+        service = load_fake()
+        app = GbotApp(service, animate=False)
+        notices = []
+        monkeypatch.setattr(
+            app, "notify", lambda text, **kw: notices.append((text, kw))
+        )
+        async with app.run_test(size=(100, 30)) as pilot:
+            ctx = await session(app, pilot)
+            run(ctx, "/secrets")
+            await settle(app, pilot)
+            await pilot.press("r")
+            form = app.screen
+            assert isinstance(form, FormPanel)
+            form.query_one("#form-0", Input).value = str(source)
+            await pilot.press("ctrl+s")
+            await settle(app, pilot)
+            assert "secret" in app.screen.heading.lower()
+            await accept(app, pilot)
+            assert calls(service, "setBoxSecrets") == [
+                {"secrets": {"DEMO_TOKEN": value}}
+            ]
+            assert value not in repr(notices)
+
+    asyncio.run(exercise())
+
+
 def test_panel_snapshot(tmp_path, monkeypatch):
     monkeypatch.setenv("GBOT_HOME", str(tmp_path))
     monkeypatch.setattr("gbot.tui.slash.secrets._age", lambda stamp: "now")

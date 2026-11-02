@@ -5,6 +5,11 @@ Yours, scheduled skills under Scheduled, and other skills under Managed. Enter
 shows source, schedule, last and next run timestamps (milliseconds), description
 and the instruction body as plain text.
 
+Direct agent-skill RPCs are available as `/skills add-agent-skill [NAME] FILE`,
+`/skills update-agent-skill NAME FILE` and `/skills remove-agent-skill NAME`.
+FILE is UTF-8 content; each operation asks for confirmation. RPC reply messages are
+left unprojected.
+
 - `n`: new skill; `e`: edit the selected editable skill.
 - `x`: delete the selected editable skill.
 - `R`: run the selected scheduled skill now, including a paused schedule.
