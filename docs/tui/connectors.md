@@ -4,6 +4,10 @@
 Rows show its account, status sentence and tool count. `r` reloads.
 `A` asks: `Forget every "always allow" answer for connector tools?`
 
+`/connectors settings` opens account-wide user MCP settings. Press `e` to edit
+the settings JSON, choose whether to keep disabled tools, then save after
+confirmation. Unknown settings and opaque instruction messages stay in the JSON.
+
 The detail panel shows Status, Account, Transport, Tools, Group chats and
 Instructions. Keys:
 

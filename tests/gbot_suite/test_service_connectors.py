@@ -14,6 +14,45 @@ def fake():
     )
 
 
+def test_user_mcp_settings_round_trip_and_keep_disabled_tools():
+    t = fake()
+    settings = {
+        "servers": [
+            {
+                "serverId": "demo-connector",
+                "customInstructions": "Use concise answers.",
+                "disabledTools": ["search"],
+            }
+        ],
+        "customInstructionsByName": {"search": "Use the index."},
+        "userTimeZone": "Australia/Brisbane",
+        "updatedAtMs": "1800000000000",
+        "autoReviewInstructions": {"futureMessageField": "kept"},
+        "futureSetting": {"kept": True},
+    }
+    t.rpcs["GetGrokBotUserMcpSettings"] = {"settings": settings}
+
+    result = c.user_mcp_settings(t)
+
+    assert t.calls[-1] == ("rpc", "GetGrokBotUserMcpSettings", {})
+    assert result is not None
+    assert result.servers[0]["disabledTools"] == ["search"]
+    assert result.updated_at_ms == 1_800_000_000_000
+    assert result.auto_review_instructions == {"futureMessageField": "kept"}
+    assert result.raw["futureSetting"] == {"kept": True}
+
+    t.rpcs["SetGrokBotUserMcpSettings"] = {"settings": settings}
+    updated = c.set_user_mcp_settings(t, settings, keep_disabled_tools=True)
+    assert t.calls[-1] == (
+        "rpc",
+        "SetGrokBotUserMcpSettings",
+        {"settings": settings, "keepDisabledTools": True},
+    )
+    assert updated == result
+    t.rpcs["SetGrokBotUserMcpSettings"] = {}
+    assert c.set_user_mcp_settings(t, settings) is None
+
+
 def test_safe_rows_and_find():
     t = fake()
     t.commands["getMcpState"] = {

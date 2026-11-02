@@ -374,7 +374,60 @@ class AutomationPanel(_Detail):
         _confirm(self.ctx, f"Run {value.name} now?", run, self.reload)
 
 
+class AgentRoutinesPanel(ListPanel):
+    def __init__(self, ctx: SlashContext, bot: Bot) -> None:
+        self.ctx, self.bot = ctx, bot
+        self.routines: dict[str, service.AgentRoutine] = {}
+        super().__init__(
+            f"{bot.name} routines",
+            self.load_rows,
+            empty="No agent routines",
+            actions=(
+                PanelAction("t", "Toggle", self.toggle),
+                PanelAction("r", "Reload", lambda *_: self.reload()),
+            ),
+        )
+
+    def load_rows(self) -> list[PanelRow]:
+        result = service.list_agent_routines(self.ctx.service.transport, self.bot.id)
+        if not result.available:
+            raise ValueError("Agent routines are unavailable for this account.")
+        self.routines = {item.automation_id: item for item in result.routines}
+        return [
+            PanelRow(
+                item.automation_id,
+                item.name or item.automation_id,
+                f"{'on' if item.is_enabled else 'off'} · {item.schedule or item.trigger_description} · {_when(item.next_run_at_ms)}",
+            )
+            for item in result.routines
+        ]
+
+    def toggle(self, row: PanelRow) -> None:
+        routine = self.routines[row.key]
+        enabled = not routine.is_enabled
+        _confirm(
+            self.ctx,
+            f"Turn {'on' if enabled else 'off'} routine {routine.name}?",
+            lambda: service.set_agent_routine_enabled(
+                self.ctx.service.transport,
+                self.bot.id,
+                routine.automation_id,
+                enabled,
+            ),
+            self.reload,
+        )
+
+
 def automations(ctx: SlashContext, args: str) -> None:
+    if args.strip().casefold() == "routines":
+        bot = ctx.app.state.bots.get(ctx.bot_id or "")
+        if bot is None:
+            ctx.app.notify("Select a bot first", markup=False)
+            return
+        ctx.app.push_screen(AgentRoutinesPanel(ctx, bot))
+        return
+    if args.strip():
+        raise ValueError("Use /automations or /automations routines.")
     ctx.app.push_screen(AutomationsPanel(ctx))
 
 

@@ -4551,8 +4551,8 @@
       "args": [],
       "area": "connectors",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The empty request and settings fields are documented and fit the existing connector settings service."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "GetGrokBotUserRuntimeSettings",
@@ -4905,8 +4905,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): Routine fields and policy are documented, so fakes can cover both routine lists and the observed unsupported-account error."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "ListGrokBotAgentSessions",
@@ -6465,8 +6465,8 @@
       ],
       "area": "automations",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The routine toggle request and optional routine reply are documented and can reuse fake automation permission cases."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "SetGrokBotAgentTaskPinned",
@@ -6638,8 +6638,8 @@
       ],
       "area": "connectors",
       "milestone": "M4",
-      "status": "planned",
-      "note": "triage (a): The settings update and keep-disabled-tools flag are documented and can be tested alongside connector settings reads."
+      "status": "done",
+      "note": ""
     },
     {
       "name": "ShareGrokBotAgentInPlace",

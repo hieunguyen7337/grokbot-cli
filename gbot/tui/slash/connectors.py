@@ -1,9 +1,11 @@
 """Confirmed account connector and tool controls."""
 
+import json
 from collections.abc import Callable, Sequence
 
 from textual import events
 from textual.message import Message
+from textual.widgets import Static
 
 from gbot.output import terminal_safe
 from gbot.service import connectors as service
@@ -473,7 +475,111 @@ class ConnectorToolsPanel(ListPanel):
             super().on_key(event)
 
 
+class UserMcpSettingsPanel(_Detail):
+    def __init__(self, ctx: SlashContext) -> None:
+        self.ctx = ctx
+        self.settings: service.UserMcpSettings | None = None
+        super().__init__("User MCP settings", self.content)
+
+    def content(self) -> Detail:
+        settings = self.settings
+        if settings is None:
+            return Detail(
+                (("Settings", "No settings loaded"),),
+                actions=(PanelAction("r", "Reload", self.reload),),
+            )
+        raw = json.dumps(dict(settings.raw), indent=2, ensure_ascii=False)
+        return Detail(
+            (
+                ("Servers", str(len(settings.servers))),
+                ("Time zone", settings.user_time_zone or "-"),
+                ("Time zone override", settings.user_time_zone_override or "-"),
+                ("Updated", str(settings.updated_at_ms or "-")),
+            ),
+            body=raw,
+            actions=(
+                PanelAction("e", "Edit settings", self.edit),
+                PanelAction("r", "Reload", self.reload),
+            ),
+        )
+
+    def on_mount(self) -> None:
+        super().on_mount()
+        self.reload()
+
+    def loaded(self, settings: service.UserMcpSettings | None) -> None:
+        if not self.is_mounted:
+            return
+        self.settings = settings
+        self.detail = self.content()
+        self.index = min(self.index, len(self.detail.actions) - 1)
+        self._draw()
+        self.query_one(".panel-footer", Static).update(
+            " · ".join(f"{action.key} {action.label}" for action in self.detail.actions)
+            + " · esc back"
+        )
+
+    def reload(self) -> None:
+        def load() -> None:
+            settings = service.user_mcp_settings(self.ctx.service.transport)
+            self.ctx.app.call_from_thread(self.loaded, settings)
+
+        _worker(self.ctx, load)
+
+    def edit(self) -> None:
+        if not _writable(self.ctx):
+            return
+        existing = (
+            json.dumps(dict(self.settings.raw), indent=2, ensure_ascii=False)
+            if self.settings is not None
+            else "{}"
+        )
+
+        def save(values: dict[str, str | bool]) -> object:
+            try:
+                value = json.loads(str(values["settings"]))
+            except json.JSONDecodeError as error:
+                raise ValueError("Settings must be a JSON object.") from error
+            if not isinstance(value, dict):
+                raise TypeError("Settings must be a JSON object.")
+            return service.set_user_mcp_settings(
+                self.ctx.service.transport,
+                value,
+                keep_disabled_tools=values["keep_disabled_tools"] == "Yes",
+            )
+
+        self.ctx.app.push_screen(
+            _Form(
+                self.ctx,
+                "Save user MCP settings?",
+                (
+                    FormField(
+                        "settings",
+                        "Settings JSON",
+                        "multiline",
+                        existing,
+                        required=True,
+                    ),
+                    FormField(
+                        "keep_disabled_tools",
+                        "Keep disabled tools",
+                        "choice",
+                        "Yes",
+                        ("Yes", "No"),
+                    ),
+                ),
+                save,
+                self.reload,
+            )
+        )
+
+
 def connectors(ctx: SlashContext, args: str) -> None:
+    if args.strip().casefold() == "settings":
+        ctx.app.push_screen(UserMcpSettingsPanel(ctx))
+        return
+    if args.strip():
+        raise ValueError("Use /connectors or /connectors settings.")
     ctx.app.push_screen(ConnectorsPanel(ctx))
 
 
