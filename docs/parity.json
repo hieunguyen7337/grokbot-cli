@@ -105,7 +105,7 @@
       "area": "channels",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Completing the source-control connection needs the owner to supply a real OAuth callback and installation decision."
     },
     {
       "name": "completeMcpOAuth",
@@ -117,7 +117,7 @@
       "area": "connectors",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Completing connector OAuth consumes sensitive callback credentials and needs the owner to finish sign-in."
     },
     {
       "name": "confirmCloudAgentPublishProposal",
@@ -155,7 +155,7 @@
       "area": "roster",
       "milestone": "M1",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The no-argument request and numeric reply are documented and can be tested with a fake roster count."
     },
     {
       "name": "createAgent",
@@ -627,7 +627,7 @@
       "area": "automations",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): This can mint and return a secret bearer key, so the owner must check credential handling."
     },
     {
       "name": "getBotTemplateExportPolicy",
@@ -659,7 +659,7 @@
       "area": "templates",
       "milestone": "M3",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The normalized recipe reply and download mapping are documented, so fake transport and recipe data can cover it."
     },
     {
       "name": "getBoxSecretsStatus",
@@ -808,7 +808,7 @@
       "area": "connectors",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (c): Logo resolution serves app presentation, and its gateway record fields are still unknown; leave it to the app."
     },
     {
       "name": "getMcpState",
@@ -826,7 +826,7 @@
       "area": "plugins-skills",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): The owner needs to capture a populated blocked-status reply because its item fields are still unknown."
     },
     {
       "name": "getSkillPublishTargets",
@@ -1088,7 +1088,7 @@
       "area": "roster",
       "milestone": "M1",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The documented entry-array reply can reuse transcript parsing and fake the read acknowledgement side effect."
     },
     {
       "name": "openAgentTail",
@@ -1142,7 +1142,7 @@
       "area": "conversation",
       "milestone": "M1",
       "status": "planned",
-      "note": "Check whether a submitted prompt was accepted."
+      "note": "triage (a): The documented send-status mapping supports fake accepted, rejected, pending and missing cases."
     },
     {
       "name": "publishBotTemplate",
@@ -1293,7 +1293,7 @@
       "area": "connectors",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): The refresh reply is unknown and completion can follow account sign-in, so it needs an owner-authorized capture."
     },
     {
       "name": "removeMcpAccount",
@@ -1518,7 +1518,7 @@
       "area": "automations",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Running a webhook can first mint a bearer key, so the owner must check the credential and execution path."
     },
     {
       "name": "searchAgents",
@@ -1568,7 +1568,7 @@
       "area": "bots",
       "milestone": "M3",
       "status": "planned",
-      "note": "Seed the conversation title from its first prompt."
+      "note": "triage (a): The prompt request and kept-or-seeded reply are documented and can reuse bot parsing with fakes."
     },
     {
       "name": "sendDraft",
@@ -1743,7 +1743,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The replacement map and status-only reply are documented, so fake values can test writes without revealing stored secrets."
     },
     {
       "name": "setCloudAgentAppSecrets",
@@ -1948,7 +1948,7 @@
       "area": "plugins-skills",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): The sync result item fields are unknown and syncing changes state, so the owner needs to capture an authorized run."
     },
     {
       "name": "tellCloudAgentAppSecretsSet",
@@ -2255,7 +2255,7 @@
       "area": "plugins-skills",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The skill fields and response envelope are documented and fit the existing skill and plugin projections."
     },
     {
       "name": "AddGrokBotRoomPeople",
@@ -3203,7 +3203,7 @@
       "area": "plugins-skills",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Attaching delegated account access needs the owner to choose the account and acknowledge its warning."
     },
     {
       "name": "BatchCreateGrokBotVaultCredentials",
@@ -3214,7 +3214,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Bulk login creation returns credential records, so the owner must check the import and redaction behavior."
     },
     {
       "name": "BeginGrokBotAgentFileUpload",
@@ -3274,7 +3274,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Starting this connection consumes a service-account token and returns a sensitive mint ticket."
     },
     {
       "name": "BeginPasskeyRegistration",
@@ -3446,7 +3446,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Completing the connection consumes a mint ticket and service-account token and requires the owner account."
     },
     {
       "name": "CompleteOnePasswordOAuth",
@@ -3459,7 +3459,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Completing password-manager OAuth requires the owner browser callback and its sensitive state and code."
     },
     {
       "name": "CompleteSandBoxStoreMultipartWrites",
@@ -4029,7 +4029,7 @@
       "area": "internal",
       "milestone": "M1",
       "status": "planned",
-      "note": "Establish or wake the sandbox gateway session."
+      "note": "triage (b): Establishing a sandbox returns gateway tokens and computer credentials, so the owner must check the session path."
     },
     {
       "name": "EnsureSandBoxWindow",
@@ -4433,7 +4433,7 @@
       "area": "conversation",
       "milestone": "M1",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The documented request mapping and delivery outcomes can be faked without sending a real message."
     },
     {
       "name": "GetGrokBotSlackInstallState",
@@ -4532,7 +4532,7 @@
       "area": "templates",
       "milestone": "M3",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): The raw backend reply returns a secret temporary recipe link, so the owner must check download and redaction handling."
     },
     {
       "name": "GetGrokBotTermsSeen",
@@ -4552,7 +4552,7 @@
       "area": "connectors",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The empty request and settings fields are documented and fit the existing connector settings service."
     },
     {
       "name": "GetGrokBotUserRuntimeSettings",
@@ -4906,7 +4906,7 @@
       "area": "automations",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): Routine fields and policy are documented, so fakes can cover both routine lists and the observed unsupported-account error."
     },
     {
       "name": "ListGrokBotAgentSessions",
@@ -4917,7 +4917,7 @@
       "area": "conversation",
       "milestone": "M2",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The session list fields, kinds and timestamps are documented and can be tested as routing contexts."
     },
     {
       "name": "ListGrokBotAgentSkills",
@@ -5477,7 +5477,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The access-request reminder takes three references and returns a boolean, so fake success and failure need no credentials."
     },
     {
       "name": "OpenGrokBotUserComputerRequest",
@@ -5689,7 +5689,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": "Save a structured vault item; payment entry uses app UI."
+      "note": "triage (b): The call returns a credential record and its accepted secret-field keys are unknown, so the owner must check the contact-write path."
     },
     {
       "name": "RaiseGrokBotVirtualCard",
@@ -5733,7 +5733,7 @@
       "area": "conversation",
       "milestone": "M2",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Only conditional backend routing is documented; the owner needs to verify its reply before reusing gateway chunk parsing."
     },
     {
       "name": "ReadGrokBotEmailAttachment",
@@ -5783,7 +5783,7 @@
       "area": "rooms",
       "milestone": "M2",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): The reply includes expiring asset links, so the owner should check whether they grant access before exposing them."
     },
     {
       "name": "ReadGrokBotMcpAppDocument",
@@ -5894,7 +5894,7 @@
       "area": "plugins-skills",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Revoking delegated account access returns potentially sensitive plugin configuration and needs an owner account check."
     },
     {
       "name": "RemoveGrokBotAgentManager",
@@ -5918,7 +5918,7 @@
       "area": "plugins-skills",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The skill-name request and plugin response envelope are documented and can use fake skill removal results."
     },
     {
       "name": "RemoveGrokBotRoomPeople",
@@ -6065,7 +6065,7 @@
       "area": "conversation",
       "milestone": "M2",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): The exact RPC name is not in our protocol notes; the nearby signed-link resolver needs an owner check of its request and secret reply."
     },
     {
       "name": "ResolveGrokBotAutoReviewApproval",
@@ -6289,7 +6289,7 @@
       "area": "search",
       "milestone": "M2",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The map bounds, card context and outcome enum are documented and can be tested with fake places cards."
     },
     {
       "name": "SendGrokBotAgentMessage",
@@ -6371,7 +6371,7 @@
       "area": "conversation",
       "milestone": "M1",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The field mapping and acceptance outcomes are documented, so fakes can cover sending and duplicate handling."
     },
     {
       "name": "SetGrokBotAgentAllowCollaboratorAutomationCreation",
@@ -6383,7 +6383,7 @@
       "area": "bots",
       "milestone": "M3",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The boolean update and routine-policy reply are documented and can be tested with fake permission results."
     },
     {
       "name": "SetGrokBotAgentAutomationEnabled",
@@ -6466,7 +6466,7 @@
       "area": "automations",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The routine toggle request and optional routine reply are documented and can reuse fake automation permission cases."
     },
     {
       "name": "SetGrokBotAgentTaskPinned",
@@ -6639,7 +6639,7 @@
       "area": "connectors",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The settings update and keep-disabled-tools flag are documented and can be tested alongside connector settings reads."
     },
     {
       "name": "ShareGrokBotAgentInPlace",
@@ -6693,7 +6693,7 @@
       "area": "conversation",
       "milestone": "M2",
       "status": "planned",
-      "note": "Prepare an attached image for the message composer."
+      "note": "triage (c): This name is not in our protocol notes and its planned purpose is a message-composer aid, so leave it to the app."
     },
     {
       "name": "StartGrokBotSilentSubagentInternal",
@@ -6769,7 +6769,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Starting password-manager OAuth returns sensitive authorization state and requires the owner browser consent flow."
     },
     {
       "name": "StartPasskeyEnrollment",
@@ -6801,7 +6801,7 @@
       "area": "secrets-vault",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (b): Storing an integration key consumes a secret from the owner OAuth callback and binds the connection."
     },
     {
       "name": "SubmitGrokBotSecret",
@@ -6953,7 +6953,7 @@
       "area": "bots",
       "milestone": "M3",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The partial identity update and avatar oneof are documented, so fakes can cover managed nonowner rows."
     },
     {
       "name": "UpdateGrokBotAgentAccess",
@@ -7007,7 +7007,7 @@
       "area": "plugins-skills",
       "milestone": "M4",
       "status": "planned",
-      "note": ""
+      "note": "triage (a): The skill-name and content update plus response envelope are documented and fit existing skill projections."
     },
     {
       "name": "UpdateGrokBotChangelogInternal",
