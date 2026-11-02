@@ -6,7 +6,7 @@ from gbot.bots import record
 from gbot.pending import APP_ONLY, classify, one_line
 from groken.client import ConnectError
 
-from .models import Action, AnswerResult, Card
+from .models import Action, AnswerResult, Card, awaiting_flag
 from .transport import Transport
 
 COMMANDS = {"getAgentTranscriptTail": "object", "resolveConnectorGrant": "object"}
@@ -250,7 +250,7 @@ def waiting(row: Mapping[str, object]) -> bool:
     """
     flag = row.get("awaitingUserResponse")
     sessions = row.get("awaitingSessionIds")
-    return (flag is not None and flag is not False) or (
+    return awaiting_flag(flag) or (
         isinstance(sessions, list) and any(isinstance(s, str) for s in sessions)
     )
 

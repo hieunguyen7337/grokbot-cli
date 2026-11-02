@@ -337,6 +337,7 @@ class GbotApp(App[None]):
             ],
             bots,
         )
+        self._sweep_finished = False
         self.sweep_cards(self._sweep)
         self.refresh_home()
         if self.initial_bot:
@@ -363,7 +364,7 @@ class GbotApp(App[None]):
         listed = set(shown)
         return [*shown, *(bot_id for bot_id in bot_ids if bot_id not in listed)]
 
-    @work(exit_on_error=False, group="card-sweep")
+    @work(exit_on_error=False, group="card-sweep", exclusive=True)
     async def sweep_cards(self, sweep: _CardSweep) -> None:
         if sweep.total:
             loop = asyncio.get_running_loop()
@@ -394,8 +395,9 @@ class GbotApp(App[None]):
                         markup=False,
                     )
             await finished.wait()
-        self._sweep_finished = True
-        self.refresh_home()
+        if sweep is self._sweep:
+            self._sweep_finished = True
+            self.refresh_home()
 
     def _run_card_checks(
         self,
@@ -416,7 +418,7 @@ class GbotApp(App[None]):
 
     def _check_bots(self, sweep: _CardSweep) -> None:
         while (item := sweep.take()) is not None:
-            if self._service_closing:
+            if self._service_closing or sweep is not self._sweep:
                 break
             bot_id, full = item
             if full:
@@ -448,7 +450,11 @@ class GbotApp(App[None]):
             return
         try:
             installed = self.call_from_thread(
-                self._install_sweep_cards, bot_id, cards, sweep.unseen(bot_id, warnings)
+                self._install_sweep_cards,
+                bot_id,
+                cards,
+                sweep.unseen(bot_id, warnings),
+                sweep,
             )
         except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
             installed = False
@@ -471,13 +477,18 @@ class GbotApp(App[None]):
             return
         try:
             self.call_from_thread(
-                self._install_sweep_cards, bot_id, cards, sweep.unseen(bot_id, warnings)
+                self._install_sweep_cards,
+                bot_id,
+                cards,
+                sweep.unseen(bot_id, warnings),
+                sweep,
             )
         except Exception as error:  # noqa: BLE001 - UI install boundary: a failed install is a badge
             self.call_from_thread(self.bot_error, bot_id, error, notify=False)
 
     def _check_failed(self, sweep: _CardSweep, bot_id: str, error: Exception) -> None:
-        if self._service_closing:
+        # A replaced sweep reports nothing: the newer sweep owns the badges and the auth notice.
+        if self._service_closing or sweep is not self._sweep:
             return
         if isinstance(error, ConnectError) and error.status == 401:
             # One notice for the whole sweep; the other checks in flight end quietly.
@@ -487,10 +498,16 @@ class GbotApp(App[None]):
             self.call_from_thread(self.bot_error, bot_id, error, notify=False)
 
     def _install_sweep_cards(
-        self, bot_id: str, cards: list[Card], warnings: list[str]
+        self,
+        bot_id: str,
+        cards: list[Card],
+        warnings: list[str],
+        sweep: _CardSweep | None = None,
     ) -> bool:
         # Refreshed cards already hold a full read, which a sweep result must not replace. Returns whether installed.
-        if bot_id in self._cards_refreshed:
+        if (
+            sweep is not None and sweep is not self._sweep
+        ) or bot_id in self._cards_refreshed:
             return False
         self._install_cards(bot_id, cards, warnings)
         return True
